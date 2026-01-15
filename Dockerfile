@@ -7,6 +7,5 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY index.html /usr/share/nginx/html/
 COPY src /usr/share/nginx/html/src
 COPY guidelines /usr/share/nginx/html/guidelines
-COPY assets /usr/share/nginx/html/assets
 
 EXPOSE 80
