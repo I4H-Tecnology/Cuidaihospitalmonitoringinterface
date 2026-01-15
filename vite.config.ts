@@ -3,12 +3,13 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '', // Isso é fundamental para o deploy em subpastas ou hosts específicos
+  base: './', 
   build: {
+    target: 'es2015', // Usa um padrão de JS mais compatível
     outDir: 'dist',
-    assetsDir: 'assets',
+    minify: 'esbuild',
     rollupOptions: {
-      external: [/^figma:/],
+      external: [/^figma:/], // Remove qualquer resquício do Figma
     },
   },
 })
