@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import logoImage from 'figma:asset/2834f4ebc0639f27caf30154ca4ffe1fb709a28c.png';
-import sideImage from 'figma:asset/d48c20bfc841277fc03408a46fc17800a0da1847.png';
-import backgroundPattern from 'figma:asset/b601272a25414cb3deada5f16dd1157a53062d5c.png';
+//import logoImage from 'figma:asset/2834f4ebc0639f27caf30154ca4ffe1fb709a28c.png';
+//import sideImage from 'figma:asset/d48c20bfc841277fc03408a46fc17800a0da1847.png';
+//import backgroundPattern from 'figma:asset/b601272a25414cb3deada5f16dd1157a53062d5c.png';
 
 export function LoginScreen() {
   const { login } = useAuth();
