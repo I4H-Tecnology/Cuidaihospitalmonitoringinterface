@@ -1,10 +1,12 @@
-FROM node:20-alpine AS build
-
-WORKDIR /app
-COPY . .
-RUN npm install
-RUN npm run build
-
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+
+# Remove o site default do nginx
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copia o site pronto do Figma Make
+COPY index.html /usr/share/nginx/html/
+COPY src /usr/share/nginx/html/src
+COPY guidelines /usr/share/nginx/html/guidelines
+COPY assets /usr/share/nginx/html/assets
+
 EXPOSE 80
