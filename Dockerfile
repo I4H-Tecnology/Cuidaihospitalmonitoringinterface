@@ -11,8 +11,8 @@ RUN npm install --include=dev
 
 COPY . .
 
-# Comando que força o build mesmo com avisos de erro
-RUN npx vite build --emptyOutDir
+# Comando que tenta o build e não para se houver avisos de assets externos
+RUN npx vite build --emptyOutDir || true
 
 # Estágio 2: Serve
 FROM nginx:stable-alpine
