@@ -3,10 +3,12 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: './', // Isso garante que os caminhos dos arquivos sejam relativos
+  base: './', 
   build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
     rollupOptions: {
-      external: [/^figma:/], // Continua ignorando os links quebrados do Figma
+      external: [/^figma:/], // Impede que o build falhe por causa dos links
     },
   },
 })
