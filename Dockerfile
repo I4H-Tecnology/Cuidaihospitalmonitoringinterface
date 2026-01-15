@@ -1,7 +1,10 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+COPY . .
+RUN npm install
+RUN npm run build
+
 FROM nginx:alpine
-
-COPY index.html /usr/share/nginx/html/
-COPY src /usr/share/nginx/html/src
-COPY guidelines /usr/share/nginx/html/guidelines
-
+COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
