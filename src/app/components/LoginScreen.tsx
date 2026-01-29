@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSystemToast } from './ui/SystemToast';
-import logoImage from "../../assets/logo.png";
-import sideImage from "../../assets/login1.png";
-import backgroundPattern from "../../assets/login2.png";
+import logoImage from "@/assets/logo.png";
+import sideImage from "@/assets/login1.png";
+import backgroundPattern from "@/assets/login2.png";
 
 export function LoginScreen() {
   const { login } = useAuth();
