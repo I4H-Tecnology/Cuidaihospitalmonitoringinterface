@@ -7,7 +7,7 @@ RUN npm ci
 COPY . .
 
 # Build-time Vite vars only (no .env dependency)
-ARG VITE_API_URL
+ARG VITE_API_URL=https://cuidai-cuidai-backend-qa.mdpk1q.easypanel.host
 ARG VITE_MODE=production
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_MODE=$VITE_MODE
