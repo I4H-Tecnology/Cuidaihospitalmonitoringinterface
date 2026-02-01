@@ -72,6 +72,29 @@ export interface LoginResponse {
   isSystemUser?: boolean;
 }
 
+export interface OperationalOverviewResponse {
+  status: 'operational' | 'attention' | 'critical';
+  criticalAlerts: number;
+  criticalCases: number;
+  occupancyRate: number;
+  avgResponseMinutes: number;
+  incidentsLast24h: number;
+  updatedAt: string;
+  criticalSectors: Array<{
+    id: string;
+    name: string;
+    occupancyRate: number;
+    activeAlerts: number;
+    status: 'operational' | 'attention' | 'critical';
+  }>;
+  insights: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
+}
+
 export const fetchTenants = () => request<TenantInfo[]>('/api/tenants');
 
 export const loginRequest = (payload: { tenant: string; username: string; password: string }) =>
@@ -126,3 +149,6 @@ export const recordAccessLog = (tenantId: string, log: any) =>
     method: 'POST',
     body: JSON.stringify({ tenantId, log })
   });
+
+export const fetchOperationalOverview = (tenantId: string) =>
+  request<OperationalOverviewResponse>(`/api/operational-overview?tenantId=${encodeURIComponent(tenantId)}`);

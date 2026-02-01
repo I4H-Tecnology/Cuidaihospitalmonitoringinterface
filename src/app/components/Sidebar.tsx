@@ -110,7 +110,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
       icon: <LayoutDashboard className="w-4 h-4" />,
       items: [
         { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard (contextual)', screen: 'dashboard' },
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Visão geral operacional', disabled: true },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Visão Geral Operacional', screen: 'operational-overview' },
         { icon: <Activity className="w-5 h-5" />, label: 'Indicadores-chave', disabled: true },
         { icon: <Bell className="w-5 h-5" />, label: 'Alertas prioritários', disabled: true },
         { icon: <FileText className="w-5 h-5" />, label: 'Insights de IA', disabled: true },
