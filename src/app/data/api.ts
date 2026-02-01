@@ -1,12 +1,23 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const rawApiBaseUrl =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  '';
+
+if (!rawApiBaseUrl) {
+  console.error('[api] VITE_API_URL is not set. Falling back to same-origin requests.');
+}
+
+const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 
 type FetchOptions = RequestInit & { json?: boolean };
 
 const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> => {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const requestUrl = `${API_BASE_URL}${normalizedPath}`;
   if (import.meta.env.DEV) {
-    console.debug('[api] request', `${API_BASE_URL}${path}`);
+    console.debug('[api] request', requestUrl);
   }
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(requestUrl, {
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {})
