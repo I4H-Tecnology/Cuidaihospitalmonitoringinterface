@@ -119,10 +119,7 @@ export function OperationalOverviewScreen() {
   return (
     <main className="px-8 py-6 flex-1 overflow-auto">
       <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-gray-800 mb-1">Visão Geral Operacional</h1>
-          <p className="text-sm text-gray-500">Indicadores consolidados e visão crítica da operação hospitalar</p>
-        </div>
+        <div />
         <div className="text-right">
           <p className="text-xs text-gray-400">Atualiza a cada {Math.round(REFRESH_INTERVAL_MS / 1000)}s</p>
           {updatedAtLabel && (
