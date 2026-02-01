@@ -1,9 +1,12 @@
-const rawApiBaseUrl = import.meta.env.VITE_API_URL;
+const rawApiBaseUrl =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  '';
 // Keep requests working on same-origin deployments when env var is missing.
 if (!rawApiBaseUrl) {
   console.error('[api] VITE_API_URL is not set. Falling back to same-origin requests.');
 }
-const API_BASE_URL = (rawApiBaseUrl || '').replace(/\/+$/, '');
+const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 
 export class ApiError extends Error {
   status: number;
