@@ -41,6 +41,7 @@ interface MenuItem {
   screen?: Screen;
   module?: string;
   onClick?: () => void;
+  disabled?: boolean;
   children?: MenuItem[];
 }
 
@@ -61,55 +62,87 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
 
   const menuSections: MenuSection[] = [
     {
-      title: 'PRINCIPAL',
+      title: 'DASHBOARD',
       items: [
-        { 
-          icon: <LayoutDashboard className="w-5 h-5" />, 
-          label: 'Dashboard',
-          screen: 'dashboard'
-        },
-        { 
-          icon: <Activity className="w-5 h-5" />, 
-          label: 'Monitoramento IA',
-          badge: { value: 3, variant: 'critical' },
-          screen: 'monitoring'
-        },
-        { 
-          icon: <Bell className="w-5 h-5" />, 
-          label: 'Alertas Clínicos',
-          badge: { value: 7, variant: 'warning' },
-          screen: 'alerts'
-        },
+        { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard (contextual)', screen: 'dashboard' },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Visão geral operacional', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Indicadores-chave', disabled: true },
+        { icon: <Bell className="w-5 h-5" />, label: 'Alertas prioritários', disabled: true },
+        { icon: <FileText className="w-5 h-5" />, label: 'Insights de IA', disabled: true },
       ],
     },
     {
-      title: 'GESTÃO CLÍNICA',
+      title: 'ASSISTENCIAL (CORE CLÍNICO)',
       items: [
-        { 
-          icon: <ClipboardList className="w-5 h-5" />, 
-          label: 'Prontuário (PEP)',
-          screen: 'pep'
-        },
-        { 
-          icon: <Users className="w-5 h-5" />, 
-          label: 'Pacientes',
-          screen: 'patients'
-        },
-        { 
-          icon: <BedDouble className="w-5 h-5" />, 
-          label: 'Leitos e Quartos',
-          screen: 'beds-rooms'
-        },
-        { icon: <Calendar className="w-5 h-5" />, label: 'Agendamentos', screen: 'scheduling' },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'Prontuário Eletrônico (PEP)', screen: 'pep' },
+        { icon: <Users className="w-5 h-5" />, label: 'Pacientes', screen: 'patients' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Evoluções Clínicas', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Linha do Tempo Clínica', disabled: true },
+        { icon: <Shield className="w-5 h-5" />, label: 'Alergias & Riscos', disabled: true },
       ],
     },
     {
-      title: 'ADMINISTRATIVO',
+      title: 'OPERACIONAL ASSISTENCIAL',
+      items: [
+        { icon: <BedDouble className="w-5 h-5" />, label: 'Leitos & Ocupação', screen: 'beds-rooms' },
+        { icon: <Building2 className="w-5 h-5" />, label: 'Internações', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Alta e Transferência', disabled: true },
+        { icon: <Calendar className="w-5 h-5" />, label: 'Agenda Médica', screen: 'scheduling' },
+        { icon: <Users className="w-5 h-5" />, label: 'Fluxo do Paciente', disabled: true },
+        { icon: <Users2 className="w-5 h-5" />, label: 'Escalas Assistenciais', disabled: true },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'Checklists Operacionais', disabled: true },
+      ],
+    },
+    {
+      title: 'MONITORAMENTO INTELIGENTE',
+      items: [
+        { icon: <Activity className="w-5 h-5" />, label: 'Monitoramento em Tempo Real', badge: { value: 3, variant: 'critical' }, screen: 'monitoring' },
+        { icon: <Bell className="w-5 h-5" />, label: 'Alertas Clínicos', badge: { value: 7, variant: 'warning' }, screen: 'alerts' },
+        { icon: <Shield className="w-5 h-5" />, label: 'Detecção de Quedas', disabled: true },
+        { icon: <BedDouble className="w-5 h-5" />, label: 'Ausência no Quarto', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Agitação Noturna', disabled: true },
+        { icon: <Package className="w-5 h-5" />, label: 'Sensores IoT', disabled: true },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Score de Risco', disabled: true },
+        { icon: <FileText className="w-5 h-5" />, label: 'Histórico de Incidentes', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Linha do Tempo de Eventos', disabled: true },
+      ],
+    },
+    {
+      title: 'RELACIONAMENTO COM PACIENTE (CRM SAÚDE)',
+      items: [
+        { icon: <Calendar className="w-5 h-5" />, label: 'Agenda do Paciente', disabled: true },
+        { icon: <Bell className="w-5 h-5" />, label: 'Lembretes Automáticos', disabled: true },
+        { icon: <Users className="w-5 h-5" />, label: 'Mensagens', disabled: true },
+        { icon: <Smartphone className="w-5 h-5" />, label: 'Chatbot', disabled: true },
+        { icon: <FileText className="w-5 h-5" />, label: 'Comunicação de Exames', disabled: true },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'Histórico de Atendimento', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'NPS / Satisfação', disabled: true },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Campanhas de Saúde', disabled: true },
+      ],
+    },
+    {
+      title: 'INTELIGÊNCIA & ANALYTICS',
+      items: [
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Dashboards Operacionais', screen: 'reports' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Indicadores Clínicos', disabled: true },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'KPIs Assistenciais', disabled: true },
+        { icon: <FileText className="w-5 h-5" />, label: 'Relatórios Regulatórios', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Análise Preditiva (IA)', disabled: true },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Heatmaps de Risco', disabled: true },
+        { icon: <Calendar className="w-5 h-5" />, label: 'Comparativos por Período', disabled: true },
+        { icon: <FileText className="w-5 h-5" />, label: 'Insights Automatizados', disabled: true },
+      ],
+    },
+    {
+      title: 'ADMINISTRAÇÃO',
       items: [
         { icon: <Building2 className="w-5 h-5" />, label: 'Gestão Hospitalar', screen: 'hospital-management' },
         { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', screen: 'financial' },
         { icon: <Package className="w-5 h-5" />, label: 'Estoque', screen: 'inventory' },
         { icon: <Users2 className="w-5 h-5" />, label: 'Recursos Humanos', screen: 'hr' },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'Compras', disabled: true },
+        { icon: <FileText className="w-5 h-5" />, label: 'Contratos', disabled: true },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Centros de Custo', disabled: true },
       ],
     },
     {
@@ -125,12 +158,6 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
         { icon: <Settings className="w-5 h-5" />, label: 'Configurações', module: 'settings', screen: 'settings' },
         { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente' },
         { icon: <Shield className="w-5 h-5" />, label: 'Segurança', module: 'security' },
-      ],
-    },
-    {
-      title: 'RELATÓRIOS',
-      items: [
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Relatórios', screen: 'reports' },
       ],
     },
   ];
@@ -218,21 +245,29 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
               {section.items.filter(isItemAllowed).map((item, itemIndex) => {
                 const visibleChildren = item.children?.filter(isItemAllowed);
                 const isActive = item.screen === currentScreen || !!visibleChildren?.some((child) => child.screen === currentScreen);
+                const isDisabled = item.disabled;
 
                 return (
                   <div key={itemIndex} className="space-y-1">
                     <button
                       onClick={() => {
+                        if (isDisabled) {
+                          return;
+                        }
                         if (item.children) {
                           toggleMenu(item.label);
                         } else {
                           handleItemClick(item);
                         }
                       }}
+                      disabled={isDisabled}
+                      aria-disabled={isDisabled ? true : undefined}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group ${
                         isActive
                           ? 'bg-gradient-to-r from-[#BAE6FD] to-[#7DD3FC] dark:from-[#0A7EA4] dark:to-[#0EA5E9] text-[#0A7EA4] dark:text-white shadow-sm'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-[#0A7EA4] dark:hover:text-[#7DD3FC]'
+                          : isDisabled
+                            ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60 pointer-events-none'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-[#0A7EA4] dark:hover:text-[#7DD3FC]'
                       }`}
                     >
                       <span className={isActive ? 'text-[#0A7EA4] dark:text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-[#0A7EA4] dark:group-hover:text-[#7DD3FC]'}>
@@ -263,14 +298,24 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
                       <div className="pl-6 space-y-1">
                         {visibleChildren.map((child, childIndex) => {
                           const isChildActive = child.screen === currentScreen;
+                          const isChildDisabled = child.disabled;
                           return (
                             <button
                               key={childIndex}
-                              onClick={() => handleItemClick(child)}
+                              onClick={() => {
+                                if (isChildDisabled) {
+                                  return;
+                                }
+                                handleItemClick(child);
+                              }}
+                              disabled={isChildDisabled}
+                              aria-disabled={isChildDisabled ? true : undefined}
                               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
                                 isChildActive
                                   ? 'bg-[#E8F4F8] text-[#0A7EA4]'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-[#0A7EA4]'
+                                  : isChildDisabled
+                                    ? 'text-gray-400 cursor-not-allowed opacity-60 pointer-events-none'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-[#0A7EA4]'
                               }`}
                             >
                               <span className={isChildActive ? 'text-[#0A7EA4]' : 'text-gray-400'}>
