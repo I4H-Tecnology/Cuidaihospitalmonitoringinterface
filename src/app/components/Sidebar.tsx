@@ -282,7 +282,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
                 <HeartPulse className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-[#0A7EA4] dark:text-[#7DD3FC]">CuidAI</h2>
+                <h2 className="text-[#0A7EA4] dark:text-[#7DD3FC]">MedSignal</h2>
                 <p className="text-xs text-gray-400 dark:text-gray-500">ERP HOSPITALAR</p>
               </div>
             </div>

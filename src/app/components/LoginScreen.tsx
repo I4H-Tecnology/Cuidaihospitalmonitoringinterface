@@ -49,7 +49,7 @@ export function LoginScreen() {
         <div className="hidden lg:flex lg:w-[60%] bg-[#E8F4F8] items-center justify-center">
           <img
             src={sideImage}
-            alt="CuidAI - Monitore Inteligentemente o seu Hospital"
+            alt="MedSignal - Monitore Inteligentemente o seu Hospital"
             className="w-full h-auto object-contain"
           />
         </div>
@@ -59,11 +59,11 @@ export function LoginScreen() {
             <div className="flex flex-col items-center mb-8">
               <img
                 src={logoImage}
-                alt="CuidAI"
+                alt="MedSignal"
                 className="h-16 w-auto mb-3"
               />
               <div className="text-center">
-                <h2 className="text-xl font-bold text-gray-900">CuidAI</h2>
+                <h2 className="text-xl font-bold text-gray-900">MedSignal</h2>
                 <p className="text-xs text-gray-500">Sistema Hospitalar Inteligente</p>
               </div>
             </div>

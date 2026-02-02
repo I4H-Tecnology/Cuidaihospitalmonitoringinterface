@@ -79,7 +79,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
         <div className="hidden lg:flex lg:w-[60%] bg-[#E8F4F8] items-center justify-center">
           <img
             src={sideImage}
-            alt="CuidAI - Monitore Inteligentemente o seu Hospital"
+            alt="MedSignal - Monitore Inteligentemente o seu Hospital"
             className="w-full h-auto object-contain"
           />
         </div>
@@ -90,7 +90,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
               <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
                 <img
                   src={logoImage}
-                  alt="CuidAI"
+                  alt="MedSignal"
                   className="h-16 w-16 object-contain"
                 />
               </div>

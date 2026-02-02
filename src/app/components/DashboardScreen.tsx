@@ -336,7 +336,7 @@ const bedOccupancyByFloorData = [
 ];
 
 const availableDashboards: DashboardConfig[] = [
-  { id: 'default', name: 'Visão Geral', description: 'Dashboard padrão do CuidAI', isDefault: true, isCustom: false },
+  { id: 'default', name: 'Visão Geral', description: 'Dashboard padrão do MedSignal', isDefault: true, isCustom: false },
   { id: 'uti', name: 'Dashboard UTI', description: 'Personalizado para Unidade de Terapia Intensiva', isDefault: false, isCustom: true },
   { id: 'geriatria', name: 'Dashboard Geriatria', description: 'Foco em pacientes idosos', isDefault: false, isCustom: true },
   { id: 'enfermagem', name: 'Dashboard Enfermagem', description: 'Visão operacional da enfermagem', isDefault: false, isCustom: true }
@@ -1130,7 +1130,7 @@ export function DashboardScreen() {
             <div className="flex items-center gap-3 mb-2">
               <Lightbulb className="w-8 h-8" />
               <div>
-                <h2 className="text-xl">Insights de IA do CuidAI</h2>
+                <h2 className="text-xl">Insights de IA do MedSignal</h2>
                 <p className="text-sm opacity-90">Análise preditiva e recomendações inteligentes baseadas em dados em tempo real</p>
               </div>
             </div>
@@ -1301,7 +1301,7 @@ export function DashboardScreen() {
             <div className="flex items-center gap-3 text-white">
               <Bot className="w-6 h-6" />
               <div>
-                <h3 className="text-sm">Assistente IA CuidAI</h3>
+                <h3 className="text-sm">Assistente IA MedSignal</h3>
                 <p className="text-xs opacity-90">Sempre disponível</p>
               </div>
             </div>
@@ -1316,7 +1316,7 @@ export function DashboardScreen() {
             <div className="space-y-4">
               <div className="bg-blue-50 rounded-lg p-3">
                 <p className="text-sm text-blue-900">
-                  Olá! Sou a IA do CuidAI. Como posso ajudar com os dados do {viewTabs.find(t => t.id === currentView)?.label}?
+                  Olá! Sou a IA do MedSignal. Como posso ajudar com os dados do {viewTabs.find(t => t.id === currentView)?.label}?
                 </p>
               </div>
               <div className="flex flex-col gap-2">

@@ -14,7 +14,7 @@ const initialMessages: Message[] = [
   {
     id: 1,
     type: 'bot',
-    content: 'Olá! 👋 Sou o assistente inteligente do CuidAI. Como posso ajudar você hoje?',
+    content: 'Olá! 👋 Sou o assistente inteligente do MedSignal. Como posso ajudar você hoje?',
     timestamp: new Date(),
     suggestions: [
       'Buscar paciente',
@@ -146,7 +146,7 @@ export function AIChatbot() {
                 <Bot className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-white font-medium">Assistente CuidAI</h3>
+                <h3 className="text-white font-medium">Assistente MedSignal</h3>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                   <p className="text-xs text-white/80">Online • Responde em segundos</p>

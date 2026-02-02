@@ -331,7 +331,7 @@ export function AIAssistant({ onNavigate, patients = [], onOpenPatient, isMobile
       content = `🔴 Pacientes em Estado Crítico\n\nAtualmente temos 1 paciente classificado como crítico:\n\n👤 Maria Silva Santos\n• Localização: UTI 101 - Leito A\n• Status: Crítico\n• Último evento: Queda detectada há 2h\n• Alertas ativos: 2\n• 🤖 Risco IA: Alto\n• Tempo de internação: 5 dias\n\n⚠️ Atenção Especial (2 pacientes)\n• João Pereira Souza (UTI 101-B)\n• Carlos Mendes Oliveira (UTI 102-A)\n\n💡 Recomendo monitoramento contínuo e revisão de protocolos de prevenção de quedas.`;
       suggestions = ['Ver prontuário completo', 'Histórico de eventos', 'Acionar equipe médica'];
     } else {
-      content = `👋 Olá! Sou a IA Assistiva do CuidAI.\n\nEstou aqui para ajudar você com:\n\n💡 Insights Operacionais\n• Análise de ocupação de leitos\n• Identificação de pacientes sem atualização\n• Resumos de alertas e eventos\n\n🔍 Navegação Rápida\n• Encontrar informações específicas\n• Atalhos para prontuários e telas\n• Filtros inteligentes\n\n📊 Relatórios Instantâneos\n• Status de leitos e quartos\n• Indicadores por andar\n• Estatísticas em tempo real\n\n🎯 Como posso te ajudar hoje?\n\n💡 Exemplos:\n• "Abrir prontuário de Maria Silva"\n• "Ver leito 301"\n• "Agendamentos de hoje"`;
+      content = `👋 Olá! Sou a IA Assistiva do MedSignal.\n\nEstou aqui para ajudar você com:\n\n💡 Insights Operacionais\n• Análise de ocupação de leitos\n• Identificação de pacientes sem atualização\n• Resumos de alertas e eventos\n\n🔍 Navegação Rápida\n• Encontrar informações específicas\n• Atalhos para prontuários e telas\n• Filtros inteligentes\n\n📊 Relatórios Instantâneos\n• Status de leitos e quartos\n• Indicadores por andar\n• Estatísticas em tempo real\n\n🎯 Como posso te ajudar hoje?\n\n💡 Exemplos:\n• "Abrir prontuário de Maria Silva"\n• "Ver leito 301"\n• "Agendamentos de hoje"`;
       suggestions = quickSuggestions;
     }
 
@@ -472,7 +472,7 @@ export function AIAssistant({ onNavigate, patients = [], onOpenPatient, isMobile
                 <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white"></span>
               </div>
               <div>
-                <h3 className="text-white font-medium">Assistente IA CuidAI</h3>
+                <h3 className="text-white font-medium">Assistente IA MedSignal</h3>
                 <p className="text-xs text-blue-100">Insights e suporte inteligente</p>
               </div>
             </div>
