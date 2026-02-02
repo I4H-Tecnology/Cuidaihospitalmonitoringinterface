@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Activity,
@@ -96,8 +96,8 @@ function SidebarModule({ title, icon, isCollapsed, isOpen, onToggle, children }:
 
 export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen = 'dashboard', onNavigate }: SidebarProps) {
   const { can } = useAuth();
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ Cadastros: false });
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
 
   const toggleMenu = (label: string) => {
     setExpandedMenus((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -220,6 +220,29 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
     info: 'bg-[#0EA5E9] text-white',
   };
 
+  const getActiveSectionInfo = () => {
+    for (const section of menuSections) {
+      for (const item of section.items) {
+        if (item.screen === currentScreen) {
+          return { sectionTitle: section.title, menuLabel: null };
+        }
+        if (item.children?.some((child) => child.screen === currentScreen)) {
+          return { sectionTitle: section.title, menuLabel: item.label };
+        }
+      }
+    }
+    return { sectionTitle: null, menuLabel: null };
+  };
+
+  const { sectionTitle: activeSectionTitle, menuLabel: activeMenuLabel } = getActiveSectionInfo();
+
+  useEffect(() => {
+    setOpenSection(activeSectionTitle);
+    if (activeMenuLabel) {
+      setExpandedMenus((prev) => ({ ...prev, [activeMenuLabel]: true }));
+    }
+  }, [activeSectionTitle, activeMenuLabel]);
+
   const handleItemClick = (item: MenuItem) => {
     if (item.screen && onNavigate) {
       onNavigate(item.screen);
@@ -288,7 +311,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
       <nav className="sidebar-scrollbar flex-1 overflow-y-auto px-3 py-4">
         {menuSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter(isItemAllowed);
-          const isOpen = expandedModules[section.title] ?? true;
+          const isOpen = openSection === section.title;
 
           return (
             <SidebarModule
@@ -297,9 +320,7 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
               icon={section.icon}
               isCollapsed={isCollapsed}
               isOpen={isOpen}
-              onToggle={() =>
-                setExpandedModules((prev) => ({ ...prev, [section.title]: !isOpen }))
-              }
+              onToggle={() => setOpenSection((prev) => (prev === section.title ? null : section.title))}
             >
               <div className="space-y-1">
                 {visibleItems.map((item, itemIndex) => {
