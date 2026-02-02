@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard,
   Activity,
@@ -235,8 +235,14 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
   };
 
   const { sectionTitle: activeSectionTitle, menuLabel: activeMenuLabel } = getActiveSectionInfo();
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      return;
+    }
+
     setOpenSection(activeSectionTitle);
     if (activeMenuLabel) {
       setExpandedMenus((prev) => ({ ...prev, [activeMenuLabel]: true }));
