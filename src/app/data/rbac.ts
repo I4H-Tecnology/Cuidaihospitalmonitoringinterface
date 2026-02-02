@@ -2,6 +2,7 @@ import type { Platform } from './authStore';
 
 export type Screen =
   | 'dashboard'
+  | 'operational-overview'
   | 'monitoring'
   | 'alerts'
   | 'pep'
@@ -18,6 +19,8 @@ export type Screen =
 
 export const screenModuleMap: Record<Screen, string> = {
   dashboard: 'dashboard',
+  // TODO: Trocar para "operational_overview" quando o backend expor permissões deste módulo.
+  'operational-overview': 'dashboard',
   monitoring: 'monitoring',
   alerts: 'alerts',
   pep: 'clinical_logs',

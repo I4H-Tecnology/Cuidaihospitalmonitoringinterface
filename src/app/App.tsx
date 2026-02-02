@@ -10,6 +10,7 @@ import { MobileApp } from './MobileApp';
 import { LoginScreen } from './components/LoginScreen';
 import { CompanySelectScreen } from './components/CompanySelectScreen';
 import { DashboardScreen } from './components/DashboardScreen';
+import { OperationalOverviewScreen } from './components/OperationalOverviewScreen';
 import { MonitoringScreen } from './components/MonitoringScreen';
 import { AlertsScreen } from './components/AlertsScreen';
 import { PatientsScreen } from './components/PatientsScreen';
@@ -268,6 +269,7 @@ function AppContent() {
     
     const screenInfo = {
       dashboard: { title: 'Central de Monitoramento', subtitle: 'Acompanhamento em tempo real' },
+      'operational-overview': { title: 'Visão Geral Operacional', subtitle: 'Indicadores consolidados da operação' },
       monitoring: { title: 'Monitoramento Inteligente', subtitle: 'Câmeras e Sensores IA' },
       alerts: { title: 'Central de Alertas', subtitle: 'Gestão de Alertas Clínicos' },
       patients: { title: 'Gestão de Pacientes', subtitle: 'Estrutura física e lista de internações' },
@@ -330,6 +332,7 @@ function AppContent() {
             </div>
           )}
           {isScreenAllowed(currentScreen) && currentScreen === 'dashboard' && <DashboardScreen />}
+          {isScreenAllowed(currentScreen) && currentScreen === 'operational-overview' && <OperationalOverviewScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'monitoring' && <MonitoringScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'alerts' && <AlertsScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'patients' && <PatientsScreen />}

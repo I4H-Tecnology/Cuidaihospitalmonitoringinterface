@@ -141,7 +141,7 @@ const quickSuggestions = [
 ];
 
 interface AIAssistantProps {
-  onNavigate?: (screen: 'dashboard' | 'monitoring' | 'alerts' | 'pep' | 'patients' | 'beds-rooms' | 'scheduling' | 'reports' | 'settings' | 'users' | 'hospital-management' | 'financial' | 'inventory' | 'hr') => void;
+  onNavigate?: (screen: 'dashboard' | 'operational-overview' | 'monitoring' | 'alerts' | 'pep' | 'patients' | 'beds-rooms' | 'scheduling' | 'reports' | 'settings' | 'users' | 'hospital-management' | 'financial' | 'inventory' | 'hr') => void;
   patients?: Array<{
     id: number;
     name: string;
