@@ -8,8 +8,6 @@ interface ForgotPasswordScreenProps {
   onBack: () => void;
 }
 
-const normalizeCpf = (value: string) => value.replace(/\D/g, '');
-
 export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
   const { showToast } = useSystemToast();
   const [identifier, setIdentifier] = useState('');
@@ -27,14 +25,19 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
       return;
     }
     if (!identifier.trim()) {
-      showToast({ message: 'Informe seu e-mail ou CPF.' });
+      showToast({ message: 'Informe seu e-mail.' });
+      return;
+    }
+    const email = identifier.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showToast({ message: 'Informe um e-mail válido.' });
       return;
     }
     setIsLoading(true);
     try {
       const result = await requestForgotPassword({
         tenant,
-        loginOrEmail: normalizeCpf(identifier).length >= 11 ? normalizeCpf(identifier) : identifier.trim()
+        email
       });
       setDevCode(result.devResetCode || '');
       setStep('reset');
@@ -61,12 +64,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
     }
     setIsLoading(true);
     try {
-      await resetForgotPassword({
-        tenant,
-        loginOrEmail: normalizeCpf(identifier).length >= 11 ? normalizeCpf(identifier) : identifier.trim(),
-        code: code.trim(),
-        newPassword
-      });
+      await resetForgotPassword({ tenant, email: identifier.trim().toLowerCase(), code: code.trim(), newPassword });
       showToast({ message: 'Senha redefinida com sucesso.' });
       onBack();
     } catch (error) {
@@ -90,19 +88,19 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
         <div className="bg-white/60 border border-[#E5EDF6] rounded-2xl p-8 shadow-sm">
           <h2 className="text-4xl font-semibold text-[#0F2A4D] text-center mb-2">Esqueceu a sua senha?</h2>
           <p className="text-center text-[#5F7697] mb-8">
-            Insira abaixo o seu e-mail ou CPF para recuperar a sua senha
+            Insira abaixo o seu e-mail para recuperar a sua senha
           </p>
 
           <div className="space-y-4">
-            <label className="block text-[#304A6E]">E-mail ou CPF</label>
+            <label className="block text-[#304A6E]">E-mail</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA6C4]" />
               <input
-                type="text"
+                type="email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 disabled={step === 'reset' || isLoading}
-                placeholder="seu@email.com ou 000.000.000-00"
+                placeholder="seu@email.com"
                 className="w-full pl-11 pr-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-[#7DD3FC]"
               />
             </div>
@@ -143,7 +141,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
               type="button"
               disabled={isLoading}
               onClick={step === 'request' ? handleRequest : handleReset}
-              className="w-full mt-2 py-3 rounded-xl bg-[#7DD3FC] hover:bg-[#55C0F5] text-[#0F2A4D] font-semibold transition-colors shadow-md disabled:opacity-70"
+              className="w-full mt-2 py-3 rounded-xl bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-semibold transition-colors shadow-md disabled:opacity-70"
             >
               {isLoading ? (
                 <span className="inline-flex items-center gap-2">

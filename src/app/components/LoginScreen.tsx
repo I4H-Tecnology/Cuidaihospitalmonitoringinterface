@@ -7,15 +7,13 @@ import logoImage from '@/assets/logo.png';
 import sideImage from '@/assets/login1.png';
 import backgroundPattern from '@/assets/login2.png';
 
-const normalizeCpf = (value: string) => value.replace(/\D/g, '');
-
 export function LoginScreen() {
   const { login } = useAuth();
   const { showToast } = useSystemToast();
   const [mode, setMode] = useState<'login' | 'forgot'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showFirstAccessModal, setShowFirstAccessModal] = useState(false);
   const [firstAccessUsername, setFirstAccessUsername] = useState('');
@@ -57,16 +55,20 @@ export function LoginScreen() {
       showToast({ message: 'Selecione a empresa para continuar.' });
       return;
     }
-    if (!forgotIdentifier.trim()) {
-      showToast({ message: 'Informe seu e-mail ou CPF.' });
+    const email = forgotEmail.trim().toLowerCase();
+    if (!email) {
+      showToast({ message: 'Informe seu e-mail.' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showToast({ message: 'Informe um e-mail válido.' });
       return;
     }
     setIsLoading(true);
     try {
-      const payload = normalizeCpf(forgotIdentifier).length >= 11 ? normalizeCpf(forgotIdentifier) : forgotIdentifier.trim();
       await requestForgotPassword({
         tenant,
-        loginOrEmail: payload
+        email
       });
       showToast({ message: 'Se o cadastro existir, enviaremos instruções para o e-mail cadastrado.' });
       setMode('login');
@@ -225,23 +227,23 @@ export function LoginScreen() {
               <>
                 <div className="mb-8 text-center">
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">Esqueceu a sua senha?</h1>
-                  <p className="text-sm text-gray-600">Insira abaixo o seu e-mail ou CPF para recuperar a sua senha</p>
+                  <p className="text-sm text-gray-600">Insira abaixo o seu e-mail para recuperar a sua senha</p>
                 </div>
 
                 <form onSubmit={handleForgotSubmit} className="space-y-4">
                   <div>
                     <label htmlFor="forgot" className="block text-sm font-medium text-gray-700 mb-2">
-                      E-mail ou CPF
+                      E-mail
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         id="forgot"
-                        type="text"
-                        value={forgotIdentifier}
-                        onChange={(e) => setForgotIdentifier(e.target.value)}
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
                         className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900"
-                        placeholder="seu@email.com ou 000.000.000-00"
+                        placeholder="seu@email.com"
                         disabled={isLoading}
                       />
                     </div>
@@ -250,7 +252,7 @@ export function LoginScreen() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#7DD3FC] hover:bg-[#55C0F5] text-[#0F2A4D] py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[#7DD3FC] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                    className="w-full bg-[#0EA5E9] hover:bg-[#0284C7] text-white py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                   >
                     {isLoading ? (
                       <>

@@ -122,7 +122,7 @@ export const forceChangePasswordRequest = (payload: {
     body: JSON.stringify(payload)
   });
 
-export const requestForgotPassword = (payload: { tenant: string; loginOrEmail: string }) =>
+export const requestForgotPassword = (payload: { tenant: string; email: string }) =>
   request<AuthFlowResponse>('/api/auth/forgot-password/request', {
     method: 'POST',
     body: JSON.stringify(payload)
@@ -130,7 +130,7 @@ export const requestForgotPassword = (payload: { tenant: string; loginOrEmail: s
 
 export const resetForgotPassword = (payload: {
   tenant: string;
-  loginOrEmail: string;
+  email: string;
   code: string;
   newPassword: string;
 }) =>
