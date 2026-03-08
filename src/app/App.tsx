@@ -8,6 +8,7 @@ import { NotificationCenter } from './components/NotificationCenter';
 import { AIChatbot } from './components/AIChatbot';
 import { MobileApp } from './MobileApp';
 import { LoginScreen } from './components/LoginScreen';
+import { ForgotPasswordScreen } from './components/ForgotPasswordScreen';
 import { CompanySelectScreen } from './components/CompanySelectScreen';
 import { DashboardScreen } from './components/DashboardScreen';
 import { OperationalOverviewScreen } from './components/OperationalOverviewScreen';
@@ -155,7 +156,7 @@ function AppContent() {
         navigate('/empresa', true);
         return;
       }
-      if (route !== '/empresa' && route !== '/login') {
+      if (route !== '/empresa' && route !== '/login' && route !== '/forgot-password') {
         navigate('/empresa', true);
       }
     }
@@ -188,7 +189,11 @@ function AppContent() {
     }
 
     if (route === '/login') {
-      return tenant ? <LoginScreen /> : null;
+      return tenant ? <LoginScreen onForgotPassword={() => navigate('/forgot-password')} /> : null;
+    }
+
+    if (route === '/forgot-password') {
+      return tenant ? <ForgotPasswordScreen onBack={() => navigate('/login')} /> : null;
     }
 
     return null;

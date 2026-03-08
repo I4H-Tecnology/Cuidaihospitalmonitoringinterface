@@ -24,7 +24,10 @@ interface AuthContextType {
   user: AuthUser | null;
   tenantId: string | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    username: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string; requiresPasswordChange?: boolean }>;
   logout: (action?: string) => void;
   can: (module: string, action: 'view' | 'create' | 'edit' | 'delete') => boolean;
   recordAccess: (log: { action: string; module: string; platform: Platform; status: 'SUCESSO' | 'FALHA' | 'BLOQUEADO' }) => void;
@@ -120,7 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (
+    username: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string; requiresPasswordChange?: boolean }> => {
     const currentTenant = localStorage.getItem('tenant');
     setTenantId(currentTenant);
     if (!currentTenant) {
@@ -132,6 +138,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: String(username).trim().toLowerCase(),
         password
       });
+
+      if (response.mustChangePassword) {
+        return {
+          success: false,
+          requiresPasswordChange: true,
+          error: 'Troca de senha obrigatória no primeiro acesso.'
+        };
+      }
 
       const userData: AuthUser = {
         id: response.id,

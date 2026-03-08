@@ -1,17 +1,27 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSystemToast } from './ui/SystemToast';
-import logoImage from "@/assets/logo.png";
-import sideImage from "@/assets/login1.png";
-import backgroundPattern from "@/assets/login2.png";
+import { forceChangePasswordRequest } from '../data/api';
+import logoImage from '@/assets/logo.png';
+import sideImage from '@/assets/login1.png';
+import backgroundPattern from '@/assets/login2.png';
 
-export function LoginScreen() {
+interface LoginScreenProps {
+  onForgotPassword: () => void;
+}
+
+export function LoginScreen({ onForgotPassword }: LoginScreenProps) {
   const { login } = useAuth();
   const { showToast } = useSystemToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showFirstAccessModal, setShowFirstAccessModal] = useState(false);
+  const [firstAccessUsername, setFirstAccessUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isFirstAccessLoading, setIsFirstAccessLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({ username: false, password: false });
   const tenant = localStorage.getItem('tenant');
 
@@ -20,19 +30,58 @@ export function LoginScreen() {
     const trimmedUsername = username.trim();
     const nextErrors = {
       username: !trimmedUsername,
-      password: !password,
+      password: !password
     };
     setFieldErrors(nextErrors);
-    if (nextErrors.username || nextErrors.password) {
-      return;
-    }
-    setIsLoading(true);
+    if (nextErrors.username || nextErrors.password) return;
 
+    setIsLoading(true);
     const result = await login(trimmedUsername, password);
 
     if (!result.success) {
-      showToast({ message: result.error || 'Não foi possível entrar. Verifique seus dados.' });
+      if (result.requiresPasswordChange) {
+        showToast({ variant: 'warning', message: result.error || 'Troca obrigatória de senha.' });
+        setFirstAccessUsername(trimmedUsername);
+        setShowFirstAccessModal(true);
+      } else {
+        showToast({ message: result.error || 'Não foi possível entrar. Verifique seus dados.' });
+      }
       setIsLoading(false);
+      return;
+    }
+  };
+
+  const handleFirstAccessChange = async () => {
+    if (!tenant) {
+      showToast({ message: 'Selecione a empresa para continuar.' });
+      return;
+    }
+    if (!firstAccessUsername || !password || !newPassword) {
+      showToast({ message: 'Preencha login, senha atual e nova senha.' });
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      showToast({ message: 'As senhas não conferem.' });
+      return;
+    }
+
+    setIsFirstAccessLoading(true);
+    try {
+      await forceChangePasswordRequest({
+        tenant,
+        username: firstAccessUsername,
+        currentPassword: password,
+        newPassword
+      });
+      showToast({ message: 'Senha alterada. Faça login novamente com a nova senha.' });
+      setShowFirstAccessModal(false);
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setPassword('');
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : 'Não foi possível alterar a senha.' });
+    } finally {
+      setIsFirstAccessLoading(false);
     }
   };
 
@@ -57,11 +106,7 @@ export function LoginScreen() {
         <div className="w-full lg:w-[40%] bg-white flex items-center justify-center p-12">
           <div className="w-full max-w-md">
             <div className="flex flex-col items-center mb-8">
-              <img
-                src={logoImage}
-                alt="MedSignal"
-                className="h-16 w-auto mb-3"
-              />
+              <img src={logoImage} alt="MedSignal" className="h-16 w-auto mb-3" />
               <div className="text-center">
                 <h2 className="text-xl font-bold text-gray-900">MedSignal</h2>
                 <p className="text-xs text-gray-500">Sistema Hospitalar Inteligente</p>
@@ -73,13 +118,9 @@ export function LoginScreen() {
                 <div className="w-8 h-8 bg-[#0EA5E9] rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-sm">2</span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  Login e senha
-                </h1>
+                <h1 className="text-xl font-bold text-gray-900">Login e senha</h1>
               </div>
-              <p className="text-sm text-gray-600 ml-11">
-                Insira seu login e senha abaixo
-              </p>
+              <p className="text-sm text-gray-600 ml-11">Insira seu login e senha abaixo</p>
               {tenant && (
                 <p className="text-xs text-gray-500 ml-11 mt-2">
                   Tenant ativo: <span className="font-semibold text-gray-700">{tenant}</span>
@@ -89,10 +130,7 @@ export function LoginScreen() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label
-                  htmlFor="username"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
                   Nome do usuario
                 </label>
                 <input
@@ -101,9 +139,7 @@ export function LoginScreen() {
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
-                    if (fieldErrors.username) {
-                      setFieldErrors((prev) => ({ ...prev, username: false }));
-                    }
+                    if (fieldErrors.username) setFieldErrors((prev) => ({ ...prev, username: false }));
                   }}
                   className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
                     fieldErrors.username ? 'border-[#EF4444]' : 'border-gray-300'
@@ -113,10 +149,7 @@ export function LoginScreen() {
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                   Senha
                 </label>
                 <input
@@ -125,9 +158,7 @@ export function LoginScreen() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (fieldErrors.password) {
-                      setFieldErrors((prev) => ({ ...prev, password: false }));
-                    }
+                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: false }));
                   }}
                   className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
                     fieldErrors.password ? 'border-[#EF4444]' : 'border-gray-300'
@@ -154,6 +185,7 @@ export function LoginScreen() {
               <div className="text-center pt-2">
                 <button
                   type="button"
+                  onClick={onForgotPassword}
                   className="text-sm text-[#0EA5E9] hover:text-[#0284C7] font-medium transition-colors"
                 >
                   Esqueceu a sua senha?
@@ -163,6 +195,73 @@ export function LoginScreen() {
           </div>
         </div>
       </div>
+
+      {showFirstAccessModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Troca obrigatória de senha</h3>
+                <p className="text-xs text-gray-500 mt-1">Defina uma nova senha para concluir o primeiro acesso.</p>
+              </div>
+              <button type="button" onClick={() => setShowFirstAccessModal(false)} className="text-gray-400 hover:text-gray-600">
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Login</label>
+                <input
+                  type="text"
+                  value={firstAccessUsername}
+                  onChange={(e) => setFirstAccessUsername(e.target.value)}
+                  disabled={isFirstAccessLoading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Nova senha</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={isFirstAccessLoading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Confirmar nova senha</label>
+                <input
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  disabled={isFirstAccessLoading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowFirstAccessModal(false)}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleFirstAccessChange}
+                disabled={isFirstAccessLoading}
+                className="px-4 py-2 text-sm bg-[#0EA5E9] text-white rounded-lg hover:bg-[#0284C7] disabled:opacity-60"
+              >
+                {isFirstAccessLoading ? 'Salvando...' : 'Alterar senha'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -70,6 +70,14 @@ export interface LoginResponse {
   lastAccess?: string;
   passwordChangedAt?: string;
   isSystemUser?: boolean;
+  mustChangePassword?: boolean;
+  temporaryPasswordExpiresAt?: string;
+}
+
+export interface AuthFlowResponse {
+  ok: boolean;
+  message?: string;
+  devResetCode?: string;
 }
 
 export interface OperationalOverviewResponse {
@@ -99,6 +107,34 @@ export const fetchTenants = () => request<TenantInfo[]>('/api/tenants');
 
 export const loginRequest = (payload: { tenant: string; username: string; password: string }) =>
   request<LoginResponse>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const forceChangePasswordRequest = (payload: {
+  tenant: string;
+  username: string;
+  currentPassword: string;
+  newPassword: string;
+}) =>
+  request<{ ok: boolean }>('/api/auth/force-change-password', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const requestForgotPassword = (payload: { tenant: string; loginOrEmail: string }) =>
+  request<AuthFlowResponse>('/api/auth/forgot-password/request', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const resetForgotPassword = (payload: {
+  tenant: string;
+  loginOrEmail: string;
+  code: string;
+  newPassword: string;
+}) =>
+  request<{ ok: boolean }>('/api/auth/forgot-password/reset', {
     method: 'POST',
     body: JSON.stringify(payload)
   });
