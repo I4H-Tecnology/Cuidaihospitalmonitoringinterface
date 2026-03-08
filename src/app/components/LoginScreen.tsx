@@ -14,6 +14,7 @@ export function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotEmailError, setForgotEmailError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showFirstAccessModal, setShowFirstAccessModal] = useState(false);
   const [firstAccessUsername, setFirstAccessUsername] = useState('');
@@ -42,7 +43,8 @@ export function LoginScreen() {
         setFirstAccessUsername(trimmedUsername);
         setShowFirstAccessModal(true);
       } else {
-        showToast({ message: result.error || 'Não foi possível entrar. Verifique seus dados.' });
+        setFieldErrors({ username: true, password: true });
+        showToast({ message: 'Usuario ou senha invalidos.' });
       }
       setIsLoading(false);
       return;
@@ -57,13 +59,16 @@ export function LoginScreen() {
     }
     const email = forgotEmail.trim().toLowerCase();
     if (!email) {
+      setForgotEmailError(true);
       showToast({ message: 'Informe seu e-mail.' });
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setForgotEmailError(true);
       showToast({ message: 'Informe um e-mail válido.' });
       return;
     }
+    setForgotEmailError(false);
     setIsLoading(true);
     try {
       await requestForgotPassword({
@@ -241,8 +246,13 @@ export function LoginScreen() {
                         id="forgot"
                         type="email"
                         value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
-                        className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900"
+                        onChange={(e) => {
+                          setForgotEmail(e.target.value);
+                          if (forgotEmailError) setForgotEmailError(false);
+                        }}
+                        className={`block w-full pl-11 pr-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
+                          forgotEmailError ? 'border-[#EF4444]' : 'border-gray-300'
+                        }`}
                         placeholder="seu@email.com"
                         disabled={isLoading}
                       />
