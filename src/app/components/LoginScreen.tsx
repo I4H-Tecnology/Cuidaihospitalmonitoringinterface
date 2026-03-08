@@ -32,7 +32,10 @@ export function LoginScreen() {
       password: !password
     };
     setFieldErrors(nextErrors);
-    if (nextErrors.username || nextErrors.password) return;
+    if (nextErrors.username || nextErrors.password) {
+      showToast({ message: 'Informe usuario e senha.' });
+      return;
+    }
 
     setIsLoading(true);
     const result = await login(trimmedUsername, password);
