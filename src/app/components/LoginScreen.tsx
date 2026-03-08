@@ -1,21 +1,21 @@
 ﻿import React, { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSystemToast } from './ui/SystemToast';
-import { forceChangePasswordRequest } from '../data/api';
+import { forceChangePasswordRequest, requestForgotPassword } from '../data/api';
 import logoImage from '@/assets/logo.png';
 import sideImage from '@/assets/login1.png';
 import backgroundPattern from '@/assets/login2.png';
 
-interface LoginScreenProps {
-  onForgotPassword: () => void;
-}
+const normalizeCpf = (value: string) => value.replace(/\D/g, '');
 
-export function LoginScreen({ onForgotPassword }: LoginScreenProps) {
+export function LoginScreen() {
   const { login } = useAuth();
   const { showToast } = useSystemToast();
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showFirstAccessModal, setShowFirstAccessModal] = useState(false);
   const [firstAccessUsername, setFirstAccessUsername] = useState('');
@@ -48,6 +48,32 @@ export function LoginScreen({ onForgotPassword }: LoginScreenProps) {
       }
       setIsLoading(false);
       return;
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenant) {
+      showToast({ message: 'Selecione a empresa para continuar.' });
+      return;
+    }
+    if (!forgotIdentifier.trim()) {
+      showToast({ message: 'Informe seu e-mail ou CPF.' });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const payload = normalizeCpf(forgotIdentifier).length >= 11 ? normalizeCpf(forgotIdentifier) : forgotIdentifier.trim();
+      await requestForgotPassword({
+        tenant,
+        loginOrEmail: payload
+      });
+      showToast({ message: 'Se o cadastro existir, enviaremos instruções para o e-mail cadastrado.' });
+      setMode('login');
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : 'Não foi possível solicitar recuperação.' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -113,85 +139,141 @@ export function LoginScreen({ onForgotPassword }: LoginScreenProps) {
               </div>
             </div>
 
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 bg-[#0EA5E9] rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">2</span>
+            {mode === 'login' ? (
+              <>
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-[#0EA5E9] rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">2</span>
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-900">Login e senha</h1>
+                  </div>
+                  <p className="text-sm text-gray-600 ml-11">Insira seu login e senha abaixo</p>
+                  {tenant && (
+                    <p className="text-xs text-gray-500 ml-11 mt-2">
+                      Tenant ativo: <span className="font-semibold text-gray-700">{tenant}</span>
+                    </p>
+                  )}
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">Login e senha</h1>
-              </div>
-              <p className="text-sm text-gray-600 ml-11">Insira seu login e senha abaixo</p>
-              {tenant && (
-                <p className="text-xs text-gray-500 ml-11 mt-2">
-                  Tenant ativo: <span className="font-semibold text-gray-700">{tenant}</span>
-                </p>
-              )}
-            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome do usuario
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    if (fieldErrors.username) setFieldErrors((prev) => ({ ...prev, username: false }));
-                  }}
-                  className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
-                    fieldErrors.username ? 'border-[#EF4444]' : 'border-gray-300'
-                  }`}
-                  disabled={isLoading}
-                />
-              </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                      Nome do usuario
+                    </label>
+                    <input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        if (fieldErrors.username) setFieldErrors((prev) => ({ ...prev, username: false }));
+                      }}
+                      className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
+                        fieldErrors.username ? 'border-[#EF4444]' : 'border-gray-300'
+                      }`}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Senha
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: false }));
-                  }}
-                  className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
-                    fieldErrors.password ? 'border-[#EF4444]' : 'border-gray-300'
-                  }`}
-                  disabled={isLoading}
-                />
-              </div>
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                      Senha
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: false }));
+                      }}
+                      className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
+                        fieldErrors.password ? 'border-[#EF4444]' : 'border-gray-300'
+                      }`}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-[#0EA5E9] hover:bg-[#0284C7] text-white py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Entrando...</span>
-                  </>
-                ) : (
-                  <span>Entrar</span>
-                )}
-              </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-[#0EA5E9] hover:bg-[#0284C7] text-white py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Entrando...</span>
+                      </>
+                    ) : (
+                      <span>Entrar</span>
+                    )}
+                  </button>
 
-              <div className="text-center pt-2">
-                <button
-                  type="button"
-                  onClick={onForgotPassword}
-                  className="text-sm text-[#0EA5E9] hover:text-[#0284C7] font-medium transition-colors"
-                >
-                  Esqueceu a sua senha?
-                </button>
-              </div>
-            </form>
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setMode('forgot')}
+                      className="text-sm text-[#0EA5E9] hover:text-[#0284C7] font-medium transition-colors"
+                    >
+                      Esqueceu a sua senha?
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="mb-8 text-center">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">Esqueceu a sua senha?</h1>
+                  <p className="text-sm text-gray-600">Insira abaixo o seu e-mail ou CPF para recuperar a sua senha</p>
+                </div>
+
+                <form onSubmit={handleForgotSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="forgot" className="block text-sm font-medium text-gray-700 mb-2">
+                      E-mail ou CPF
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        id="forgot"
+                        type="text"
+                        value={forgotIdentifier}
+                        onChange={(e) => setForgotIdentifier(e.target.value)}
+                        className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900"
+                        placeholder="seu@email.com ou 000.000.000-00"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-[#7DD3FC] hover:bg-[#55C0F5] text-[#0F2A4D] py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[#7DD3FC] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Enviando...</span>
+                      </>
+                    ) : (
+                      <span>Enviar</span>
+                    )}
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setMode('login')}
+                      className="text-sm text-[#0EA5E9] hover:text-[#0284C7] font-medium transition-colors"
+                    >
+                      Voltar para o login
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>
