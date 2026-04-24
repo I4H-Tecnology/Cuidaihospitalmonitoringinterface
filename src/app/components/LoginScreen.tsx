@@ -46,8 +46,14 @@ export function LoginScreen() {
         setFirstAccessUsername(trimmedUsername);
         setShowFirstAccessModal(true);
       } else {
-        setFieldErrors({ username: true, password: true });
-        showToast({ message: 'Usuario ou senha invalidos.' });
+        const fallbackMessage = 'Usuario ou senha invalidos.';
+        const errorMessage = result.error || fallbackMessage;
+        const shouldMarkFields = errorMessage === fallbackMessage;
+        setFieldErrors({
+          username: shouldMarkFields,
+          password: shouldMarkFields
+        });
+        showToast({ message: errorMessage });
       }
       setIsLoading(false);
       return;
