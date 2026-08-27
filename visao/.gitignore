@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 capturas/
 saida/
+pesos/
+!pesos/.gitkeep
+*.pt
+*.onnx
