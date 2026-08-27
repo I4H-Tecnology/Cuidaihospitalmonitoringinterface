@@ -489,7 +489,10 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
             <div className="overflow-auto flex-1 space-y-3">
               {insightType === 'summary' ? (
                 <div className="bg-white/80 backdrop-blur-sm p-4 rounded-lg border border-purple-200">
-                  <p className="text-sm leading-relaxed">{data}</p>
+                  {/* `insightType` é string, então o TS não consegue provar que
+                      este ramo só recebe o resumo em texto. A guarda abaixo faz
+                      o estreitamento de verdade, em vez de mascarar com `as`. */}
+                  <p className="text-sm leading-relaxed">{typeof data === 'string' ? data : null}</p>
                 </div>
               ) : Array.isArray(data) ? (
                 data.map((item: any, idx: number) => (

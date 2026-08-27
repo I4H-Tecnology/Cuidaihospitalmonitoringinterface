@@ -2,16 +2,7 @@ import React from 'react';
 import { Info } from 'lucide-react';
 import { PatientCard } from './PatientCard';
 
-interface Patient {
-  id: number;
-  name: string;
-  age: number;
-  room: string;
-  bed: string;
-  status: 'normal' | 'attention' | 'critical';
-  heartRate: number;
-  lastUpdate: string;
-}
+import type { MobilePatient as Patient } from './types';
 
 interface HomeScreenProps {
   patients: Patient[];

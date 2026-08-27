@@ -33,6 +33,7 @@ import {
   sanitizeSecurityPolicy,
   type AccessLog,
   type Permission,
+  type Platform,
   type Role,
   type SecurityPolicy,
   type UserRecord
@@ -138,6 +139,12 @@ const permissionLabels: Record<keyof Permission, string> = {
 };
 
 const normalizeLogin = (value: string) => value.trim().toLowerCase();
+
+/** Converte os checkboxes do formulário na lista tipada que UserRecord espera. */
+const toPlatforms = (selecionadas: { web: boolean; app: boolean }): Platform[] => [
+  ...(selecionadas.web ? (['web'] as Platform[]) : []),
+  ...(selecionadas.app ? (['app'] as Platform[]) : [])
+];
 
 const emptyForm = (tenantId: string | null) => ({
   id: '',
@@ -326,10 +333,7 @@ export function UsersScreen() {
           status: existing.isSystemUser ? existing.status : formState.status,
           unit: formState.unit,
           sector: formState.sector || undefined,
-          platforms: [
-            ...(formState.platforms.web ? ['web'] : []),
-            ...(formState.platforms.app ? ['app'] : [])
-          ],
+          platforms: toPlatforms(formState.platforms),
           passwordHash: effectivePassword ? hashPassword(effectivePassword) : existing.passwordHash,
           passwordChangedAt: effectivePassword ? now : existing.passwordChangedAt,
           mustChangePassword: effectivePassword ? mustChangePassword : existing.mustChangePassword,
@@ -373,10 +377,7 @@ export function UsersScreen() {
           passwordHash: hashPassword(effectivePassword),
           role: formState.role,
           status: formState.status,
-          platforms: [
-            ...(formState.platforms.web ? ['web'] : []),
-            ...(formState.platforms.app ? ['app'] : [])
-          ],
+          platforms: toPlatforms(formState.platforms),
           unit: formState.unit,
           sector: formState.sector || undefined,
           createdAt: now,

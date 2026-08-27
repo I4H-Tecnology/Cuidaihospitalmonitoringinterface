@@ -9,18 +9,7 @@ import { AlertsScreen } from './components/mobile/AlertsScreen';
 import { ReportsScreen } from './components/mobile/ReportsScreen';
 import { AIAssistant } from './components/AIAssistant';
 
-interface Patient {
-  id: number;
-  name: string;
-  age: number;
-  room: string;
-  bed: string;
-  status: 'normal' | 'attention' | 'critical';
-  heartRate: number;
-  temperature: number;
-  bloodPressure: string;
-  lastUpdate: string;
-}
+import type { MobilePatient as Patient } from './components/mobile/types';
 
 const mockPatients: Patient[] = [
   {
