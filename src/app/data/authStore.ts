@@ -26,9 +26,15 @@ export interface UserRecord {
   createdAt: string;
   lastAccess?: string;
   passwordChangedAt?: string;
+  mustChangePassword?: boolean;
+  temporaryPasswordExpiresAt?: string;
   failedAttempts: number;
+  failedAttemptWindowStartedAt?: string;
   lockedUntil?: string;
   isSystemUser?: boolean;
+  birthDate?: string;
+  admissionDate?: string;
+  documentId?: string;
 }
 
 export interface Permission {
@@ -47,6 +53,14 @@ export interface SecurityPolicy {
   passwordExpiryDays: number;
   maxFailedAttempts: number;
   lockoutMinutes: number;
+  requireLowercase: boolean;
+  requireUppercase: boolean;
+  requireNumber: boolean;
+  requireSpecialChar: boolean;
+  disallowPersonalData: boolean;
+  blockedPasswords: string[];
+  forcePasswordChangeOnFirstAccess: boolean;
+  adminResetPasswordTtlHours: number;
   idleTimeoutMinutes: number;
   twoFactorEnabled: boolean;
 }
@@ -106,17 +120,42 @@ const ROLE_LABELS: Record<Role, string> = {
   VISITOR: 'Visitante'
 };
 
+const MIN_PASSWORD_LENGTH = 8;
+const DEFAULT_PASSWORD_BLOCKLIST = [
+  '123456',
+  '12345678',
+  '123456789',
+  '1234567890',
+  'password',
+  'qwerty',
+  'abc123',
+  'admin',
+  'senha123',
+  'senha@123',
+  'welcome',
+  'letmein',
+  '111111',
+  '000000'
+];
+const SYSTEM_DEFAULT_PASSWORD = 'Sistema@123';
+
 const DEFAULT_SECURITY_POLICY: SecurityPolicy = {
   requireStrongPassword: true,
   minPasswordLength: 8,
-  passwordExpiryDays: 90,
-  maxFailedAttempts: 3,
-  lockoutMinutes: 30,
+  passwordExpiryDays: 0,
+  maxFailedAttempts: 5,
+  lockoutMinutes: 5,
+  requireLowercase: true,
+  requireUppercase: true,
+  requireNumber: true,
+  requireSpecialChar: true,
+  disallowPersonalData: true,
+  blockedPasswords: DEFAULT_PASSWORD_BLOCKLIST,
+  forcePasswordChangeOnFirstAccess: true,
+  adminResetPasswordTtlHours: 24,
   idleTimeoutMinutes: 30,
   twoFactorEnabled: false
 };
-
-const SYSTEM_DEFAULT_PASSWORD = 'Sistema@123';
 
 const nowIso = () => new Date().toISOString();
 
@@ -285,7 +324,13 @@ export const getTenantData = (tenantId: string): TenantData => {
   const raw = localStorage.getItem(getTenantKey(tenantId));
   if (raw) {
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw) as TenantData;
+      const sanitizedPolicy = sanitizeSecurityPolicy(parsed.securityPolicy);
+      if (JSON.stringify(sanitizedPolicy) !== JSON.stringify(parsed.securityPolicy)) {
+        parsed.securityPolicy = sanitizedPolicy;
+        saveTenantData(tenantId, parsed);
+      }
+      return parsed;
     } catch {
       localStorage.removeItem(getTenantKey(tenantId));
     }
@@ -394,7 +439,7 @@ export const getSecurityPolicy = (tenantId: string): SecurityPolicy => {
 
 export const updateSecurityPolicy = (tenantId: string, policy: SecurityPolicy) => {
   const data = getTenantData(tenantId);
-  data.securityPolicy = policy;
+  data.securityPolicy = sanitizeSecurityPolicy(policy);
   saveTenantData(tenantId, data);
 };
 
@@ -419,12 +464,143 @@ export const getSystemDefaultPassword = () => SYSTEM_DEFAULT_PASSWORD;
 export const getIpAddress = () => IP_PLACEHOLDER;
 
 export const isPasswordStrong = (password: string, policy: SecurityPolicy) => {
-  if (!policy.requireStrongPassword) return true;
-  const hasMinLength = password.length >= policy.minPasswordLength;
-  const hasUpper = /[A-Z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSpecial = /[^A-Za-z0-9]/.test(password);
-  return hasMinLength && hasUpper && hasNumber && hasSpecial;
+  const normalizedPolicy = sanitizeSecurityPolicy(policy);
+  if (!normalizedPolicy.requireStrongPassword) return true;
+  const result = evaluatePasswordPolicy(password, null, normalizedPolicy);
+  return result.isValid;
+};
+
+const normalizeComparableValue = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+const splitNameTokens = (name?: string) =>
+  String(name || '')
+    .trim()
+    .split(/\s+/)
+    .map((part) => normalizeComparableValue(part))
+    .filter((part) => part.length >= 3);
+
+const extractComparableTokens = (
+  context: {
+    login?: string;
+    username?: string;
+    name?: string;
+    birthDate?: string;
+    admissionDate?: string;
+    cpf?: string;
+    documentId?: string;
+  } | null
+) => {
+  if (!context) return [];
+  const direct = [
+    context.login,
+    context.username,
+    context.birthDate,
+    context.admissionDate,
+    context.cpf,
+    context.documentId
+  ]
+    .map((value) => normalizeComparableValue(String(value || '')))
+    .filter(Boolean);
+
+  return [...direct, ...splitNameTokens(context.name)];
+};
+
+export const sanitizeSecurityPolicy = (policy?: Partial<SecurityPolicy> | null): SecurityPolicy => {
+  const candidate = policy || {};
+  const minPasswordLength = Math.max(MIN_PASSWORD_LENGTH, Number(candidate.minPasswordLength || MIN_PASSWORD_LENGTH));
+  const blockedPasswords = Array.isArray(candidate.blockedPasswords)
+    ? candidate.blockedPasswords
+    : DEFAULT_PASSWORD_BLOCKLIST;
+  return {
+    requireStrongPassword: candidate.requireStrongPassword ?? true,
+    minPasswordLength,
+    passwordExpiryDays: Math.max(0, Number(candidate.passwordExpiryDays ?? 0)),
+    maxFailedAttempts: Math.max(1, Number(candidate.maxFailedAttempts ?? 5)),
+    lockoutMinutes: Math.max(1, Number(candidate.lockoutMinutes ?? 5)),
+    requireLowercase: candidate.requireLowercase ?? true,
+    requireUppercase: candidate.requireUppercase ?? true,
+    requireNumber: candidate.requireNumber ?? true,
+    requireSpecialChar: candidate.requireSpecialChar ?? true,
+    disallowPersonalData: candidate.disallowPersonalData ?? true,
+    blockedPasswords: Array.from(new Set(blockedPasswords.map((item) => normalizeComparableValue(String(item || ''))).filter(Boolean))),
+    forcePasswordChangeOnFirstAccess: candidate.forcePasswordChangeOnFirstAccess ?? true,
+    adminResetPasswordTtlHours: Math.max(1, Number(candidate.adminResetPasswordTtlHours ?? 24)),
+    idleTimeoutMinutes: Math.max(1, Number(candidate.idleTimeoutMinutes ?? 30)),
+    twoFactorEnabled: candidate.twoFactorEnabled ?? false
+  };
+};
+
+export const evaluatePasswordPolicy = (
+  password: string,
+  context: {
+    login?: string;
+    username?: string;
+    name?: string;
+    birthDate?: string;
+    admissionDate?: string;
+    cpf?: string;
+    documentId?: string;
+  } | null,
+  policy: SecurityPolicy
+) => {
+  const normalizedPolicy = sanitizeSecurityPolicy(policy);
+  if (!normalizedPolicy.requireStrongPassword) {
+    return {
+      isValid: true,
+      errors: [],
+      checks: {
+        hasMinLength: true,
+        hasLower: true,
+        hasUpper: true,
+        hasNumber: true,
+        hasSpecial: true,
+        inBlocklist: false,
+        reusesPersonalData: false
+      }
+    };
+  }
+  const passwordValue = String(password || '');
+  const comparablePassword = normalizeComparableValue(passwordValue);
+  const hasMinLength = passwordValue.length >= normalizedPolicy.minPasswordLength;
+  const hasLower = /[a-z]/.test(passwordValue);
+  const hasUpper = /[A-Z]/.test(passwordValue);
+  const hasNumber = /\d/.test(passwordValue);
+  const hasSpecial = /[^A-Za-z0-9]/.test(passwordValue);
+  const inBlocklist = normalizedPolicy.blockedPasswords.includes(comparablePassword);
+  const personalTokens = extractComparableTokens(context);
+  const reusesPersonalData =
+    normalizedPolicy.disallowPersonalData &&
+    personalTokens.some((token) => token.length >= 3 && comparablePassword.includes(token));
+
+  const checks = {
+    hasMinLength,
+    hasLower,
+    hasUpper,
+    hasNumber,
+    hasSpecial,
+    inBlocklist,
+    reusesPersonalData
+  };
+
+  const errors: string[] = [];
+  if (!hasMinLength) errors.push(`A senha deve ter no minimo ${normalizedPolicy.minPasswordLength} caracteres.`);
+  if (normalizedPolicy.requireLowercase && !hasLower) errors.push('A senha deve conter pelo menos 1 letra minuscula.');
+  if (normalizedPolicy.requireUppercase && !hasUpper) errors.push('A senha deve conter pelo menos 1 letra maiuscula.');
+  if (normalizedPolicy.requireNumber && !hasNumber) errors.push('A senha deve conter pelo menos 1 digito.');
+  if (normalizedPolicy.requireSpecialChar && !hasSpecial) errors.push('A senha deve conter pelo menos 1 caractere especial.');
+  if (inBlocklist) errors.push('Essa senha e fraca e apareceu em vazamentos de dados anteriores.');
+  if (reusesPersonalData) errors.push('A senha nao pode ser igual ou baseada em dados pessoais do usuario.');
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    checks
+  };
 };
 
 export const isPasswordExpired = (user: UserRecord, policy: SecurityPolicy) => {
@@ -440,20 +616,66 @@ export const isUserLocked = (user: UserRecord) => {
 };
 
 export const registerFailedAttempt = (tenantId: string, user: UserRecord, policy: SecurityPolicy) => {
-  const updated = { ...user, failedAttempts: user.failedAttempts + 1 };
-  if (updated.failedAttempts >= policy.maxFailedAttempts) {
+  const normalizedPolicy = sanitizeSecurityPolicy(policy);
+  const now = Date.now();
+  const existingWindow = user.failedAttemptWindowStartedAt ? new Date(user.failedAttemptWindowStartedAt).getTime() : 0;
+  const windowLimitMs = normalizedPolicy.lockoutMinutes * 60 * 1000;
+  const windowExpired = !existingWindow || now - existingWindow > windowLimitMs;
+  const attempts = windowExpired ? 1 : user.failedAttempts + 1;
+
+  const updated: UserRecord = {
+    ...user,
+    failedAttempts: attempts,
+    failedAttemptWindowStartedAt: windowExpired ? new Date(now).toISOString() : user.failedAttemptWindowStartedAt
+  };
+  if (updated.failedAttempts >= normalizedPolicy.maxFailedAttempts) {
     updated.status = 'blocked';
-    updated.lockedUntil = new Date(Date.now() + policy.lockoutMinutes * 60 * 1000).toISOString();
+    updated.lockedUntil = new Date(now + normalizedPolicy.lockoutMinutes * 60 * 1000).toISOString();
   }
   updateUser(tenantId, updated);
   return updated;
 };
 
 export const clearFailedAttempts = (tenantId: string, user: UserRecord) => {
-  if (user.failedAttempts === 0 && !user.lockedUntil) return user;
-  const updated = { ...user, failedAttempts: 0, lockedUntil: undefined };
+  if (user.failedAttempts === 0 && !user.lockedUntil && !user.failedAttemptWindowStartedAt) return user;
+  const updated = { ...user, failedAttempts: 0, failedAttemptWindowStartedAt: undefined, lockedUntil: undefined };
   updateUser(tenantId, updated);
   return updated;
+};
+
+export const isTemporaryPasswordExpired = (user: UserRecord) => {
+  if (!user.temporaryPasswordExpiresAt) return false;
+  return Date.now() > new Date(user.temporaryPasswordExpiresAt).getTime();
+};
+
+export const generateRandomPassword = (policy: SecurityPolicy) => {
+  const normalizedPolicy = sanitizeSecurityPolicy(policy);
+  const length = Math.max(normalizedPolicy.minPasswordLength, 12);
+  const lowers = 'abcdefghjkmnpqrstuvwxyz';
+  const uppers = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+  const numbers = '23456789';
+  const specials = '!@#$%&*()-_=+?';
+
+  const all = `${lowers}${uppers}${numbers}${specials}`;
+  const picks: string[] = [];
+
+  const pick = (source: string) => source[Math.floor(Math.random() * source.length)];
+
+  if (normalizedPolicy.requireLowercase) picks.push(pick(lowers));
+  if (normalizedPolicy.requireUppercase) picks.push(pick(uppers));
+  if (normalizedPolicy.requireNumber) picks.push(pick(numbers));
+  if (normalizedPolicy.requireSpecialChar) picks.push(pick(specials));
+
+  while (picks.length < length) {
+    picks.push(pick(all));
+  }
+
+  for (let i = picks.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [picks[i], picks[j]] = [picks[j], picks[i]];
+  }
+
+  return picks.join('');
 };
 
 export const buildUserAvatar = (name: string) =>

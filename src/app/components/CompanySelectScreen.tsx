@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import logoImage from "../../assets/logo.png";
 import sideImage from "../../assets/login1.png";
 import backgroundPattern from "../../assets/login2.png";
 import { useSystemToast } from './ui/SystemToast';
-import { fetchTenants } from '../data/api';
+import { ApiError, fetchTenants } from '../data/api';
 
 interface CompanySelectScreenProps {
   onContinue: (tenant: string) => void;
@@ -24,7 +24,16 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
       .then((data) => {
         if (mounted) setTenants(data);
       })
-      .catch(() => {
+      .catch((error) => {
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            console.warn('[empresa] Endpoint de tenants não encontrado (404). Verifique VITE_API_URL.');
+          } else {
+            console.error('[empresa] Falha ao carregar tenants', { status: error.status, error });
+          }
+        } else {
+          console.error('[empresa] Falha inesperada ao carregar tenants', error);
+        }
         if (mounted) setTenants([]);
         showToast({ message: 'Não foi possível carregar as empresas.' });
       });
@@ -44,6 +53,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
 
     const tenant = tenants.find((item) => item.id === normalized);
     if (!tenant) {
+      console.warn('[empresa] Tenant não encontrado', { tenant: normalized });
       showToast({ message: 'Empresa não encontrada' });
       return;
     }
@@ -69,7 +79,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
         <div className="hidden lg:flex lg:w-[60%] bg-[#E8F4F8] items-center justify-center">
           <img
             src={sideImage}
-            alt="CuidAI - Monitore Inteligentemente o seu Hospital"
+            alt="MedSignal - Monitore Inteligentemente o seu Hospital"
             className="w-full h-auto object-contain"
           />
         </div>
@@ -80,7 +90,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
               <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
                 <img
                   src={logoImage}
-                  alt="CuidAI"
+                  alt="MedSignal"
                   className="h-16 w-16 object-contain"
                 />
               </div>
@@ -122,3 +132,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
     </div>
   );
 }
+
+
+
+

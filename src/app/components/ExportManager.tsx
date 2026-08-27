@@ -29,7 +29,7 @@ export function ExportManager({ isOpen, onClose, data, filename, title, columns 
       
       // Header
       doc.setFontSize(18);
-      doc.text(title || 'Relatório CuidAI', 14, 22);
+      doc.text(title || 'Relatório MedSignal', 14, 22);
       
       doc.setFontSize(10);
       doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
@@ -55,7 +55,7 @@ export function ExportManager({ isOpen, onClose, data, filename, title, columns 
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.text(
-          `Página ${i} de ${pageCount} - CuidAI © ${new Date().getFullYear()}`,
+          `Página ${i} de ${pageCount} - MedSignal © ${new Date().getFullYear()}`,
           doc.internal.pageSize.width / 2,
           doc.internal.pageSize.height - 10,
           { align: 'center' }

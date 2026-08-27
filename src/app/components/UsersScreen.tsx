@@ -23,12 +23,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSystemToast } from './ui/SystemToast';
 import {
   createUserId,
+  evaluatePasswordPolicy,
   formatRoleOptions,
+  generateRandomPassword,
   getIpAddress,
   getSystemDefaultPassword,
   getTenantName,
   hashPassword,
-  isPasswordStrong,
+  sanitizeSecurityPolicy,
   type AccessLog,
   type Permission,
   type Role,
@@ -142,9 +144,13 @@ const emptyForm = (tenantId: string | null) => ({
   name: '',
   email: '',
   cpf: '',
+  birthDate: '',
+  admissionDate: '',
+  documentId: '',
   login: '',
   password: '',
   confirmPassword: '',
+  adminResetPassword: false,
   role: 'ADMIN' as Role,
   unit: '',
   sector: '',
@@ -185,7 +191,7 @@ export function UsersScreen() {
       .then(setAccessLogs)
       .catch(() => showToast({ message: 'Não foi possível carregar os logs de acesso.' }));
     fetchSecurityPolicy(tenantId)
-      .then(setPolicy)
+      .then((loadedPolicy) => setPolicy(sanitizeSecurityPolicy(loadedPolicy)))
       .catch(() => showToast({ message: 'Não foi possível carregar a política de segurança.' }));
     setFormState(emptyForm(tenantId));
   }, [tenantId, selectedRole]);
@@ -211,9 +217,13 @@ export function UsersScreen() {
       name: user.name,
       email: user.email,
       cpf: user.cpf || '',
+      birthDate: user.birthDate || '',
+      admissionDate: user.admissionDate || '',
+      documentId: user.documentId || '',
       login: user.login,
       password: '',
       confirmPassword: '',
+      adminResetPassword: false,
       role: user.role,
       unit: user.unit,
       sector: user.sector || '',
@@ -232,7 +242,7 @@ export function UsersScreen() {
     const normalizedLogin = normalizeLogin(formState.login);
     const isSystemRole = formState.role === 'SYSTEM';
 
-    if (!formState.name || !formState.email || !normalizedLogin || (!isEditing && !formState.password)) {
+    if (!formState.name || !formState.email || !normalizedLogin) {
       showToast({ message: 'Preencha os campos obrigatórios.' });
       return;
     }
@@ -248,14 +258,35 @@ export function UsersScreen() {
       }
     }
 
+    if (!isEditing && !formState.password) {
+      showToast({ message: 'Informe uma senha inicial.' });
+      return;
+    }
+
     if (formState.password && formState.password !== formState.confirmPassword) {
       showToast({ message: 'As senhas não conferem.' });
       return;
     }
 
-    if (formState.password && !isPasswordStrong(formState.password, policy)) {
-      showToast({ message: 'A senha não atende à política de segurança.' });
-      return;
+    const passwordCandidate = formState.password;
+    if (passwordCandidate) {
+      const validation = evaluatePasswordPolicy(
+        passwordCandidate,
+        {
+          login: normalizedLogin,
+          username: normalizedLogin,
+          name: formState.name,
+          birthDate: formState.birthDate,
+          admissionDate: formState.admissionDate,
+          cpf: formState.cpf,
+          documentId: formState.documentId
+        },
+        policy
+      );
+      if (!validation.isValid) {
+        showToast({ message: validation.errors[0] || 'A senha não atende à política de segurança.' });
+        return;
+      }
     }
 
     if (!formState.platforms.web && !formState.platforms.app) {
@@ -266,6 +297,14 @@ export function UsersScreen() {
     const now = new Date().toISOString();
 
     try {
+      const adminResetPassword = isEditing && formState.adminResetPassword;
+      const generatedPassword = adminResetPassword ? generateRandomPassword(policy) : '';
+      const effectivePassword = adminResetPassword ? generatedPassword : formState.password;
+      const mustChangePassword = policy.forcePasswordChangeOnFirstAccess && Boolean(effectivePassword);
+      const temporaryPasswordExpiresAt = adminResetPassword
+        ? new Date(Date.now() + policy.adminResetPasswordTtlHours * 60 * 60 * 1000).toISOString()
+        : undefined;
+
       if (isEditing) {
         const existing = users.find((u) => u.id === formState.id);
         if (!existing) return;
@@ -279,6 +318,9 @@ export function UsersScreen() {
           name: formState.name,
           email: formState.email,
           cpf: formState.cpf || undefined,
+          birthDate: formState.birthDate || undefined,
+          admissionDate: formState.admissionDate || undefined,
+          documentId: formState.documentId || undefined,
           login: normalizedLogin,
           role: formState.role,
           status: existing.isSystemUser ? existing.status : formState.status,
@@ -288,19 +330,24 @@ export function UsersScreen() {
             ...(formState.platforms.web ? ['web'] : []),
             ...(formState.platforms.app ? ['app'] : [])
           ],
-          passwordHash: formState.password ? hashPassword(formState.password) : existing.passwordHash,
-          passwordChangedAt: formState.password ? now : existing.passwordChangedAt
+          passwordHash: effectivePassword ? hashPassword(effectivePassword) : existing.passwordHash,
+          passwordChangedAt: effectivePassword ? now : existing.passwordChangedAt,
+          mustChangePassword: effectivePassword ? mustChangePassword : existing.mustChangePassword,
+          temporaryPasswordExpiresAt: effectivePassword ? temporaryPasswordExpiresAt : existing.temporaryPasswordExpiresAt
         };
 
         await updateUserRequest(tenantId, updated.id, {
           ...updated,
-          password: formState.password || undefined
+          password: effectivePassword || undefined
         });
         const refreshed = await fetchUsers(tenantId);
         setUsers(refreshed);
+        if (adminResetPassword) {
+          showToast({ message: `Senha temporária aleatória gerada. Ela expira em ${policy.adminResetPasswordTtlHours}h e exigirá troca no primeiro acesso.` });
+        }
         recordAccessLog(tenantId, {
           user_id: currentUser?.id,
-          action: 'Alteracao de usuario',
+          action: adminResetPassword ? 'Reset administrativo de senha' : 'Alteracao de usuario',
           module: 'Usuarios',
           platform: 'web',
           status: 'SUCESSO',
@@ -319,8 +366,11 @@ export function UsersScreen() {
           name: formState.name,
           email: formState.email,
           cpf: formState.cpf || undefined,
+          birthDate: formState.birthDate || undefined,
+          admissionDate: formState.admissionDate || undefined,
+          documentId: formState.documentId || undefined,
           login: normalizedLogin,
-          passwordHash: hashPassword(formState.password),
+          passwordHash: hashPassword(effectivePassword),
           role: formState.role,
           status: formState.status,
           platforms: [
@@ -331,12 +381,14 @@ export function UsersScreen() {
           sector: formState.sector || undefined,
           createdAt: now,
           passwordChangedAt: now,
+          mustChangePassword,
+          temporaryPasswordExpiresAt,
           failedAttempts: 0,
           isSystemUser: formState.role === 'SYSTEM'
         };
         await createUser(tenantId, {
           ...newUser,
-          password: formState.password
+          password: effectivePassword
         });
         const refreshed = await fetchUsers(tenantId);
         setUsers(refreshed);
@@ -428,8 +480,10 @@ export function UsersScreen() {
   const handleSavePolicy = async () => {
     if (!tenantId || !policy) return;
     if (!isSystemEditor) return;
+    const normalizedPolicy = sanitizeSecurityPolicy(policy);
     try {
-      await saveSecurityPolicy(tenantId, policy);
+      await saveSecurityPolicy(tenantId, normalizedPolicy);
+      setPolicy(normalizedPolicy);
       recordAccessLog(tenantId, {
         user_id: currentUser?.id,
         action: 'Alteracao de politica de senha',
@@ -457,6 +511,20 @@ export function UsersScreen() {
 
   const selectedUsers = users.filter((user) => user.role === selectedRole);
   const selectedProfile = profileMeta[selectedRole];
+  const policyForUi = policy ? sanitizeSecurityPolicy(policy) : null;
+  const passwordGuide = evaluatePasswordPolicy(
+    formState.password,
+    {
+      login: normalizeLogin(formState.login),
+      username: normalizeLogin(formState.login),
+      name: formState.name,
+      birthDate: formState.birthDate,
+      admissionDate: formState.admissionDate,
+      cpf: formState.cpf,
+      documentId: formState.documentId
+    },
+    policyForUi || sanitizeSecurityPolicy(null)
+  );
 
   return (
     <main className="px-8 py-6 flex-1 overflow-auto">
@@ -882,7 +950,7 @@ export function UsersScreen() {
         </div>
       )}
 
-      {currentTab === 'security' && policy && (
+      {currentTab === 'security' && policyForUi && (
         <div className="space-y-4">
           <div className="bg-red-50 border-l-4 border-l-red-500 rounded-lg p-5">
             <div className="flex items-start gap-3">
@@ -913,9 +981,9 @@ export function UsersScreen() {
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={policy.requireStrongPassword}
+                    checked={policyForUi.requireStrongPassword}
                     disabled={!isSystemEditor}
-                    onChange={(e) => setPolicy({ ...policy, requireStrongPassword: e.target.checked })}
+                    onChange={(e) => setPolicy({ ...policyForUi, requireStrongPassword: e.target.checked })}
                     className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]"
                   />
                   <span className="text-sm text-gray-700">Exigir senha forte (min. caracteres)</span>
@@ -924,10 +992,15 @@ export function UsersScreen() {
                   <span>Minimo de caracteres</span>
                   <input
                     type="number"
-                    min={6}
-                    value={policy.minPasswordLength}
+                    min={8}
+                    value={policyForUi.minPasswordLength}
                     disabled={!isSystemEditor}
-                    onChange={(e) => setPolicy({ ...policy, minPasswordLength: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setPolicy({
+                        ...policyForUi,
+                        minPasswordLength: Math.max(8, Number(e.target.value || 8))
+                      })
+                    }
                     className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm"
                   />
                 </div>
@@ -936,11 +1009,11 @@ export function UsersScreen() {
                   <input
                     type="number"
                     min={0}
-                    value={policy.passwordExpiryDays}
-                    disabled={!isSystemEditor}
-                    onChange={(e) => setPolicy({ ...policy, passwordExpiryDays: Number(e.target.value) })}
+                    value={policyForUi.passwordExpiryDays}
+                    disabled
                     className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm"
                   />
+                  <span className="text-xs text-gray-500">Sem expiracao por diretriz NIST</span>
                 </div>
               </div>
             </div>
@@ -955,10 +1028,10 @@ export function UsersScreen() {
                   <span>Bloqueio apos tentativas falhas</span>
                   <input
                     type="number"
-                    min={1}
-                    value={policy.maxFailedAttempts}
+                    min={5}
+                    value={policyForUi.maxFailedAttempts}
                     disabled={!isSystemEditor}
-                    onChange={(e) => setPolicy({ ...policy, maxFailedAttempts: Number(e.target.value) })}
+                    onChange={(e) => setPolicy({ ...policyForUi, maxFailedAttempts: Math.max(5, Number(e.target.value || 5)) })}
                     className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm"
                   />
                 </div>
@@ -966,10 +1039,10 @@ export function UsersScreen() {
                   <span>Tempo de bloqueio (min)</span>
                   <input
                     type="number"
-                    min={1}
-                    value={policy.lockoutMinutes}
+                    min={5}
+                    value={policyForUi.lockoutMinutes}
                     disabled={!isSystemEditor}
-                    onChange={(e) => setPolicy({ ...policy, lockoutMinutes: Number(e.target.value) })}
+                    onChange={(e) => setPolicy({ ...policyForUi, lockoutMinutes: Math.max(5, Number(e.target.value || 5)) })}
                     className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm"
                   />
                 </div>
@@ -978,14 +1051,14 @@ export function UsersScreen() {
                   <input
                     type="number"
                     min={1}
-                    value={policy.idleTimeoutMinutes}
+                    value={policyForUi.idleTimeoutMinutes}
                     disabled={!isSystemEditor}
-                    onChange={(e) => setPolicy({ ...policy, idleTimeoutMinutes: Number(e.target.value) })}
+                    onChange={(e) => setPolicy({ ...policyForUi, idleTimeoutMinutes: Number(e.target.value) })}
                     className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm"
                   />
                 </div>
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={policy.twoFactorEnabled} disabled className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]" />
+                  <input type="checkbox" checked={policyForUi.twoFactorEnabled} disabled className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]" />
                   <span className="text-sm text-gray-700">2FA (preparado)</span>
                 </label>
               </div>
@@ -1048,6 +1121,33 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm text-gray-700 mb-2">Data de Nascimento</label>
+                  <input
+                    type="date"
+                    value={formState.birthDate}
+                    onChange={(e) => setFormState({ ...formState, birthDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">Data de Admissao</label>
+                  <input
+                    type="date"
+                    value={formState.admissionDate}
+                    onChange={(e) => setFormState({ ...formState, admissionDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">Documento (opcional)</label>
+                  <input
+                    type="text"
+                    value={formState.documentId}
+                    onChange={(e) => setFormState({ ...formState, documentId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm text-gray-700 mb-2">Login *</label>
                   <input
                     type="text"
@@ -1057,24 +1157,44 @@ export function UsersScreen() {
                     disabled={formState.role === 'SYSTEM'}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">Senha {isEditing ? '(opcional)' : '*'}</label>
-                  <input
-                    type="password"
-                    value={formState.password}
-                    onChange={(e) => setFormState({ ...formState, password: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">Confirmar Senha</label>
-                  <input
-                    type="password"
-                    value={formState.confirmPassword}
-                    onChange={(e) => setFormState({ ...formState, confirmPassword: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
+                {!isEditing && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-2">Senha *</label>
+                      <input
+                        type="password"
+                        value={formState.password}
+                        onChange={(e) => setFormState({ ...formState, password: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-2">Confirmar Senha</label>
+                      <input
+                        type="password"
+                        value={formState.confirmPassword}
+                        onChange={(e) => setFormState({ ...formState, confirmPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                      />
+                    </div>
+                  </>
+                )}
+                {isEditing && (
+                  <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formState.adminResetPassword}
+                        onChange={(e) => setFormState({ ...formState, adminResetPassword: e.target.checked })}
+                        className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]"
+                      />
+                      <span className="text-sm text-amber-800">Resetar senha com geracao aleatoria (expira em {policyForUi?.adminResetPasswordTtlHours || 24}h)</span>
+                    </label>
+                    <p className="text-xs text-amber-700 mt-2">
+                      A senha temporaria sera trocada no primeiro acesso do usuario.
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm text-gray-700 mb-2">Perfil *</label>
                   <select
@@ -1146,6 +1266,20 @@ export function UsersScreen() {
                     </label>
                   </div>
                 </div>
+                {!isEditing && (
+                  <div className="col-span-2 rounded-lg border border-gray-200 p-3">
+                    <p className="text-sm text-gray-800 mb-2">Guia de senha forte</p>
+                    <ul className="space-y-1 text-xs text-gray-700">
+                      <li className={passwordGuide.checks.hasMinLength ? 'text-green-700' : ''}>- Minimo de {policyForUi?.minPasswordLength || 8} caracteres</li>
+                      <li className={passwordGuide.checks.hasLower ? 'text-green-700' : ''}>- Ao menos 1 letra minuscula</li>
+                      <li className={passwordGuide.checks.hasUpper ? 'text-green-700' : ''}>- Ao menos 1 letra maiuscula</li>
+                      <li className={passwordGuide.checks.hasNumber ? 'text-green-700' : ''}>- Ao menos 1 digito</li>
+                      <li className={passwordGuide.checks.hasSpecial ? 'text-green-700' : ''}>- Ao menos 1 caractere especial</li>
+                      <li className={!passwordGuide.checks.inBlocklist ? 'text-green-700' : 'text-red-700'}>- Nao pode estar na blocklist de senhas vazadas</li>
+                      <li className={!passwordGuide.checks.reusesPersonalData ? 'text-green-700' : 'text-red-700'}>- Nao pode usar dados pessoais do usuario</li>
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {!isEditing && formState.role === 'SYSTEM' && (

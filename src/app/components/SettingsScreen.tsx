@@ -266,7 +266,7 @@ const mockAlertTypes: AlertType[] = [
 const mockIntegrations: Integration[] = [
   {
     id: 1,
-    name: 'API REST - CuidAI',
+    name: 'API REST - MedSignal',
     type: 'api',
     status: 'active',
     endpoint: 'https://api.cuidai.com.br/v1',
@@ -777,7 +777,7 @@ export function SettingsScreen() {
 
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="text-sm text-blue-800 mb-2">📘 Documentação da API</h4>
-            <p className="text-xs text-blue-700 mb-3">Acesse a documentação completa para integrar sistemas externos ao CuidAI.</p>
+            <p className="text-xs text-blue-700 mb-3">Acesse a documentação completa para integrar sistemas externos ao MedSignal.</p>
             <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition-colors">
               Ver Documentação →
             </button>

@@ -2,12 +2,22 @@ const rawApiBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
   '';
-
+// Keep requests working on same-origin deployments when env var is missing.
 if (!rawApiBaseUrl) {
   console.error('[api] VITE_API_URL is not set. Falling back to same-origin requests.');
 }
-
 const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
+
+export class ApiError extends Error {
+  status: number;
+  payload: Record<string, unknown>;
+
+  constructor(message: string, status: number, payload: Record<string, unknown>) {
+    super(message);
+    this.status = status;
+    this.payload = payload;
+  }
+}
 
 type FetchOptions = RequestInit & { json?: boolean };
 
@@ -27,7 +37,7 @@ const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> 
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error || 'Erro inesperado.');
+    throw new ApiError(payload.error || 'Erro inesperado.', response.status, payload);
   }
 
   return response.json() as Promise<T>;
@@ -60,12 +70,71 @@ export interface LoginResponse {
   lastAccess?: string;
   passwordChangedAt?: string;
   isSystemUser?: boolean;
+  mustChangePassword?: boolean;
+  temporaryPasswordExpiresAt?: string;
+}
+
+export interface AuthFlowResponse {
+  ok: boolean;
+  message?: string;
+  devResetCode?: string;
+}
+
+export interface OperationalOverviewResponse {
+  status: 'operational' | 'attention' | 'critical';
+  criticalAlerts: number;
+  criticalCases: number;
+  occupancyRate: number;
+  avgResponseMinutes: number;
+  incidentsLast24h: number;
+  updatedAt: string;
+  criticalSectors: Array<{
+    id: string;
+    name: string;
+    occupancyRate: number;
+    activeAlerts: number;
+    status: 'operational' | 'attention' | 'critical';
+  }>;
+  insights: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
 }
 
 export const fetchTenants = () => request<TenantInfo[]>('/api/tenants');
 
 export const loginRequest = (payload: { tenant: string; username: string; password: string }) =>
   request<LoginResponse>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const forceChangePasswordRequest = (payload: {
+  tenant: string;
+  username: string;
+  currentPassword: string;
+  newPassword: string;
+}) =>
+  request<{ ok: boolean }>('/api/auth/force-change-password', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const requestForgotPassword = (payload: { tenant: string; email: string }) =>
+  request<AuthFlowResponse>('/api/auth/forgot-password/request', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const resetForgotPassword = (payload: {
+  tenant: string;
+  email: string;
+  code: string;
+  newPassword: string;
+}) =>
+  request<{ ok: boolean }>('/api/auth/forgot-password/reset', {
     method: 'POST',
     body: JSON.stringify(payload)
   });
@@ -116,3 +185,6 @@ export const recordAccessLog = (tenantId: string, log: any) =>
     method: 'POST',
     body: JSON.stringify({ tenantId, log })
   });
+
+export const fetchOperationalOverview = (tenantId: string) =>
+  request<OperationalOverviewResponse>(`/api/operational-overview?tenantId=${encodeURIComponent(tenantId)}`);
