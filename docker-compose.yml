@@ -1,0 +1,127 @@
+# =============================================================================
+#  MedSignal — ambiente local completo
+#
+#  Sobe por padrão:  banco (Postgres), Adminer e o frontend em modo dev com HMR.
+#
+#    docker compose up -d              # dia a dia: db + adminer + frontend-dev
+#    docker compose --profile prod up  # testa a imagem de produção (nginx)
+#    docker compose --profile backend up -d   # quando o FastAPI chegar
+#
+#  Portas:  5173 frontend dev · 8080 frontend prod · 8000 API · 5432 db · 8081 Adminer
+# =============================================================================
+
+name: medsignal
+
+services:
+  # ---------------------------------------------------------------------------
+  # Banco de dados — as 12 entidades do DER da RFC vivem aqui.
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: medsignal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medsignal}
+      POSTGRES_USER: ${POSTGRES_USER:-medsignal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      # Locale pt-BR para ordenação e mensagens coerentes com o domínio.
+      LANG: pt_BR.utf8
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts rodam UMA vez, na criação do volume. Para reexecutar:
+      #   docker compose down -v && docker compose up -d
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-medsignal} -d ${POSTGRES_DB:-medsignal}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Cliente web de banco — para inspecionar as tabelas sem instalar nada.
+  # ---------------------------------------------------------------------------
+  adminer:
+    image: adminer:5
+    container_name: medsignal-adminer
+    restart: unless-stopped
+    ports:
+      - '${ADMINER_PORT:-8081}:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+      ADMINER_DESIGN: dracula
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Frontend em desenvolvimento — Vite com hot reload.
+  # O código é montado por bind mount; node_modules fica no volume do container
+  # para não brigar com o node_modules do Windows.
+  # ---------------------------------------------------------------------------
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: medsignal-frontend-dev
+    restart: unless-stopped
+    ports:
+      - '${FRONTEND_DEV_PORT:-5173}:5173'
+    environment:
+      # No navegador do host, a API é localhost — não o hostname da rede Docker.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # Necessário para o HMR enxergar alterações vindas de um bind mount Windows.
+      CHOKIDAR_USEPOLLING: 'true'
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  # ---------------------------------------------------------------------------
+  # Frontend de produção — a mesma imagem que vai para o Hetzner.
+  #   docker compose --profile prod up --build frontend
+  # ---------------------------------------------------------------------------
+  frontend:
+    profiles: ['prod']
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_MODE: production
+    container_name: medsignal-frontend
+    restart: unless-stopped
+    ports:
+      - '${FRONTEND_PORT:-8080}:80'
+
+  # ---------------------------------------------------------------------------
+  # API FastAPI — ativa quando você trouxer o repositório do backend.
+  #
+  # Clone o backend em ../medsignal-backend e rode:
+  #   docker compose --profile backend up -d --build
+  #
+  # Se o caminho for outro, ajuste BACKEND_PATH no .env.
+  # ---------------------------------------------------------------------------
+  backend:
+    profiles: ['backend']
+    build:
+      context: ${BACKEND_PATH:-../medsignal-backend}
+      dockerfile: Dockerfile
+    container_name: medsignal-api
+    restart: unless-stopped
+    ports:
+      - '${BACKEND_PORT:-8000}:8000'
+    environment:
+      # Dentro da rede do compose o host do banco é o nome do serviço: "db".
+      DATABASE_URL: postgresql://${POSTGRES_USER:-medsignal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-medsignal}
+      # A API precisa liberar CORS para as duas portas do frontend.
+      CORS_ORIGINS: http://localhost:${FRONTEND_DEV_PORT:-5173},http://localhost:${FRONTEND_PORT:-8080}
+      SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    name: medsignal-pgdata

@@ -1,0 +1,19 @@
+# Imagem só para desenvolvimento local — o Vite serve com hot reload.
+# A imagem de produção continua sendo o Dockerfile da raiz (build + nginx).
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instala as dependências numa camada própria: mexer no código não reinstala tudo.
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# O código real chega por bind mount no compose; esta cópia serve para
+# a imagem funcionar mesmo se alguém rodar sem o mount.
+COPY . .
+
+EXPOSE 5173
+
+# --host expõe fora do container; sem isso o Vite escuta só em 127.0.0.1
+# e a porta publicada não responde.
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
