@@ -22,15 +22,20 @@
 \set ON_ERROR_STOP on
 
 -- ---------------------------------------------------------------------------
--- 1. Perfil de acesso total.
---    Cobre todos os módulos que o rbac.ts do frontend conhece, com as quatro
---    ações e as duas plataformas. É o que "acesso completo" significa aqui.
+-- 1. Eleva o perfil ADMIN a acesso total.
+--    O nome tem de ser ADMIN, e não SUPERADMIN: o tipo Role do frontend
+--    (authStore.ts) só aceita SYSTEM, ADMIN, MANAGER, DOCTOR, NURSE,
+--    ADMINISTRATIVE, PATIENT e VISITOR. Nome fora dessa lista faz
+--    getRoleLabel() devolver undefined e quebra a busca de permissões.
+--
+--    Cobre os 14 módulos que o rbac.ts conhece, com as quatro ações e as duas
+--    plataformas. É o que "acesso completo" significa aqui.
 -- ---------------------------------------------------------------------------
 INSERT INTO perfil (clinica_id, nome, descricao, permissoes)
 VALUES (
   NULL,
-  'SUPERADMIN',
-  'Acesso total a todos os módulos, web e app. Uso administrativo.',
+  'ADMIN',
+  'Acesso total a todos os módulos, web e app.',
   (
     SELECT jsonb_object_agg(
              modulo,
@@ -48,6 +53,23 @@ VALUES (
 )
 ON CONFLICT DO NOTHING;
 
+-- Se o ADMIN já existia com permissões parciais (veio do seed), eleva agora.
+UPDATE perfil SET permissoes = (
+  SELECT jsonb_object_agg(
+           modulo,
+           jsonb_build_object(
+             'view', true, 'create', true, 'edit', true, 'delete', true,
+             'web', true, 'app', true
+           )
+         )
+  FROM unnest(ARRAY[
+    'dashboard', 'monitoring', 'alerts', 'clinical_logs', 'patients',
+    'beds', 'appointments', 'reports', 'settings', 'users',
+    'hospital_management', 'financial', 'inventory', 'hr'
+  ]) AS modulo
+)
+WHERE nome = 'ADMIN' AND clinica_id IS NULL;
+
 -- ---------------------------------------------------------------------------
 -- 2. Garante que a clínica informada existe.
 -- ---------------------------------------------------------------------------
@@ -61,7 +83,7 @@ ON CONFLICT (slug) DO NOTHING;
 WITH alvo AS (
   SELECT
     (SELECT id FROM clinica WHERE slug = :tenant)                       AS clinica_id,
-    (SELECT id FROM perfil WHERE nome = 'SUPERADMIN' AND clinica_id IS NULL) AS perfil_id
+    (SELECT id FROM perfil WHERE nome = 'ADMIN' AND clinica_id IS NULL) AS perfil_id
 )
 INSERT INTO usuario (
   clinica_id, perfil_id, nome, email, login, senha_hash,

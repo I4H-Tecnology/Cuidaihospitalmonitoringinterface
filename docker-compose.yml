@@ -98,7 +98,29 @@ services:
       - '${FRONTEND_PORT:-8080}:80'
 
   # ---------------------------------------------------------------------------
-  # API FastAPI — ativa quando você trouxer o repositório do backend.
+  # Backend MÍNIMO de autenticação — andaime, mora em backend-stub/.
+  # Existe só para destravar o login enquanto o FastAPI definitivo não chega.
+  #   docker compose --profile stub up -d --build
+  # Apague o serviço e a pasta quando o backend real entrar.
+  # ---------------------------------------------------------------------------
+  backend-stub:
+    profiles: ['stub']
+    build:
+      context: ./backend-stub
+      dockerfile: Dockerfile
+    container_name: medsignal-api-stub
+    restart: unless-stopped
+    ports:
+      - '${BACKEND_PORT:-8000}:8000'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-medsignal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-medsignal}
+      CORS_ORIGINS: http://localhost:${FRONTEND_DEV_PORT:-5173},http://localhost:${FRONTEND_PORT:-8080}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # API FastAPI definitiva — ativa quando você trouxer o repositório do backend.
   #
   # Clone o backend em ../medsignal-backend e rode:
   #   docker compose --profile backend up -d --build

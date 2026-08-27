@@ -77,7 +77,20 @@ docker compose --profile prod up -d --build frontend
 
 Sobe em http://localhost:8080.
 
-### Quando o backend entrar
+### Backend de autenticação (andaime)
+
+Enquanto o FastAPI definitivo não chega, há um backend mínimo em
+[`backend-stub/`](backend-stub/README.md) que implementa só o necessário para o
+login funcionar, contra o mesmo Postgres:
+
+```bash
+docker compose --profile stub up -d --build
+```
+
+Sobe em http://localhost:8000, com documentação interativa em `/docs`.
+Para criar seu usuário administrador, veja `db/scripts/criar-admin.sql`.
+
+### Quando o backend definitivo entrar
 
 Clone o repositório do FastAPI ao lado deste (ou ajuste `BACKEND_PATH` no `.env`) e:
 
