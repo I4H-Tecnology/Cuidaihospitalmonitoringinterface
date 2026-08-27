@@ -1,4 +1,27 @@
-﻿node_modules
+# Artefatos de build (o frontend mora em frontend/)
+node_modules/
+frontend/dist/
+frontend/coverage/
+
+# Variaveis de ambiente. O padrao amplo veio da branch dev e e o mais seguro:
+# ignora qualquer .env, com excecao explicita do exemplo.
+# ATENCAO: .env.production ja estava rastreado antes desta regra. Ignorar nao
+# destraqueia — rode `git rm --cached .env.production` e passe a URL por build
+# arg do Docker ou variavel do GitHub Actions.
 .env
 .env.*
 !.env.example
+
+# Editores e SO
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.log
+
+# Servico de visao
+visao/.venv/
+visao/capturas/
+visao/saida/
+__pycache__/
+*.pyc

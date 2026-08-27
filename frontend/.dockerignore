@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.git
+.github
+.env*
+!.env.example
+db
+*.md
+!README.md
+_cRFC_*.pdf
+Dockerfile*
+docker-compose*.yml

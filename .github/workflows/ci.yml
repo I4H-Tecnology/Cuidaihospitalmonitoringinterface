@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev, qa]
+  pull_request:
+    branches: [main, dev, qa]
+
+# Um push novo na mesma branch cancela a execução anterior.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Testes, tipos e build
+    runs-on: ubuntu-latest
+
+    # O frontend deixou de morar na raiz. Sem isto, todo passo de npm falha
+    # com "package.json not found".
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npm run typecheck
+
+      - name: Rodar testes com cobertura
+        run: npm run test:coverage
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: frontend/coverage/
+          retention-days: 14
+
+      - name: Build de produção
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+
+  imagem:
+    name: Imagens Docker
+    runs-on: ubuntu-latest
+    needs: qualidade
+    # Sem working-directory aqui: os contextos de build sao passados explicitos.
+    # Só valida a imagem no que vai para produção.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build da imagem do frontend
+        run: docker build -t medsignal-frontend:${{ github.sha }} ./frontend
+
+      - name: Build da imagem do backend
+        run: docker build -t medsignal-backend:${{ github.sha }} ./backend
