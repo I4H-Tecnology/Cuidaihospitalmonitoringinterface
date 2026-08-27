@@ -28,6 +28,7 @@ import { HRScreen } from './components/HRScreen';
 import { AIAssistant } from './components/AIAssistant';
 import { getModuleForScreen, type Screen } from './data/rbac';
 import { SystemToastProvider, useSystemToast } from './components/ui/SystemToast';
+import { TarjaModoTeste } from './components/TarjaModoTeste';
 
 interface Patient {
   id: number;
@@ -384,6 +385,9 @@ function App() {
     <AuthProvider>
       <ThemeProvider>
         <SystemToastProvider>
+          {/* Acima de tudo, inclusive da tela de login: em modo de teste a
+              marcacao precisa aparecer antes mesmo de alguem entrar. */}
+          <TarjaModoTeste />
           <AppContent />
         </SystemToastProvider>
       </ThemeProvider>

@@ -17,3 +17,10 @@ coverage
 .idea
 .DS_Store
 *.log
+
+# Servico de visao
+visao/.venv/
+visao/capturas/
+visao/saida/
+__pycache__/
+*.pyc

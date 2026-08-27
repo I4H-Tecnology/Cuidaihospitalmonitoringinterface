@@ -74,6 +74,9 @@ services:
     environment:
       # No navegador do host, a API é localhost — não o hostname da rede Docker.
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # O Vite só expõe variáveis com prefixo VITE_. Derivar aqui evita ter a
+      # mesma flag escrita duas vezes no .env, com risco de dessincronizar.
+      VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
       # Necessário para o HMR enxergar alterações vindas de um bind mount Windows.
       CHOKIDAR_USEPOLLING: 'true'
     volumes:
@@ -91,6 +94,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
         VITE_MODE: production
     container_name: medsignal-frontend
     restart: unless-stopped
