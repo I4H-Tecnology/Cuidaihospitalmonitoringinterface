@@ -1,23 +1,171 @@
+# MedSignal — Monitoramento Inteligente de Quedas
 
-  # CuidAI Hospital Monitoring Interface
+Detecção de quedas de pacientes idosos em clínicas de repouso por visão computacional.
+Uma câmera observa o ambiente, a IA acompanha postura e movimentação e, ao identificar
+uma possível queda, registra a ocorrência e dispara alerta em até 5 segundos no dashboard
+web e no aplicativo da enfermagem.
 
-  This is a code bundle for CuidAI Hospital Monitoring Interface. The original project is available at https://www.figma.com/design/lBzlZadeYzIi9JltAYkKZo/CuidAI-Hospital-Monitoring-Interface.
+Projeto de Portfólio — Engenharia de Software, Centro Universitário Católica SC.
+Linha: **Projetos com IA (Visão Computacional)**, com Web Apps e Mobile como apoio.
+A especificação completa está na RFC (`_cRFC_MedSignal_N3.pdf`).
 
-  ## Running the code
+> O repositório mantém o nome original `Cuidaihospitalmonitoringinterface` para preservar
+> o histórico de versionamento. O produto foi renomeado de CuidAI para MedSignal na v1.0
+> da RFC.
 
-  Run `npm i` to install the dependencies.
+---
 
-  Run `npm run dev` to start the development server.
+## Este repositório
 
-  ## Environment variables
+Contém o **frontend**: dashboard web e o app do enfermeiro, ambos em React.
+O backend (FastAPI) e o serviço de visão computacional vivem em repositórios próprios.
 
-  Create a `.env` file based on `.env.example`, or use per-environment files:
-  - `.env.development`
-  - `.env.qa` (use `vite --mode qa` or `npm run build -- --mode qa`)
-  - `.env.production`
+```
+src/
+├── app/
+│   ├── App.tsx              # shell do sistema web, roteamento por estado
+│   ├── MobileApp.tsx        # app do enfermeiro
+│   ├── components/          # telas e componentes
+│   │   ├── pep/             # prontuário — fora do escopo do MVP
+│   │   ├── mobile/          # telas do app
+│   │   └── ui/              # shadcn/ui vendorizado (MIT, ver ATTRIBUTIONS.md)
+│   ├── contexts/            # autenticação e tema
+│   └── data/                # api.ts, authStore.ts, rbac.ts — camada de dados
+└── test/                    # setup do Vitest
+db/init/                     # schema e seed do Postgres (as 12 entidades do DER)
+```
 
-  Set:
+---
 
-  - `VITE_API_URL`: Base URL of the backend API (ex: `https://api.seudominio.com`).
-    - If not set, the frontend falls back to same-origin requests and logs an error.
-  
+## Rodando localmente
+
+Pré-requisitos: **Docker Desktop**. Nada mais — nem Node instalado no Windows.
+
+```bash
+cp .env.example .env
+```
+
+Preencha `POSTGRES_PASSWORD` e `SECRET_KEY` no `.env`. Para gerar a chave:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Depois:
+
+```bash
+docker compose up -d
+```
+
+Sobe três serviços:
+
+| Serviço | Endereço | O que é |
+| --- | --- | --- |
+| `frontend-dev` | http://localhost:5173 | Vite com hot reload |
+| `db` | localhost:5432 | PostgreSQL 16 |
+| `adminer` | http://localhost:8081 | cliente web do banco |
+
+No Adminer, entre com sistema `PostgreSQL`, servidor `db`, e o usuário/senha do `.env`.
+
+### Testar a imagem de produção
+
+A mesma imagem que vai para o servidor — build multi-stage terminando em Nginx:
+
+```bash
+docker compose --profile prod up -d --build frontend
+```
+
+Sobe em http://localhost:8080.
+
+### Quando o backend entrar
+
+Clone o repositório do FastAPI ao lado deste (ou ajuste `BACKEND_PATH` no `.env`) e:
+
+```bash
+docker compose --profile backend up -d --build
+```
+
+### Recriar o banco do zero
+
+Os scripts de `db/init/` rodam **uma única vez**, na criação do volume. Para reexecutá-los:
+
+```bash
+docker compose down -v && docker compose up -d
+```
+
+### Builds por ambiente
+
+Além do `.env`, o Vite aceita arquivos por modo. Herdado da configuração que já
+existia na branch `dev`:
+
+| Arquivo | Como usar |
+| --- | --- |
+| `.env.development` | padrão do `npm run dev` |
+| `.env.qa` | `vite --mode qa` ou `npm run build -- --mode qa` |
+| `.env.production` | padrão do `npm run build` |
+
+`VITE_API_URL` é a URL base da API. Sem ela, o frontend cai para requisições
+same-origin e registra um erro no console.
+
+---
+
+## Sem Docker
+
+O frontend roda direto, desde que você tenha Node 20+:
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## Qualidade
+
+```bash
+npm run typecheck      # tsc --noEmit
+npm run test           # Vitest
+npm run test:coverage  # com relatório de cobertura em coverage/
+npm run build          # build de produção
+```
+
+O pipeline em `.github/workflows/ci.yml` roda os quatro em cada push e pull request
+nas branches `main`, `dev` e `qa`, publica o relatório de cobertura como artifact e,
+em `main`, valida também o build da imagem Docker.
+
+O limiar de cobertura usa catraca: sobe sozinho conforme a cobertura melhora e nunca
+regride. A linha de projeto (IA) não exige percentual mínimo — o que se avalia é a
+qualidade do teste, não o número.
+
+---
+
+## Banco de dados
+
+`db/init/01_schema.sql` implementa as 12 entidades do DER da RFC. As regras de negócio
+da seção 2.5 estão codificadas como constraints, não só na aplicação — o banco recusa
+dado inválido mesmo que a API esqueça de validar. Cada constraint referencia a regra
+correspondente (RN01, RN05, RN11...) em comentário.
+
+`db/init/02_seed.sql` cria os perfis de acesso e uma clínica de demonstração com
+ambientes, câmeras e pacientes fictícios. **Não cria usuários**: a senha exige hash real
+gerado pelo backend, e credencial versionada não entra neste repositório.
+
+Imagens e vídeos não ficam neste banco. Pela RN08/RN09, são retidos por no máximo 24h
+no serviço de visão computacional, que tem rotina de expurgo própria; aqui persiste
+apenas o registro da ocorrência.
+
+---
+
+## Stack
+
+React 18 · TypeScript · Vite · Tailwind CSS 4 · Vitest · Docker · Nginx · PostgreSQL 16
+
+Backend previsto: Python + FastAPI, WebSockets para alertas em tempo real.
+Visão computacional: OpenCV, MediaPipe Pose e YOLOv8.
+
+---
+
+## Licenças de terceiros
+
+Componentes de UI do [shadcn/ui](https://ui.shadcn.com/) sob licença MIT e imagens do
+Unsplash sob a licença da plataforma. Detalhes em [ATTRIBUTIONS.md](ATTRIBUTIONS.md).
