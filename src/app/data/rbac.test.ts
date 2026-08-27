@@ -5,6 +5,7 @@ import { defaultPlatform, getModuleForScreen, screenModuleMap, type Screen } fro
 // senão o RBAC deixa passar (ou barra) por omissão em vez de por regra.
 const TELAS: Screen[] = [
   'dashboard',
+  'operational-overview',
   'monitoring',
   'alerts',
   'pep',
@@ -31,9 +32,22 @@ describe('mapa de telas para módulos de permissão', () => {
     expect(typeof modulo).toBe('string');
   });
 
-  it('não repete o mesmo módulo em telas diferentes', () => {
-    const modulos = Object.values(screenModuleMap);
-    expect(new Set(modulos).size).toBe(modulos.length);
+  it('só permite um módulo compartilhado: o apelido documentado da visão operacional', () => {
+    // 'operational-overview' aponta para 'dashboard' de propósito, porque o
+    // backend ainda não expõe permissão própria para esse módulo — há um TODO
+    // no rbac.ts registrando isso. Qualquer OUTRA duplicata é engano: duas
+    // telas dividindo módulo significa que uma delas não é controlável sozinha.
+    const modulos = Object.entries(screenModuleMap);
+    const contagem = new Map<string, string[]>();
+    for (const [tela, modulo] of modulos) {
+      contagem.set(modulo, [...(contagem.get(modulo) ?? []), tela]);
+    }
+
+    const compartilhados = [...contagem.entries()]
+      .filter(([, telas]) => telas.length > 1)
+      .map(([modulo, telas]) => `${modulo}: ${telas.sort().join(', ')}`);
+
+    expect(compartilhados).toEqual(['dashboard: dashboard, operational-overview']);
   });
 
   it('mapeia o PEP para o módulo de registros clínicos', () => {

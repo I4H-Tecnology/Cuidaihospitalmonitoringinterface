@@ -33,6 +33,14 @@ const policy = (overrides: Partial<SecurityPolicy> = {}): SecurityPolicy => ({
   passwordExpiryDays: 90,
   maxFailedAttempts: 3,
   lockoutMinutes: 30,
+  requireLowercase: true,
+  requireUppercase: true,
+  requireNumber: true,
+  requireSpecialChar: true,
+  disallowPersonalData: true,
+  blockedPasswords: [],
+  forcePasswordChangeOnFirstAccess: true,
+  adminResetPasswordTtlHours: 24,
   idleTimeoutMinutes: 30,
   twoFactorEnabled: false,
   ...overrides,
@@ -57,13 +65,28 @@ const makeUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
 const days = (n: number) => n * 24 * 60 * 60 * 1000;
 
 describe('política de senha', () => {
-  it('exige comprimento mínimo, maiúscula, número e caractere especial', () => {
+  it('exige comprimento mínimo, maiúscula, minúscula, número e caractere especial', () => {
     expect(isPasswordStrong('Senha@123', policy())).toBe(true);
 
     expect(isPasswordStrong('Se@1', policy())).toBe(false); // curta
     expect(isPasswordStrong('senha@123', policy())).toBe(false); // sem maiúscula
+    expect(isPasswordStrong('SENHA@123', policy())).toBe(false); // sem minúscula
     expect(isPasswordStrong('Senha@abc', policy())).toBe(false); // sem número
     expect(isPasswordStrong('Senha1234', policy())).toBe(false); // sem especial
+  });
+
+  it('permite desligar cada exigência individualmente', () => {
+    // O dev tornou cada requisito um flag próprio, em vez de um bloco fixo.
+    expect(isPasswordStrong('Senha1234', policy({ requireSpecialChar: false }))).toBe(true);
+    expect(isPasswordStrong('senha@123', policy({ requireUppercase: false }))).toBe(true);
+    expect(isPasswordStrong('SENHA@123', policy({ requireLowercase: false }))).toBe(true);
+    expect(isPasswordStrong('Senha@abc', policy({ requireNumber: false }))).toBe(true);
+  });
+
+  it('recusa senha que está na blocklist, mesmo atendendo os demais critérios', () => {
+    const comBlocklist = policy({ blockedPasswords: ['Senha@123'] });
+    expect(isPasswordStrong('Senha@123', comBlocklist)).toBe(false);
+    expect(isPasswordStrong('Outra@456', comBlocklist)).toBe(true);
   });
 
   it('respeita o comprimento mínimo configurado pelo tenant', () => {
@@ -97,7 +120,12 @@ describe('expiração de senha', () => {
   });
 });
 
-describe('bloqueio por tentativas falhas', () => {
+describe('bloqueio por tentativas falhas (janela deslizante)', () => {
+  // O dev trocou a contagem cumulativa por uma janela: tentativa que chega
+  // depois de `lockoutMinutes` da primeira reinicia o contador. Sem informar
+  // failedAttemptWindowStartedAt, toda tentativa vale como a primeira.
+  const dentroDaJanela = () => new Date(Date.now() - 60 * 1000).toISOString();
+
   it('conta a tentativa sem bloquear antes do limite', () => {
     seedTenantWithUser();
     const updated = registerFailedAttempt(TENANT, makeUser(), policy());
@@ -107,9 +135,45 @@ describe('bloqueio por tentativas falhas', () => {
     expect(updated.lockedUntil).toBeUndefined();
   });
 
-  it('bloqueia o usuário ao atingir o número máximo de tentativas', () => {
+  it('abre a janela na primeira tentativa', () => {
     seedTenantWithUser();
-    const updated = registerFailedAttempt(TENANT, makeUser({ failedAttempts: 2 }), policy());
+    const updated = registerFailedAttempt(TENANT, makeUser(), policy());
+
+    expect(updated.failedAttemptWindowStartedAt).toBeTruthy();
+  });
+
+  it('acumula tentativas que caem dentro da janela', () => {
+    seedTenantWithUser();
+    const updated = registerFailedAttempt(
+      TENANT,
+      makeUser({ failedAttempts: 1, failedAttemptWindowStartedAt: dentroDaJanela() }),
+      policy(),
+    );
+
+    expect(updated.failedAttempts).toBe(2);
+    expect(updated.status).toBe('active');
+  });
+
+  it('reinicia a contagem quando a janela já expirou', () => {
+    seedTenantWithUser();
+    const janelaVelha = new Date(Date.now() - 31 * 60 * 1000).toISOString(); // > lockoutMinutes
+    const updated = registerFailedAttempt(
+      TENANT,
+      makeUser({ failedAttempts: 2, failedAttemptWindowStartedAt: janelaVelha }),
+      policy(),
+    );
+
+    expect(updated.failedAttempts).toBe(1);
+    expect(updated.status).toBe('active');
+  });
+
+  it('bloqueia o usuário ao atingir o número máximo dentro da janela', () => {
+    seedTenantWithUser();
+    const updated = registerFailedAttempt(
+      TENANT,
+      makeUser({ failedAttempts: 2, failedAttemptWindowStartedAt: dentroDaJanela() }),
+      policy(),
+    );
 
     expect(updated.failedAttempts).toBe(3);
     expect(updated.status).toBe('blocked');
@@ -124,30 +188,44 @@ describe('bloqueio por tentativas falhas', () => {
 
   it('persiste o bloqueio no tenant, não só no objeto devolvido', () => {
     seedTenantWithUser();
-    registerFailedAttempt(TENANT, makeUser({ failedAttempts: 2 }), policy());
+    registerFailedAttempt(
+      TENANT,
+      makeUser({ failedAttempts: 2, failedAttemptWindowStartedAt: dentroDaJanela() }),
+      policy(),
+    );
 
     const persistido = listUsers(TENANT).find((u) => u.id === 'user-1');
     expect(persistido?.status).toBe('blocked');
   });
 
-  it('zera o contador de tentativas ao liberar o usuário', () => {
+  it('zera contador e janela ao liberar o usuário', () => {
     seedTenantWithUser();
-    const bloqueado = registerFailedAttempt(TENANT, makeUser({ failedAttempts: 2 }), policy());
+    const bloqueado = registerFailedAttempt(
+      TENANT,
+      makeUser({ failedAttempts: 2, failedAttemptWindowStartedAt: dentroDaJanela() }),
+      policy(),
+    );
     const liberado = clearFailedAttempts(TENANT, bloqueado);
 
     expect(liberado.failedAttempts).toBe(0);
     expect(liberado.lockedUntil).toBeUndefined();
+    expect(liberado.failedAttemptWindowStartedAt).toBeUndefined();
   });
 
   // BUG CONHECIDO — este teste documenta o comportamento atual, não o desejado.
-  // clearFailedAttempts limpa o contador e o prazo, mas deixa status='blocked'.
-  // O usuário fica permanentemente bloqueado mesmo depois do lockout expirar.
-  // Ao corrigir, troque a asserção para 'active' — o teste vai te lembrar.
+  // clearFailedAttempts limpa contador, janela e prazo, mas deixa
+  // status='blocked'. O usuário fica permanentemente bloqueado mesmo depois de
+  // o lockout expirar. Ao corrigir, troque a asserção para 'active'.
   it('BUG: não devolve o status para active ao liberar o usuário', () => {
     seedTenantWithUser();
-    const bloqueado = registerFailedAttempt(TENANT, makeUser({ failedAttempts: 2 }), policy());
+    const bloqueado = registerFailedAttempt(
+      TENANT,
+      makeUser({ failedAttempts: 2, failedAttemptWindowStartedAt: dentroDaJanela() }),
+      policy(),
+    );
     const liberado = clearFailedAttempts(TENANT, bloqueado);
 
+    expect(bloqueado.status).toBe('blocked');
     expect(liberado.status).toBe('blocked');
   });
 });
@@ -220,7 +298,14 @@ describe('trilha de auditoria', () => {
 
 describe('política de segurança e permissões', () => {
   it('devolve a política padrão para um tenant novo', () => {
-    expect(getSecurityPolicy(TENANT).maxFailedAttempts).toBe(3);
+    // O dev afrouxou o número de tentativas (3 -> 5) e encurtou o bloqueio
+    // (30 -> 5 min), além de desligar a expiração de senha por padrão.
+    const padrao = getSecurityPolicy(TENANT);
+    expect(padrao.maxFailedAttempts).toBe(5);
+    expect(padrao.lockoutMinutes).toBe(5);
+    expect(padrao.passwordExpiryDays).toBe(0);
+    expect(padrao.forcePasswordChangeOnFirstAccess).toBe(true);
+    expect(padrao.blockedPasswords.length).toBeGreaterThan(0);
   });
 
   it('persiste a política alterada', () => {
