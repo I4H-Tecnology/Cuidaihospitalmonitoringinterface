@@ -4,8 +4,8 @@
 #  Sobe por padrão:  banco (Postgres), Adminer e o frontend em modo dev com HMR.
 #
 #    docker compose up -d              # dia a dia: db + adminer + frontend-dev
-#    docker compose --profile prod up  # testa a imagem de produção (nginx)
-#    docker compose --profile backend up -d   # quando o FastAPI chegar
+#    docker compose --profile api up -d      # sobe tambem a API de autenticacao
+#    docker compose --profile prod up        # testa a imagem de produção (nginx)
 #
 #  Portas:  5173 frontend dev · 8080 frontend prod · 8000 API · 5432 db · 8081 Adminer
 # =============================================================================
@@ -65,7 +65,7 @@ services:
   # ---------------------------------------------------------------------------
   frontend-dev:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: medsignal-frontend-dev
     restart: unless-stopped
@@ -80,7 +80,7 @@ services:
       # Necessário para o HMR enxergar alterações vindas de um bind mount Windows.
       CHOKIDAR_USEPOLLING: 'true'
     volumes:
-      - .:/app
+      - ./frontend:/app
       - /app/node_modules
 
   # ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ services:
   frontend:
     profiles: ['prod']
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
@@ -102,17 +102,17 @@ services:
       - '${FRONTEND_PORT:-8080}:80'
 
   # ---------------------------------------------------------------------------
-  # Backend MÍNIMO de autenticação — andaime, mora em backend-stub/.
+  # Backend de autenticação — provisório, mora em backend/.
   # Existe só para destravar o login enquanto o FastAPI definitivo não chega.
-  #   docker compose --profile stub up -d --build
-  # Apague o serviço e a pasta quando o backend real entrar.
+  #   docker compose --profile api up -d --build
+  # Substituir pelo FastAPI definitivo quando ele chegar.
   # ---------------------------------------------------------------------------
-  backend-stub:
-    profiles: ['stub']
+  backend:
+    profiles: ['api']
     build:
-      context: ./backend-stub
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: medsignal-api-stub
+    container_name: medsignal-api
     restart: unless-stopped
     ports:
       - '${BACKEND_PORT:-8000}:8000'
@@ -128,19 +128,19 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # API FastAPI definitiva — ativa quando você trouxer o repositório do backend.
+  # API FastAPI definitiva de outro repositório — alternativa ao serviço acima.
   #
   # Clone o backend em ../medsignal-backend e rode:
   #   docker compose --profile backend up -d --build
   #
   # Se o caminho for outro, ajuste BACKEND_PATH no .env.
   # ---------------------------------------------------------------------------
-  backend:
-    profiles: ['backend']
+  backend-externo:
+    profiles: ['externo']
     build:
       context: ${BACKEND_PATH:-../medsignal-backend}
       dockerfile: Dockerfile
-    container_name: medsignal-api
+    container_name: medsignal-api-externa
     restart: unless-stopped
     ports:
       - '${BACKEND_PORT:-8000}:8000'

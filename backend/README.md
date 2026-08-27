@@ -1,16 +1,16 @@
-# Backend mínimo de autenticação — andaime
+# Backend — API de autenticação
 
 Existe por um motivo só: o frontend do MedSignal só autentica contra uma API, e
 o backend FastAPI definitivo ainda não está disponível nesta máquina. Sem isso,
 a tela de login falha com erro de rede independentemente do que exista no banco.
 
-**Isto não é o backend do projeto.** Quando o FastAPI real chegar, apague esta
-pasta e o serviço `backend-stub` do `docker-compose.yml`.
+**Isto é provisório.** Quando o FastAPI definitivo chegar, substitua o conteúdo
+desta pasta — o serviço `backend` do `docker-compose.yml` continua servindo.
 
 ## Como subir
 
 ```bash
-docker compose --profile stub up -d --build
+docker compose --profile api up -d --build
 ```
 
 Sobe em http://localhost:8000. Documentação interativa em `/docs`.

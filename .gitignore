@@ -1,6 +1,7 @@
-node_modules
-dist
-coverage
+# Artefatos de build (o frontend mora em frontend/)
+node_modules/
+frontend/dist/
+frontend/coverage/
 
 # Variaveis de ambiente. O padrao amplo veio da branch dev e e o mais seguro:
 # ignora qualquer .env, com excecao explicita do exemplo.

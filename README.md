@@ -15,25 +15,41 @@ A especificação completa está na RFC (`_cRFC_MedSignal_N3.pdf`).
 
 ---
 
-## Este repositório
-
-Contém o **frontend**: dashboard web e o app do enfermeiro, ambos em React.
-O backend (FastAPI) e o serviço de visão computacional vivem em repositórios próprios.
+## Estrutura
 
 ```
-src/
-├── app/
-│   ├── App.tsx              # shell do sistema web, roteamento por estado
-│   ├── MobileApp.tsx        # app do enfermeiro
-│   ├── components/          # telas e componentes
-│   │   ├── pep/             # prontuário — fora do escopo do MVP
-│   │   ├── mobile/          # telas do app
-│   │   └── ui/              # shadcn/ui vendorizado (MIT, ver ATTRIBUTIONS.md)
-│   ├── contexts/            # autenticação e tema
-│   └── data/                # api.ts, authStore.ts, rbac.ts — camada de dados
-└── test/                    # setup do Vitest
-db/init/                     # schema e seed do Postgres (as 12 entidades do DER)
+MedSignal/
+├── frontend/     dashboard web e app do enfermeiro (React + Vite + Tailwind)
+│   ├── src/app/
+│   │   ├── components/     telas e componentes
+│   │   ├── contexts/       autenticação e tema
+│   │   └── data/           api.ts, authStore.ts, rbac.ts
+│   ├── Dockerfile          imagem de produção (build + Nginx)
+│   └── Dockerfile.dev      Vite com hot reload
+│
+├── backend/      API de autenticação e permissões (Python + FastAPI)
+│   └── app/
+│       ├── main.py         rotas
+│       ├── seguranca.py    JWT e verificação de permissão
+│       ├── schemas.py      contratos de entrada e saída
+│       └── db.py           acesso ao Postgres
+│
+├── visao/        serviço de visão computacional (YOLOv8 + MediaPipe)
+│   ├── app/                captura, detecção, pose, features, regras
+│   ├── detectar.py         roda o pipeline
+│   └── verificar_camera.py diagnóstico da fonte de vídeo
+│
+├── db/           banco de dados
+│   ├── init/               schema (12 entidades do DER) e seed
+│   └── scripts/            scripts avulsos, rodados sob demanda
+│
+├── docs/         RFC do projeto e documentos de apoio
+│
+├── docker-compose.yml
+└── .env
 ```
+
+Cada serviço tem o próprio `README.md` com as instruções específicas.
 
 ---
 
@@ -80,11 +96,11 @@ Sobe em http://localhost:8080.
 ### Backend de autenticação (andaime)
 
 Enquanto o FastAPI definitivo não chega, há um backend mínimo em
-[`backend-stub/`](backend-stub/README.md) que implementa só o necessário para o
+[`backend/`](backend/README.md) que implementa só o necessário para o
 login funcionar, contra o mesmo Postgres:
 
 ```bash
-docker compose --profile stub up -d --build
+docker compose --profile api up -d --build
 ```
 
 Sobe em http://localhost:8000, com documentação interativa em `/docs`.
