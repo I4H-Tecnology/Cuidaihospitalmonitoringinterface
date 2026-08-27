@@ -33,6 +33,8 @@ services:
       # Scripts rodam UMA vez, na criação do volume. Para reexecutar:
       #   docker compose down -v && docker compose up -d
       - ./db/init:/docker-entrypoint-initdb.d:ro
+      # Scripts avulsos, rodados sob demanda com psql -f /scripts/<arquivo>.sql
+      - ./db/scripts:/scripts:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-medsignal} -d ${POSTGRES_DB:-medsignal}']
       interval: 5s
