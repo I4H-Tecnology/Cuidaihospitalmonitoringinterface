@@ -8,6 +8,38 @@ if (!rawApiBaseUrl) {
 }
 const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 
+/* ---------------------------------------------------------------------------
+ * Token de sessão
+ *
+ * O backend passou a exigir credencial em toda rota protegida. Todo o acesso
+ * agora depende deste token viajar no cabeçalho — sem ele a API responde 401,
+ * que é exatamente o comportamento desejado.
+ *
+ * Fica em localStorage por compatibilidade com o resto da aplicação, que já
+ * guarda a sessão ali. A alternativa correta é cookie httpOnly, fora do
+ * alcance de JavaScript e portanto imune a XSS — mas isso exige o backend
+ * definir o cookie e o frontend parar de ler a sessão, e é mudança que
+ * pertence ao backend definitivo, não a este remendo.
+ * -------------------------------------------------------------------------- */
+const CHAVE_TOKEN = 'medsignal_token';
+
+export const guardarToken = (token: string): void => {
+  localStorage.setItem(CHAVE_TOKEN, token);
+};
+
+export const lerToken = (): string | null => localStorage.getItem(CHAVE_TOKEN);
+
+export const descartarToken = (): void => {
+  localStorage.removeItem(CHAVE_TOKEN);
+};
+
+/** Chamado quando a API devolve 401: a sessão morreu, não adianta insistir. */
+let aoPerderSessao: (() => void) | null = null;
+
+export const registrarPerdaDeSessao = (callback: () => void): void => {
+  aoPerderSessao = callback;
+};
+
 export class ApiError extends Error {
   status: number;
   payload: Record<string, unknown>;
@@ -27,9 +59,14 @@ const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> 
   if (import.meta.env.DEV) {
     console.debug('[api] request', requestUrl);
   }
+  const token = lerToken();
   const response = await fetch(requestUrl, {
     headers: {
       'Content-Type': 'application/json',
+      // Só manda o cabeçalho quando há token: mandar "Bearer null" faria a
+      // API recusar até as rotas públicas, como a listagem de clínicas que
+      // roda antes do login.
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {})
     },
     ...options
@@ -37,6 +74,11 @@ const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> 
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      // Token expirado ou inválido. Insistir com ele só gera mais 401.
+      descartarToken();
+      aoPerderSessao?.();
+    }
     throw new ApiError(payload.error || 'Erro inesperado.', response.status, payload);
   }
 
@@ -59,6 +101,8 @@ export interface PermissionRow {
 }
 
 export interface LoginResponse {
+  /** JWT emitido no login. Sem ele nenhuma rota protegida responde. */
+  token: string;
   id: string;
   tenantId: string;
   login: string;

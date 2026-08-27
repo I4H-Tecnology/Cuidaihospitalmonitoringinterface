@@ -7,7 +7,15 @@ import {
   type Platform,
   type Role
 } from '../data/authStore';
-import { fetchPermissions, loginRequest, recordAccessLog, type PermissionRow } from '../data/api';
+import {
+  descartarToken,
+  fetchPermissions,
+  guardarToken,
+  loginRequest,
+  recordAccessLog,
+  registrarPerdaDeSessao,
+  type PermissionRow,
+} from '../data/api';
 
 interface AuthUser {
   id: string;
@@ -97,6 +105,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Qualquer 401 vindo da API significa que o token morreu (expirou, o usuario
+  // foi desativado, o perfil mudou). Sem isto a interface continuaria exibindo
+  // uma sessao que o servidor ja nao reconhece.
+  useEffect(() => {
+    registrarPerdaDeSessao(() => {
+      setUser(null);
+      setPermissions(null);
+    });
+  }, []);
+
   const handleLogout = (action: string) => {
     if (tenantId && user) {
       recordAccessLog(tenantId, {
@@ -118,6 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }
     setUser(null);
+    // O token some junto com a sessao. Deixa-lo para tras significaria que
+    // qualquer aba aberta seguiria autenticada depois do logout.
+    descartarToken();
     if (tenantId) {
       localStorage.removeItem(sessionKey(tenantId));
     }
@@ -146,6 +167,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error: 'Troca de senha obrigatória no primeiro acesso.'
         };
       }
+
+      // Antes de qualquer outra coisa: sem o token guardado, as chamadas
+      // seguintes (permissoes, logs) sairiam sem credencial e voltariam 401.
+      guardarToken(response.token);
 
       const userData: AuthUser = {
         id: response.id,

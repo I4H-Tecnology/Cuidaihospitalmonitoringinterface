@@ -119,6 +119,10 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-medsignal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-medsignal}
       CORS_ORIGINS: http://localhost:${FRONTEND_DEV_PORT:-5173},http://localhost:${FRONTEND_PORT:-8080}
+      # Assina os tokens. Sem valor padrao de proposito: chave com padrao e
+      # chave publicada, e qualquer um forjaria um token valido.
+      SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
+      TOKEN_HORAS: ${TOKEN_HORAS:-8}
     depends_on:
       db:
         condition: service_healthy

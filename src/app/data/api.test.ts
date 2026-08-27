@@ -77,17 +77,62 @@ describe('montagem da requisição', () => {
     expect(options.headers['Content-Type']).toBe('application/json');
   });
 
-  /* Falha de segurança conhecida: nenhuma requisição carrega credencial.
-     O backend não recebe token nem cookie, então o RBAC existe só no cliente.
-     Quando a autenticação por token entrar, este teste quebra — é a intenção. */
-  it('SEGURANÇA: hoje nenhuma requisição envia Authorization', async () => {
+  /* Este teste nasceu documentando uma vulnerabilidade: nenhuma requisição
+     carregava credencial, e o RBAC existia só no cliente. Foi escrito para
+     quebrar quando a autenticação entrasse — e quebrou. Agora afirma o
+     comportamento correto. */
+  it('anexa o token no cabeçalho Authorization', async () => {
+    localStorage.setItem('medsignal_token', 'token-de-teste');
     fetchMock.mockResolvedValue(respostaOk([]));
     const { fetchUsers } = await carregarApi();
 
     await fetchUsers('hospital-1');
 
     const [, options] = fetchMock.mock.calls[0];
+    expect(options.headers.Authorization).toBe('Bearer token-de-teste');
+  });
+
+  it('omite o cabeçalho quando não há token', async () => {
+    // Mandar "Bearer null" faria a API recusar até as rotas públicas, como a
+    // listagem de clínicas que roda antes do login.
+    fetchMock.mockResolvedValue(respostaOk([]));
+    const { fetchTenants } = await carregarApi();
+
+    await fetchTenants();
+
+    const [, options] = fetchMock.mock.calls[0];
     expect(options.headers.Authorization).toBeUndefined();
+  });
+
+  it('descarta o token quando a API responde 401', async () => {
+    localStorage.setItem('medsignal_token', 'token-expirado');
+    fetchMock.mockResolvedValue(respostaErro({ error: 'Sessão expirada.' }, 401));
+    const { fetchUsers } = await carregarApi();
+
+    await expect(fetchUsers('hospital-1')).rejects.toThrow('Sessão expirada.');
+    // Insistir com um token morto só geraria mais 401.
+    expect(localStorage.getItem('medsignal_token')).toBeNull();
+  });
+
+  it('avisa quem registrou a perda de sessão', async () => {
+    localStorage.setItem('medsignal_token', 'token-expirado');
+    fetchMock.mockResolvedValue(respostaErro({ error: 'Token inválido.' }, 401));
+    const { fetchUsers, registrarPerdaDeSessao } = await carregarApi();
+
+    const aviso = vi.fn();
+    registrarPerdaDeSessao(aviso);
+    await expect(fetchUsers('hospital-1')).rejects.toThrow();
+
+    expect(aviso).toHaveBeenCalledOnce();
+  });
+
+  it('não derruba a sessão em erro que não seja 401', async () => {
+    localStorage.setItem('medsignal_token', 'token-bom');
+    fetchMock.mockResolvedValue(respostaErro({ error: 'Sem permissão.' }, 403));
+    const { fetchUsers } = await carregarApi();
+
+    await expect(fetchUsers('hospital-1')).rejects.toThrow('Sem permissão.');
+    expect(localStorage.getItem('medsignal_token')).toBe('token-bom');
   });
 });
 

@@ -4,12 +4,13 @@ Existe para destravar o login do frontend enquanto o backend definitivo não
 está disponível. Implementa exatamente os endpoints que `src/app/data/api.ts`
 chama, contra o mesmo Postgres do docker-compose.
 
-O QUE ELE NÃO É:
-  - Não emite token. O frontend hoje não manda Authorization em requisição
-    nenhuma, então o controle de acesso é só do lado do cliente. Essa é uma
-    falha conhecida, registrada em `src/app/data/api.test.ts`, e o backend
-    definitivo precisa resolver.
-  - Não valida sessão, não expira nada, não tem rate limit.
+SEGURANÇA:
+  - Emite JWT no login e exige token em toda rota protegida.
+  - A permissão é conferida no SERVIDOR, contra o perfil gravado no banco.
+  - O token carrega o tenant: token da clínica A não abre dado da clínica B,
+    mesmo que a query string peça outra.
+  - O que falta: refresh token, revogação (logout só descarta no cliente) e
+    rate limit no login.
 
 Substitua por inteiro quando o FastAPI real chegar.
 """
@@ -19,11 +20,18 @@ import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from . import db
+from .seguranca import (
+    UsuarioAutenticado,
+    emitir_token,
+    exigir_permissao,
+    exigir_tenant,
+    usuario_atual,
+)
 from .schemas import (
     AccessLogPayload,
     AuthFlowResponse,
@@ -188,7 +196,10 @@ def login(dados: LoginRequest):
         (usuario["id"],),
     )
 
+    token = emitir_token(str(usuario["id"]), clinica["slug"], usuario["perfil_nome"])
+
     return LoginResponse(
+        token=token,
         id=str(usuario["id"]),
         tenantId=clinica["slug"],
         login=usuario["login"],
@@ -333,7 +344,8 @@ def concluir_recuperacao(dados: ForgotPasswordReset):
 # -----------------------------------------------------------------------------
 
 @app.get("/api/permissions/{tenant_id}/{role}", response_model=list[PermissionRow])
-def obter_permissoes(tenant_id: str, role: str):
+def obter_permissoes(tenant_id: str, role: str, usuario: UsuarioAutenticado = Depends(usuario_atual)):
+    exigir_tenant(usuario, tenant_id)
     clinica = clinica_por_slug(tenant_id)
     perfil = db.buscar_um(
         """
@@ -364,7 +376,9 @@ def obter_permissoes(tenant_id: str, role: str):
 
 
 @app.put("/api/permissions/{tenant_id}/{role}", response_model=Ok)
-def salvar_permissoes(tenant_id: str, role: str, payload: PermissionsPayload):
+def salvar_permissoes(tenant_id: str, role: str, payload: PermissionsPayload,
+                      usuario: UsuarioAutenticado = Depends(exigir_permissao("settings", "edit"))):
+    exigir_tenant(usuario, tenant_id)
     clinica = clinica_por_slug(tenant_id)
     mapa = {
         p.module: {
@@ -413,7 +427,8 @@ def usuario_para_frontend(linha: dict) -> dict:
 
 
 @app.get("/api/users")
-def listar_usuarios(tenantId: str):
+def listar_usuarios(tenantId: str, usuario: UsuarioAutenticado = Depends(exigir_permissao("users", "view"))):
+    exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
     linhas = db.buscar_todos(
         """
@@ -430,7 +445,9 @@ def listar_usuarios(tenantId: str):
 
 
 @app.post("/api/users")
-def criar_usuario(payload: UsuarioPayload):
+def criar_usuario(payload: UsuarioPayload,
+                  usuario: UsuarioAutenticado = Depends(exigir_permissao("users", "create"))):
+    exigir_tenant(usuario, payload.tenantId)
     clinica = clinica_por_slug(payload.tenantId)
     u = payload.user
     perfil = db.buscar_um(
@@ -453,7 +470,9 @@ def criar_usuario(payload: UsuarioPayload):
 
 
 @app.put("/api/users/{user_id}")
-def atualizar_usuario(user_id: str, payload: UsuarioPayload):
+def atualizar_usuario(user_id: str, payload: UsuarioPayload,
+                      usuario: UsuarioAutenticado = Depends(exigir_permissao("users", "edit"))):
+    exigir_tenant(usuario, payload.tenantId)
     clinica = clinica_por_slug(payload.tenantId)
     u = payload.user
     db.executar(
@@ -472,7 +491,9 @@ def atualizar_usuario(user_id: str, payload: UsuarioPayload):
 
 
 @app.delete("/api/users/{user_id}", response_model=Ok)
-def remover_usuario(user_id: str, tenantId: str):
+def remover_usuario(user_id: str, tenantId: str,
+                    usuario: UsuarioAutenticado = Depends(exigir_permissao("users", "delete"))):
+    exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
     removidos = db.executar(
         "DELETE FROM usuario WHERE id = %s AND clinica_id = %s", (user_id, clinica["id"])
@@ -494,13 +515,16 @@ def ler_politica(clinica_id) -> dict:
 
 
 @app.get("/api/security-policy")
-def obter_politica(tenantId: str):
+def obter_politica(tenantId: str, usuario: UsuarioAutenticado = Depends(exigir_permissao("settings", "view"))):
+    exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
     return ler_politica(clinica["id"])
 
 
 @app.put("/api/security-policy", response_model=Ok)
-def salvar_politica(payload: SecurityPolicyPayload):
+def salvar_politica(payload: SecurityPolicyPayload,
+                    usuario: UsuarioAutenticado = Depends(exigir_permissao("settings", "edit"))):
+    exigir_tenant(usuario, payload.tenantId)
     import json
 
     clinica = clinica_por_slug(payload.tenantId)
@@ -523,7 +547,8 @@ MAPA_RESULTADO = {"SUCESSO": "sucesso", "FALHA": "falha", "BLOQUEADO": "bloquead
 
 
 @app.get("/api/access-logs")
-def listar_logs(tenantId: str):
+def listar_logs(tenantId: str, usuario: UsuarioAutenticado = Depends(exigir_permissao("settings", "view"))):
+    exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
     linhas = db.buscar_todos(
         """
@@ -550,7 +575,8 @@ def listar_logs(tenantId: str):
 
 
 @app.post("/api/access-logs", response_model=Ok)
-def registrar_log(payload: AccessLogPayload):
+def registrar_log(payload: AccessLogPayload, usuario: UsuarioAutenticado = Depends(usuario_atual)):
+    exigir_tenant(usuario, payload.tenantId)
     clinica = clinica_por_slug(payload.tenantId)
     log = payload.log
     db.executar(
@@ -574,7 +600,8 @@ def registrar_log(payload: AccessLogPayload):
 # -----------------------------------------------------------------------------
 
 @app.get("/api/operational-overview", response_model=OperationalOverviewResponse)
-def visao_operacional(tenantId: str):
+def visao_operacional(tenantId: str, usuario: UsuarioAutenticado = Depends(exigir_permissao("dashboard", "view"))):
+    exigir_tenant(usuario, tenantId)
     """Todos os números saem de consulta ao banco.
 
     Nada aqui é gerado aleatoriamente — se não houver dado, o número é zero.

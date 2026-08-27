@@ -19,6 +19,9 @@ class LoginRequest(BaseModel):
 
 
 class LoginResponse(BaseModel):
+    # O token e a mudanca central: sem ele o frontend nao consegue provar quem
+    # e nas chamadas seguintes, e o controle de acesso volta a ser decorativo.
+    token: str
     id: str
     tenantId: str
     login: str
