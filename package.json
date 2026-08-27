@@ -1,11 +1,16 @@
 {
-  "name": "@figma/my-make-file",
+  "name": "cuidai-hospital-monitoring-interface",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
     "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "dev:server": "node server/index.js"
   },
   "dependencies": {
@@ -68,11 +73,20 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
-    "@types/react": "^19.2.9",
-    "@types/react-dom": "^19.2.3",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.6",
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "4.7.0",
+    "@vitest/coverage-v8": "^3.2.7",
+    "jsdom": "^30.0.1",
     "tailwindcss": "4.1.12",
-    "vite": "6.3.5"
+    "typescript": "~5.7",
+    "vite": "6.3.5",
+    "vitest": "^3.2.7"
   },
   "peerDependencies": {
     "react": "18.3.1",
