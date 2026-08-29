@@ -13,3 +13,7 @@ mediapipe==0.10.20
 
 # Envio de ocorrencias para a API
 httpx==0.28.1
+
+# Servidor que publica o video anotado para o frontend
+fastapi==0.115.6
+uvicorn[standard]==0.34.0

@@ -25,3 +25,4 @@ visao/capturas/
 visao/saida/
 __pycache__/
 *.pyc
+frontend/.vite/

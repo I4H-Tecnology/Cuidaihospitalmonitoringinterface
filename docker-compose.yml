@@ -77,6 +77,9 @@ services:
       # O Vite só expõe variáveis com prefixo VITE_. Derivar aqui evita ter a
       # mesma flag escrita duas vezes no .env, com risco de dessincronizar.
       VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
+      # Servico de visao. Roda fora do compose quando a fonte e webcam, porque
+      # container no Windows nao enxerga dispositivo de video.
+      VITE_VISAO_URL: ${VITE_VISAO_URL:-http://localhost:8001}
       # Necessário para o HMR enxergar alterações vindas de um bind mount Windows.
       CHOKIDAR_USEPOLLING: 'true'
     volumes:

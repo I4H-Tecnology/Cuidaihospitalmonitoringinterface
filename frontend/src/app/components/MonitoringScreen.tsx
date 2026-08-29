@@ -1,5 +1,6 @@
 import React from 'react';
 import { Camera, Activity, RefreshCw, Settings, Eye, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { CameraAoVivo } from './CameraAoVivo';
 
 interface CameraFeed {
   id: string;
@@ -217,9 +218,17 @@ export function MonitoringScreen() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Camera Feeds */}
         <div className="lg:col-span-2">
+          {/* Camera real, alimentada pelo servico de visao. Fica acima das
+              demais de proposito: e a unica que existe de fato. */}
+          <div className="mb-6">
+            <CameraAoVivo />
+          </div>
+
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-gray-800">Câmeras de Monitoramento</h2>
-            <span className="text-sm text-gray-500">6 dispositivos</span>
+            <h2 className="text-gray-800">Demais câmeras</h2>
+            {/* Rotulo honesto: estas sao ilustrativas, nao ha dispositivo
+                atras delas. Exibir como se fossem reais seria enganoso. */}
+            <span className="text-sm text-gray-500">6 dispositivos (ilustrativos)</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
