@@ -59,6 +59,8 @@ def main() -> int:
 
     print(f"Modo de teste : {'LIGADO' if cfg.modo_teste else 'desligado'}")
     print(f"Fonte         : {cfg.descrever_fonte()}")
+    registro = f"camera {cfg.camera_id}" if cfg.publica_ocorrencias else "DESLIGADO (VISAO_CAMERA_ID vazio)"
+    print(f"Registro      : {registro}")
     print(f"Vídeo         : http://localhost:{args.porta}/stream")
     print(f"Estado        : http://localhost:{args.porta}/estado")
     print("\nCarregando modelos...\n")

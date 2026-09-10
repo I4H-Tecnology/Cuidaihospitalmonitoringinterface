@@ -13,14 +13,46 @@ Implementado:
 - Amostragem na taxa alvo, com descarte de frame antigo em fonte ao vivo
 - Diagnóstico de câmera (`verificar_camera.py`)
 
-A implementar, nesta ordem:
+- Detecção de pessoa (YOLOv8n + ByteTrack) e landmarks de pose (MediaPipe Pose)
+- Extração das cinco features de queda, invariantes a escala
+- Camada de regras temporais e a máquina NORMAL → CAINDO → CAIDO
+- **Registro da ocorrência na API** (RF13, RF14), com fila em disco quando a API
+  está fora do ar e chave de deduplicação para não gerar alerta repetido
 
-1. Detecção de pessoa (YOLOv8n) e landmarks de pose (MediaPipe Pose)
-2. Extração das features de queda
-3. Camada de regras temporais e a máquina de estados NORMAL → FALLING → FALLEN
-4. Envio da ocorrência para a API
-5. Arnês de avaliação: vídeos anotados → matriz de confusão → as seis métricas
+A implementar:
+
+1. Arnês de avaliação: vídeos anotados → matriz de confusão → as seis métricas
    da RFC (precisão, recall, F1, taxa de falso positivo, acurácia, latência)
+2. Reconexão automática da câmera e sinalização de offline (RF30, RN15)
+3. Clipe de 10s por ocorrência, com expurgo em 24h (RNF05)
+
+## Registrar ocorrências
+
+Sem `VISAO_CAMERA_ID` o serviço detecta, desenha na tela e **não grava nada** —
+é o modo de quem está ensaiando enquadramento, e continua sendo o padrão.
+
+Para ligar o registro, crie a conta de máquina e descubra o id da câmera:
+
+```bash
+docker compose exec -T db psql -U medsignal -d medsignal   -v tenant="'clinica-demo'" -v login="'servico-visao'"   -v senha="'$(python -c "import secrets; print(secrets.token_urlsafe(32))")'"   -f /scripts/criar-servico-visao.sql
+```
+
+O script imprime as câmeras da clínica ao final. Copie o `visao_camera_id` da
+que este processo observa e preencha no `.env`:
+
+```
+VISAO_CAMERA_ID=<id impresso pelo script>
+VISAO_API_LOGIN=servico-visao
+VISAO_API_SENHA=<a senha que você gerou>
+```
+
+A conta usa o perfil `SYSTEM`, com permissão apenas de ler o cadastro da
+própria câmera e registrar ocorrência. Se a credencial vazar, o estrago
+possível é criar alerta falso — não há acesso a usuário, paciente nem
+configuração.
+
+O `/estado` e o `/health` passam a mostrar um bloco `publicacao` com quantas
+ocorrências foram registradas e quantas estão esperando em disco.
 
 ## Antes de qualquer coisa: teste a câmera
 

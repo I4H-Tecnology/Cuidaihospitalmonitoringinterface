@@ -26,3 +26,7 @@ visao/saida/
 __pycache__/
 *.pyc
 frontend/.vite/
+
+# Ocorrencias aguardando reenvio quando a API esteve fora do ar.
+# Sao dados de operacao, e podem conter horario e camera de um evento real.
+visao/dados/fila/

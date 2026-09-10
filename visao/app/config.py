@@ -65,6 +65,21 @@ class Config:
     api_url: str = field(default_factory=lambda: os.environ.get("VISAO_API_URL", "http://localhost:8000").rstrip("/"))
     tenant: str = field(default_factory=lambda: os.environ.get("VISAO_TENANT", "clinica-demo"))
 
+    # Câmera cadastrada que este processo observa. Vazio = não publica: o
+    # pipeline roda, mostra na tela e não registra nada. É o modo de quem está
+    # só ensaiando o enquadramento, e continua sendo o padrão.
+    camera_id: str = field(default_factory=lambda: os.environ.get("VISAO_CAMERA_ID", "").strip())
+    # Credencial do usuário de serviço. O serviço faz login como qualquer outro
+    # usuário e recebe um JWT — reaproveitar a autenticação que já existe é
+    # menos código e menos superfície de ataque que inventar um token estático
+    # sem prazo de validade só para máquina.
+    api_login: str = field(default_factory=lambda: os.environ.get("VISAO_API_LOGIN", "").strip())
+    api_senha: str = field(default_factory=lambda: os.environ.get("VISAO_API_SENHA", ""))
+
+    @property
+    def publica_ocorrencias(self) -> bool:
+        return bool(self.camera_id)
+
     def validar(self) -> None:
         """Falha cedo e com mensagem clara, em vez de travar em runtime."""
         if self.fonte is Fonte.RTSP and not self.rtsp_url:
@@ -81,6 +96,14 @@ class Config:
             )
         if self.fps_alvo <= 0:
             raise ValueError("VISAO_FPS_ALVO precisa ser maior que zero")
+        # Câmera configurada sem credencial publicaria em silêncio no vazio: o
+        # pipeline detectaria, tentaria enviar, tomaria 401 a cada evento e o
+        # banco ficaria vazio. Melhor não subir.
+        if self.camera_id and not (self.api_login and self.api_senha):
+            raise ValueError(
+                "VISAO_CAMERA_ID exige VISAO_API_LOGIN e VISAO_API_SENHA "
+                "(usuário de serviço criado por db/scripts/criar-servico-visao.sql)"
+            )
 
     def descrever_fonte(self) -> str:
         if self.fonte is Fonte.WEBCAM:

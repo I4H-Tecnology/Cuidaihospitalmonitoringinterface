@@ -33,6 +33,7 @@ from fastapi.responses import StreamingResponse
 
 from .config import Config
 from .pipeline import PipelineDeteccao, ResultadoQuadro
+from . import publicador as pub
 from .regras import Estado
 
 logger = logging.getLogger(__name__)
@@ -137,6 +138,7 @@ class ServicoVisao:
         self.rodando = False
         self.erro: str | None = None
         self.ocorrencias_totais = 0
+        self.publicador = pub.criar(cfg)
         self._thread: threading.Thread | None = None
 
     def _laco(self) -> None:
@@ -150,6 +152,9 @@ class ServicoVisao:
                     logger.warning(
                         "OCORRÊNCIA — pessoa #%s: %s", r.pessoa.id_rastreio, r.avaliacao.motivo
                     )
+                    # Enfileira e volta na hora. O registro é assunto da thread
+                    # do publicador; aqui o próximo quadro já está esperando.
+                    self.publicador.registrar(r)
 
                 # Qualidade 75: o suficiente para inspecionar a cena sem
                 # inflar a banda de um stream contínuo.
@@ -168,6 +173,7 @@ class ServicoVisao:
             return
         self.rodando = True
         self.erro = None
+        self.publicador.iniciar()
         self._thread = threading.Thread(target=self._laco, name="pipeline", daemon=True)
         self._thread.start()
 
@@ -175,6 +181,7 @@ class ServicoVisao:
         self.rodando = False
         if self._thread is not None:
             self._thread.join(timeout=5)
+        self.publicador.parar()
 
 
 def criar_app(cfg: Config, pasta_pesos=None) -> FastAPI:
@@ -210,6 +217,7 @@ def criar_app(cfg: Config, pasta_pesos=None) -> FastAPI:
             "fonte": cfg.descrever_fonte(),
             "modo_teste": cfg.modo_teste,
             "ocorrencias": servico.ocorrencias_totais,
+            "publicacao": servico.publicador.estado(),
         }
 
     @app.get("/estado")
@@ -221,6 +229,7 @@ def criar_app(cfg: Config, pasta_pesos=None) -> FastAPI:
             "fonte": cfg.descrever_fonte(),
             "modo_teste": cfg.modo_teste,
             "ocorrencias_totais": servico.ocorrencias_totais,
+            "publicacao": servico.publicador.estado(),
             **dados,
         }
 
