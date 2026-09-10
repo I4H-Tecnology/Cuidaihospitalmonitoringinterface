@@ -54,6 +54,11 @@ TAMANHO_DA_FILA = 100
 # De quanto em quanto tempo a thread tenta reenviar o que ficou em disco.
 INTERVALO_DE_REENVIO = 30.0
 
+# Sinal de vida da câmera (RF30, RN15). A API considera desconectada a que fica
+# 90s sem ping, então bater a cada 30s dá margem para duas falhas seguidas de
+# rede antes de o painel acusar problema.
+INTERVALO_DE_PING = 30.0
+
 
 @dataclass
 class ContextoCamera:
@@ -111,6 +116,7 @@ class Publicador:
         self.enviadas = 0
         self.duplicadas = 0
         self.em_disco = 0
+        self.ultimo_ping: float | None = None
 
         self._fila: queue.Queue[dict] = queue.Queue(maxsize=TAMANHO_DA_FILA)
         self._thread: threading.Thread | None = None
@@ -136,6 +142,7 @@ class Publicador:
             self._autenticar()
             self.contexto = self._buscar_contexto()
             logger.info("Publicando ocorrências de: %s", self.contexto.descrever())
+            self._pingar()
             if self.contexto.paciente_id is None:
                 logger.warning(
                     "Nenhum paciente internado neste ambiente — a ocorrência será "
@@ -248,6 +255,27 @@ class Publicador:
             self.ultimo_erro = str(erro)
             return False
 
+    def _pingar(self) -> None:
+        """Avisa a API que esta câmera continua de pé.
+
+        Falha aqui é silenciosa de propósito: perder um ping não é evento para
+        o operador, e o próximo resolve. O que importa é nunca deixar a exceção
+        derrubar a thread que também entrega as ocorrências.
+        """
+        try:
+            resposta = self._cliente.post(
+                f"/api/cameras/{self.cfg.camera_id}/ping", headers=self._cabecalho()
+            )
+            if resposta.status_code == 401:
+                self._autenticar()
+                resposta = self._cliente.post(
+                    f"/api/cameras/{self.cfg.camera_id}/ping", headers=self._cabecalho()
+                )
+            if resposta.status_code == 200:
+                self.ultimo_ping = time.time()
+        except Exception:  # noqa: BLE001
+            pass
+
     # -- reserva em disco -------------------------------------------------
 
     def _guardar(self, evento: dict) -> None:
@@ -281,6 +309,7 @@ class Publicador:
 
     def _laco(self) -> None:
         proximo_reenvio = time.monotonic()
+        proximo_ping = time.monotonic()
         while self._rodando:
             try:
                 evento = self._fila.get(timeout=1.0)
@@ -292,6 +321,10 @@ class Publicador:
                     self._guardar(evento)
 
             agora = time.monotonic()
+            if agora >= proximo_ping:
+                proximo_ping = agora + INTERVALO_DE_PING
+                self._pingar()
+
             if agora >= proximo_reenvio:
                 proximo_reenvio = agora + INTERVALO_DE_REENVIO
                 if self.em_disco:
@@ -309,6 +342,7 @@ class Publicador:
             "registradas": self.enviadas,
             "duplicadas": self.duplicadas,
             "aguardando_em_disco": self.em_disco,
+            "ultimo_ping": self.ultimo_ping,
             "ultimo_erro": self.ultimo_erro,
         }
 

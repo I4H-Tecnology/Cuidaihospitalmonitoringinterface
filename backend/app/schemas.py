@@ -192,3 +192,37 @@ class OcorrenciaResumo(BaseModel):
     alertaNivel: str | None = None
     alertaStatus: str | None = None
 
+
+class AmbienteResumo(BaseModel):
+    id: str
+    nome: str
+    tipo: str
+    cameras: int = 0
+    pacienteNome: str | None = None
+
+
+class CameraResumo(BaseModel):
+    id: str
+    identificador: str
+    urlStream: str
+    status: str
+    # Derivada do último ping, não lida da coluna status: câmera que cai não
+    # avisa, então só o sinal de vida recente prova que ela está de pé.
+    conectada: bool
+    ultimoPing: str | None = None
+    ambienteId: str
+    ambienteNome: str
+    ambienteTipo: str
+    pacienteId: str | None = None
+    pacienteNome: str | None = None
+    ocorrencias24h: int = 0
+    ultimaOcorrencia: str | None = None
+
+
+class CameraPayload(BaseModel):
+    tenantId: str
+    ambienteId: str
+    identificador: str = Field(min_length=2, max_length=60)
+    # RTSP, HTTP ou o que a câmera expuser. Validação leve de propósito: exigir
+    # esquema fixo aqui barraria fonte legítima que o MVP ainda nem conhece.
+    urlStream: str = Field(min_length=4, max_length=500)

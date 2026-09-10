@@ -232,3 +232,76 @@ export const recordAccessLog = (tenantId: string, log: any) =>
 
 export const fetchOperationalOverview = (tenantId: string) =>
   request<OperationalOverviewResponse>(`/api/operational-overview?tenantId=${encodeURIComponent(tenantId)}`);
+
+/* ---------------------------------------------------------------------------
+ * Monitoramento — câmeras, ambientes e ocorrências
+ * -------------------------------------------------------------------------- */
+
+export interface AmbienteResumo {
+  id: string;
+  nome: string;
+  tipo: string;
+  cameras: number;
+  pacienteNome?: string | null;
+}
+
+export interface CameraResumo {
+  id: string;
+  identificador: string;
+  /** Credencial vem mascarada pela API; nunca chega inteira ao navegador. */
+  urlStream: string;
+  status: string;
+  /** Derivada do último ping no servidor, não da coluna de status. */
+  conectada: boolean;
+  ultimoPing?: string | null;
+  ambienteId: string;
+  ambienteNome: string;
+  ambienteTipo: string;
+  pacienteId?: string | null;
+  pacienteNome?: string | null;
+  ocorrencias24h: number;
+  ultimaOcorrencia?: string | null;
+}
+
+export interface OcorrenciaResumo {
+  id: string;
+  tipoEvento: string;
+  status: string;
+  confianca?: number | null;
+  dataHora: string;
+  encerradaEm?: string | null;
+  observacao?: string | null;
+  ambienteId: string;
+  ambienteNome: string;
+  pacienteId?: string | null;
+  pacienteNome?: string | null;
+  cameraId?: string | null;
+  cameraIdentificador?: string | null;
+  alertaNivel?: string | null;
+  alertaStatus?: string | null;
+}
+
+export const fetchAmbientes = (tenantId: string) =>
+  request<AmbienteResumo[]>(`/api/ambientes?tenantId=${encodeURIComponent(tenantId)}`);
+
+export const fetchCameras = (tenantId: string, somenteConectadas = false) =>
+  request<CameraResumo[]>(
+    `/api/cameras?tenantId=${encodeURIComponent(tenantId)}` +
+      (somenteConectadas ? '&somenteConectadas=true' : '')
+  );
+
+export const createCamera = (payload: {
+  tenantId: string;
+  ambienteId: string;
+  identificador: string;
+  urlStream: string;
+}) =>
+  request<CameraResumo>('/api/cameras', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const fetchOcorrencias = (tenantId: string, limite = 20) =>
+  request<OcorrenciaResumo[]>(
+    `/api/ocorrencias?tenantId=${encodeURIComponent(tenantId)}&limite=${limite}`
+  );
