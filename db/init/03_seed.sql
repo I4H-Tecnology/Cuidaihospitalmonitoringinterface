@@ -5,32 +5,9 @@
 --  responsabilidade do backend FastAPI — deixar um hash de exemplo aqui viraria
 --  credencial fraca versionada, exatamente o problema que estamos corrigindo.
 --
---  Para criar o primeiro admin, use o endpoint/CLI do backend quando ele chegar.
+--  Para criar o primeiro admin: db/scripts/criar-admin.sql
+--  Os perfis de acesso ficam em 02_perfis.sql, que roda antes deste.
 -- =============================================================================
-
--- Perfis globais (clinica_id NULL): valem para qualquer clínica.
-INSERT INTO perfil (clinica_id, nome, descricao, permissoes) VALUES
-  (NULL, 'ADMIN', 'Administra a clínica: usuários, pacientes, ambientes e câmeras (RN02)',
-   '{"usuarios":["ver","criar","editar","excluir"],
-     "pacientes":["ver","criar","editar","excluir"],
-     "ambientes":["ver","criar","editar","excluir"],
-     "cameras":["ver","criar","editar","excluir"],
-     "ocorrencias":["ver","editar"],
-     "acompanhantes":["ver","criar","revogar"]}'::jsonb),
-
-  (NULL, 'GESTOR', 'Acompanha indicadores e libera acesso de acompanhante (RN03)',
-   '{"pacientes":["ver"],
-     "ambientes":["ver"],
-     "cameras":["ver"],
-     "ocorrencias":["ver"],
-     "relatorios":["ver"],
-     "acompanhantes":["ver","criar","revogar"]}'::jsonb),
-
-  (NULL, 'ENFERMEIRO', 'Recebe alertas e registra atendimento da ocorrência (RN13)',
-   '{"pacientes":["ver"],
-     "ocorrencias":["ver","editar"],
-     "atendimentos":["ver","criar","editar"]}'::jsonb);
-
 
 -- Clínica de demonstração, com ambientes e câmeras coerentes com o MVP.
 WITH nova_clinica AS (
