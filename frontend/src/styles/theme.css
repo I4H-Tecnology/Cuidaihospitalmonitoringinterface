@@ -178,6 +178,35 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  /**
+   * Campos de formulario tem cor propria, e nao herdam a do body.
+   *
+   * Os cartoes e formularios deste app sao bg-white fixo, inclusive com o tema
+   * escuro ligado. Sem esta regra o campo herda o --foreground do .dark, que e
+   * quase branco, e o texto digitado desaparece no fundo branco do proprio
+   * campo -- em toda tela com formulario, nao so numa.
+   *
+   * Fica em @layer base de proposito: qualquer classe utilitaria do Tailwind
+   * (bg-gray-50 de um campo desabilitado, text-white de um campo sobre fundo
+   * escuro) continua ganhando desta regra.
+   */
+  input,
+  select,
+  textarea {
+    color: #111827;
+    background-color: #ffffff;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
+
+  select option {
+    color: #111827;
+    background-color: #ffffff;
+  }
 }
 
 @keyframes cuidai-toast-in {
@@ -219,4 +248,136 @@
 
 *::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #5cc2f5, #2aaae6);
+}
+
+/* ===========================================================================
+ * Tema escuro nas superfícies claras
+ *
+ * O app foi escrito com `bg-white`, `text-gray-*` e `border-gray-*` fixos em
+ * 319 lugares, 52 arquivos. Com o tema escuro ligado, todo cartão continuava
+ * branco no meio de um fundo quase preto.
+ *
+ * A correção certa a longo prazo é trocar essas classes por tokens semânticos,
+ * arquivo por arquivo. Enquanto isso não acontece, esta camada faz a tradução
+ * num lugar só: é reversível apagando o bloco, e não espalha `dark:` por
+ * centenas de linhas que depois teriam de ser desfeitas na migração.
+ *
+ * Fica FORA de @layer de propósito. As utilitárias do Tailwind vivem em
+ * `@layer utilities`, e regra sem camada vence regra em camada — é o que
+ * permite reescrever `bg-white` sem precisar de `!important`.
+ *
+ * `[class~="bg-white"]` casa o token inteiro, então `bg-white/60` e
+ * `bg-white/20` (overlays translúcidos sobre foto ou cor) ficam de fora
+ * sozinhos, que é o comportamento desejado.
+ * ======================================================================== */
+
+.dark {
+  /* Neutros com leve viés de azul, para conversarem com o #0A7EA4 da marca em
+     vez de brigarem com ele. Cinza puro ao lado de um acento azul lê como
+     descuido. */
+  --superficie: #151d29;
+  --superficie-2: #1c2635;
+  --superficie-3: #243043;
+  --superficie-borda: #2b3846;
+  --texto-forte: #e6ebf2;
+  --texto-medio: #a9b4c2;
+  --texto-fraco: #7e8a99;
+}
+
+/* --- superfícies ---------------------------------------------------------- */
+
+/* `rounded-full` sai fora: são os pontinhos brancos dentro de badge colorido
+   (o "AO VIVO" pulsante, por exemplo). Escurecer aqueles some com eles. */
+.dark [class~="bg-white"]:not([class~="rounded-full"]) {
+  background-color: var(--superficie);
+}
+
+.dark [class~="bg-gray-50"],
+.dark [class~="bg-gray-100"] {
+  background-color: var(--superficie-2);
+}
+
+.dark [class~="bg-gray-200"] {
+  background-color: var(--superficie-3);
+}
+
+/* --- bordas --------------------------------------------------------------- */
+
+.dark [class~="border-gray-100"],
+.dark [class~="border-gray-200"],
+.dark [class~="border-gray-300"] {
+  border-color: var(--superficie-borda);
+}
+
+/* --- texto ---------------------------------------------------------------- */
+
+/* O `:not` protege o único caso real de conflito no projeto: chip translúcido
+   claro (`bg-white/60`) que carrega texto cinza. Clarear ali deixaria texto
+   claro sobre fundo claro. */
+.dark [class~="text-gray-900"]:not([class*="bg-white/"]),
+.dark [class~="text-gray-800"]:not([class*="bg-white/"]),
+.dark [class~="text-gray-700"]:not([class*="bg-white/"]) {
+  color: var(--texto-forte);
+}
+
+.dark [class~="text-gray-600"]:not([class*="bg-white/"]),
+.dark [class~="text-gray-500"]:not([class*="bg-white/"]) {
+  color: var(--texto-medio);
+}
+
+.dark [class~="text-gray-400"]:not([class*="bg-white/"]) {
+  color: var(--texto-fraco);
+}
+
+/* --- campos de formulário -------------------------------------------------- */
+
+/* A regra de @layer base acima fixa campo branco com texto escuro, que é o
+   certo no tema claro. Sobre cartão escuro ele tem de acompanhar, senão volta
+   a ser um retângulo branco brilhando no meio do formulário. */
+.dark input,
+.dark select,
+.dark textarea,
+.dark select option {
+  color: var(--texto-forte);
+  background-color: var(--superficie-2);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--texto-fraco);
+}
+
+/* --- avisos coloridos ------------------------------------------------------ */
+
+/* Os tons `-50` são quase brancos e sumiriam o contraste sobre cartão escuro.
+   Aqui viram fundo tingido escuro, com o texto subindo de `-700` para um tom
+   claro da mesma família — o alerta continua vermelho, e continua legível. */
+.dark [class~="bg-red-50"]    { background-color: #3a1d1d; }
+.dark [class~="bg-amber-50"],
+.dark [class~="bg-yellow-50"] { background-color: #3a2f16; }
+.dark [class~="bg-green-50"],
+.dark [class~="bg-emerald-50"]{ background-color: #17311f; }
+.dark [class~="bg-blue-50"]   { background-color: #16293f; }
+
+.dark [class~="border-red-200"]    { border-color: #5c2c2c; }
+.dark [class~="border-amber-200"],
+.dark [class~="border-yellow-200"] { border-color: #5a4820; }
+.dark [class~="border-green-200"],
+.dark [class~="border-emerald-200"]{ border-color: #245234; }
+.dark [class~="border-blue-200"]   { border-color: #234666; }
+
+.dark [class~="text-red-700"],
+.dark [class~="text-red-800"]     { color: #f9a8a8; }
+.dark [class~="text-amber-800"],
+.dark [class~="text-yellow-800"]  { color: #f5cf7a; }
+.dark [class~="text-green-700"],
+.dark [class~="text-green-800"],
+.dark [class~="text-emerald-800"] { color: #86e0aa; }
+.dark [class~="text-blue-700"]    { color: #93c5fd; }
+
+/* Sombra de cartão claro não aparece sobre fundo escuro; um anel sutil faz o
+   papel de separar o cartão do fundo. */
+.dark [class~="shadow-sm"]:not([class~="rounded-full"]),
+.dark [class~="shadow-md"]:not([class~="rounded-full"]) {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
 }
