@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { NotificationCenter } from './components/NotificationCenter';
-import { AIChatbot } from './components/AIChatbot';
 import { MobileApp } from './MobileApp';
 import { LoginScreen } from './components/LoginScreen';
 import { CompanySelectScreen } from './components/CompanySelectScreen';
@@ -25,7 +24,7 @@ import { HospitalManagementScreen } from './components/HospitalManagementScreen'
 import { FinancialScreen } from './components/FinancialScreen';
 import { InventoryScreen } from './components/InventoryScreen';
 import { HRScreen } from './components/HRScreen';
-import { AIAssistant } from './components/AIAssistant';
+import { SaudeScreen } from './components/SaudeScreen';
 import { getModuleForScreen, type Screen } from './data/rbac';
 import { SystemToastProvider, useSystemToast } from './components/ui/SystemToast';
 import { TarjaModoTeste } from './components/TarjaModoTeste';
@@ -202,7 +201,8 @@ function AppContent() {
       'hospital-management': { title: 'Gestão Hospitalar', subtitle: 'Administração e operações do hospital' },
       financial: { title: 'Finanças', subtitle: 'Controle financeiro e orçamentos' },
       inventory: { title: 'Inventário', subtitle: 'Gestão de estoque e equipamentos' },
-      hr: { title: 'Recursos Humanos', subtitle: 'Administração de pessoal e contratações' }
+      hr: { title: 'Recursos Humanos', subtitle: 'Administração de pessoal e contratações' },
+      saude: { title: 'Saúde do Sistema', subtitle: 'Observabilidade da solução em execução' }
     };
     
     return screenInfo[currentScreen as keyof typeof screenInfo];
@@ -287,6 +287,7 @@ function AppContent() {
           {isScreenAllowed(currentScreen) && currentScreen === 'financial' && <FinancialScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'inventory' && <InventoryScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'hr' && <HRScreen />}
+          {isScreenAllowed(currentScreen) && currentScreen === 'saude' && <SaudeScreen />}
         </div>
       </div>
 
@@ -296,15 +297,6 @@ function AppContent() {
         onClose={() => setNotificationCenterOpen(false)}
       />
 
-      {/* AI Chatbot */}
-      <AIChatbot />
-
-      {/* Legacy AI Assistant (can be removed if not needed) */}
-      <AIAssistant
-        onNavigate={handleNavigate}
-        patients={[]}
-        onOpenPatient={handleSelectPatient}
-      />
     </div>
   );
 }

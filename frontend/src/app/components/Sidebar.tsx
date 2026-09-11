@@ -121,7 +121,6 @@ export function Sidebar({
         { icon: <BarChart3 className="w-5 h-5" />, label: 'Visão Geral Operacional', screen: 'operational-overview' },
         { icon: <Activity className="w-5 h-5" />, label: 'Indicadores-chave', disabled: true },
         { icon: <Bell className="w-5 h-5" />, label: 'Alertas prioritários', disabled: true },
-        { icon: <FileText className="w-5 h-5" />, label: 'Insights de IA', disabled: true },
       ],
     },
     {
@@ -216,6 +215,7 @@ export function Sidebar({
           ],
         },
         { icon: <Settings className="w-5 h-5" />, label: 'Configurações', module: 'settings', screen: 'settings' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Saúde do Sistema', module: 'monitoring', screen: 'saude' },
         { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente' },
         { icon: <Shield className="w-5 h-5" />, label: 'Segurança', module: 'security' },
       ],
