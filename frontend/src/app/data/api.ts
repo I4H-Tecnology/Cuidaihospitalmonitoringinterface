@@ -281,6 +281,8 @@ export interface OcorrenciaResumo {
   cameraIdentificador?: string | null;
   alertaNivel?: string | null;
   alertaStatus?: string | null;
+  /** Clipe de evidência em disco agora. Some após 24 h; a ocorrência fica. */
+  temClipe?: boolean;
 }
 
 export const fetchAmbientes = (tenantId: string) =>
@@ -452,3 +454,56 @@ export const editarPaciente = (
     method: 'PATCH',
     body: JSON.stringify(payload)
   });
+
+/* ---------------------------------------------------------------------------
+ * Clipe de evidência e saúde do sistema
+ * -------------------------------------------------------------------------- */
+
+/** Como `request`, mas devolve o corpo bruto — para vídeo, não JSON. */
+const requestBlob = async (path: string): Promise<Blob> => {
+  const token = lerToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      descartarToken();
+      aoPerderSessao?.();
+    }
+    throw new ApiError(payload.error || 'Erro inesperado.', response.status, payload);
+  }
+  return response.blob();
+};
+
+/**
+ * O clipe vem por fetch, e não por `<video src=...>` direto: a tag não manda
+ * o cabeçalho Authorization, e vídeo de paciente sem credencial seria uma
+ * violação de LGPD. Quem chama transforma o Blob em URL de objeto.
+ */
+export const fetchClipeDaOcorrencia = (tenantId: string, ocorrenciaId: string) =>
+  requestBlob(`/api/ocorrencias/${ocorrenciaId}/clipe?tenantId=${encodeURIComponent(tenantId)}`);
+
+export interface SaudeApi {
+  status: 'ok' | 'degradado';
+  versao: string;
+  hora_servidor: string;
+  uptime_s: number;
+  banco: { ok: boolean; latencia_ms: number | null; erro: string | null };
+  canal_alertas: { ouvintes_desta_clinica: number; ouvintes_total: number };
+  cameras: { total: number; conectadas: number; janela_de_ping: string };
+  ocorrencias: { ultimas_24h: number; abertas: number };
+  clipes: {
+    pasta: string;
+    pasta_existe: boolean;
+    clipes_em_disco: number;
+    bytes_em_disco: number;
+    retencao_horas: number;
+    ultimo_expurgo: string | null;
+    ultimo_expurgo_removeu: number;
+  };
+  log: { nivel: string; formato: string };
+}
+
+export const fetchSaude = (tenantId: string) =>
+  request<SaudeApi>(`/api/saude?tenantId=${encodeURIComponent(tenantId)}`);

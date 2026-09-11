@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Camera, CameraOff, Loader2, Activity } from 'lucide-react';
+import { AlertTriangle, Camera, CameraOff, Loader2, Activity, RefreshCw } from 'lucide-react';
+import { VISAO_URL, diagnosticarCaptura } from '../data/visao';
+import type { Captura } from '../data/visao';
 
 /**
  * Vídeo ao vivo do serviço de visão, com o resultado da detecção sobreposto.
@@ -11,8 +13,6 @@ import { AlertTriangle, Camera, CameraOff, Loader2, Activity } from 'lucide-reac
  * O <img> não devolve dado estruturado, então o estado (quem está em cena, em
  * que estado, latência) vem de `/estado` por polling.
  */
-
-const VISAO_URL: string = import.meta.env.VITE_VISAO_URL || 'http://localhost:8001';
 
 interface PessoaDetectada {
   id: number;
@@ -33,6 +33,9 @@ interface EstadoVisao {
   fonte: string;
   modo_teste: boolean;
   latencia_ms?: number;
+  fps_real?: number | null;
+  /** Estado da fonte: capturando, reconectando, parado. */
+  captura?: Captura;
   pessoas?: PessoaDetectada[];
   caidos?: number;
   ocorrencias_totais?: number;
@@ -95,6 +98,9 @@ export function CameraAoVivo() {
 
   const pessoas = estado?.pessoas ?? [];
   const alguemNoChao = (estado?.caidos ?? 0) > 0;
+  // "Serviço fora do ar" e "câmera fora do ar" são problemas diferentes, com
+  // soluções diferentes. A tela precisa dizer qual dos dois é.
+  const diagnostico = diagnosticarCaptura(servicoNoAr, estado?.captura);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
@@ -105,6 +111,7 @@ export function CameraAoVivo() {
         </div>
         <div className="flex items-center gap-2 text-sm">
           {estado?.fonte && <span className="text-gray-500">{estado.fonte}</span>}
+          {estado?.fps_real != null && <span className="text-gray-500">{estado.fps_real} fps</span>}
           {estado?.latencia_ms !== undefined && (
             <span className="flex items-center gap-1 text-gray-500">
               <Activity className="h-3 w-3" aria-hidden="true" />
@@ -115,8 +122,15 @@ export function CameraAoVivo() {
       </header>
 
       <div className="relative bg-gray-900 aspect-video">
-        {servicoNoAr === false ? (
+        {diagnostico.tipo === 'servico-fora' ? (
           <ServicoForaDoAr aoTentarDeNovo={reconectar} />
+        ) : diagnostico.tipo === 'camera-fora' ? (
+          <CameraForaDoAr
+            tentativa={diagnostico.tentativa}
+            proximaEmS={diagnostico.proximaEmS}
+            erro={diagnostico.erro}
+            fonte={estado?.fonte}
+          />
         ) : (
           <>
             <img
@@ -210,6 +224,34 @@ function ServicoForaDoAr({ aoTentarDeNovo }: { aoTentarDeNovo: () => void }) {
       >
         Tentar novamente
       </button>
+    </div>
+  );
+}
+
+function CameraForaDoAr({
+  tentativa, proximaEmS, erro, fonte,
+}: {
+  tentativa: number; proximaEmS: number | null; erro: string | null; fonte?: string;
+}) {
+  return (
+    <div
+      role="status"
+      className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center"
+    >
+      <RefreshCw className="h-8 w-8 animate-spin text-amber-400" aria-hidden="true" />
+      <p className="text-sm text-amber-200">Câmera fora do ar — o serviço está tentando reconectar.</p>
+      <p className="text-xs text-gray-400">
+        Tentativa {tentativa}
+        {proximaEmS != null && ` · próxima em ${Math.ceil(proximaEmS)} s`}
+        {fonte && ` · ${fonte}`}
+      </p>
+      {/* O motivo cru ajuda quem vai ao local: "arquivo não encontrado" e
+          "RTSP não responde" pedem ações diferentes. */}
+      {erro && <p className="max-w-md truncate text-xs text-gray-500" title={erro}>{erro}</p>}
+      <p className="max-w-md text-xs text-gray-500">
+        O serviço de visão continua no ar. Confira cabo, rede ou a própria câmera; a
+        captura volta sozinha quando a fonte responder.
+      </p>
     </div>
   );
 }
