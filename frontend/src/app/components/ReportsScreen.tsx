@@ -15,14 +15,6 @@ interface ReportCard {
   chartType?: ChartType;
 }
 
-interface AIInsight {
-  id: number;
-  type: 'pattern' | 'recommendation' | 'alert';
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-}
-
 const reportCards: ReportCard[] = [
   // Operacionais
   {
@@ -106,7 +98,7 @@ const reportCards: ReportCard[] = [
     change: 5,
     chartType: 'bar'
   },
-  // Alertas & IA
+  // Alertas
   {
     id: 'alerts-by-type',
     title: 'Alertas por Tipo',
@@ -117,74 +109,6 @@ const reportCards: ReportCard[] = [
     change: 8,
     chartType: 'pie'
   },
-  {
-    id: 'false-positives',
-    title: 'Falsos Positivos',
-    description: 'Taxa de alertas incorretos',
-    category: 'ai-alerts',
-    icon: <XCircle className="w-6 h-6" />,
-    value: '5.8%',
-    change: -12,
-    chartType: 'line'
-  },
-  {
-    id: 'ai-accuracy',
-    title: 'Precisão da IA',
-    description: 'Acurácia dos modelos',
-    category: 'ai-alerts',
-    icon: <Target className="w-6 h-6" />,
-    value: '94.2%',
-    change: 2,
-    chartType: 'line'
-  },
-  {
-    id: 'ai-suggestions',
-    title: 'Sugestões da IA Aplicadas',
-    description: 'Recomendações implementadas',
-    category: 'ai-alerts',
-    icon: <Lightbulb className="w-6 h-6" />,
-    value: '67%',
-    change: 15,
-    chartType: 'bar'
-  }
-];
-
-const aiInsights: AIInsight[] = [
-  {
-    id: 1,
-    type: 'pattern',
-    title: 'Padrão Detectado: Pico de Alertas Noturno',
-    description: 'Identificado aumento de 35% em alertas de saída de leito entre 02h-05h. Sugestão: reforçar equipe noturna.',
-    priority: 'high'
-  },
-  {
-    id: 2,
-    type: 'recommendation',
-    title: 'Recomendação: Otimização de Leitos UTI',
-    description: 'Taxa de ocupação da UTI está 12% acima da meta. Considere abertura de 2 leitos adicionais.',
-    priority: 'medium'
-  },
-  {
-    id: 3,
-    type: 'alert',
-    title: 'Alertas Recorrentes: Paciente Maria Silva',
-    description: '8 alertas de saída de leito nos últimos 3 dias. Paciente pode necessitar avaliação de contenção.',
-    priority: 'high'
-  },
-  {
-    id: 4,
-    type: 'pattern',
-    title: 'Padrão: Redução de Quedas pós-Treinamento',
-    description: 'Após treinamento da equipe (15/12), quedas reduziram 18%. Manter protocolo atual.',
-    priority: 'low'
-  },
-  {
-    id: 5,
-    type: 'recommendation',
-    title: 'Recomendação: Calibração de Sensores',
-    description: 'Detectado aumento de 8% em falsos positivos no setor Geriatria. Recalibração recomendada.',
-    priority: 'medium'
-  }
 ];
 
 export function ReportsScreen() {
@@ -196,7 +120,7 @@ export function ReportsScreen() {
     { id: 'all' as const, label: 'Todos os Relatórios', count: reportCards.length },
     { id: 'operational' as const, label: 'Operacionais', count: reportCards.filter(r => r.category === 'operational').length },
     { id: 'clinical' as const, label: 'Clínicos', count: reportCards.filter(r => r.category === 'clinical').length },
-    { id: 'ai-alerts' as const, label: 'Alertas & IA', count: reportCards.filter(r => r.category === 'ai-alerts').length }
+    { id: 'ai-alerts' as const, label: 'Alertas', count: reportCards.filter(r => r.category === 'ai-alerts').length }
   ];
 
   const filteredReports = selectedCategory === 'all' 
@@ -213,18 +137,6 @@ export function ReportsScreen() {
     if (change > 0) return 'text-green-600';
     if (change < 0) return 'text-red-600';
     return 'text-gray-500';
-  };
-
-  const insightTypeConfig = {
-    pattern: { icon: <BarChart3 className="w-4 h-4" />, color: 'bg-blue-100 text-blue-700', label: 'Padrão' },
-    recommendation: { icon: <Lightbulb className="w-4 h-4" />, color: 'bg-purple-100 text-purple-700', label: 'Recomendação' },
-    alert: { icon: <Bell className="w-4 h-4" />, color: 'bg-orange-100 text-orange-700', label: 'Alerta' }
-  };
-
-  const priorityConfig = {
-    high: { color: 'border-l-red-500', dot: 'bg-red-500' },
-    medium: { color: 'border-l-yellow-500', dot: 'bg-yellow-500' },
-    low: { color: 'border-l-green-500', dot: 'bg-green-500' }
   };
 
   return (
@@ -305,7 +217,7 @@ export function ReportsScreen() {
                   <option>Todos</option>
                   <option>Operacional</option>
                   <option>Clínico</option>
-                  <option>Alertas & IA</option>
+                  <option>Alertas</option>
                 </select>
               </div>
               <div>
@@ -344,9 +256,9 @@ export function ReportsScreen() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content - Report Cards */}
-        <div className="lg:col-span-2">
+      <div>
+        {/* Report Cards */}
+        <div>
           <div className="grid grid-cols-2 gap-4">
             {filteredReports.map(report => (
               <div
@@ -430,67 +342,6 @@ export function ReportsScreen() {
           </div>
         </div>
 
-        {/* Sidebar - AI Insights */}
-        <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-5 py-4">
-              <div className="flex items-center gap-2 text-white mb-1">
-                <Lightbulb className="w-5 h-5" />
-                <h3 className="text-white">Insights da IA</h3>
-              </div>
-              <p className="text-xs text-white/80">Análises automáticas e recomendações</p>
-            </div>
-
-            <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
-              {aiInsights.map(insight => {
-                const typeConfig = insightTypeConfig[insight.type];
-                const priorityStyle = priorityConfig[insight.priority];
-
-                return (
-                  <div
-                    key={insight.id}
-                    className={`bg-white rounded-lg border-l-4 ${priorityStyle.color} p-4 shadow-sm hover:shadow-md transition-shadow`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${typeConfig.color}`}>
-                        {typeConfig.icon}
-                        {typeConfig.label}
-                      </span>
-                      <span className={`w-2 h-2 rounded-full ${priorityStyle.dot}`}></span>
-                    </div>
-                    <h4 className="text-sm text-gray-800 mb-2">{insight.title}</h4>
-                    <p className="text-xs text-gray-600 leading-relaxed">{insight.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="border-t border-purple-200 p-4 bg-white">
-              <button className="w-full px-4 py-2 bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white rounded-lg text-sm hover:shadow-lg transition-shadow">
-                Ver Todos os Insights →
-              </button>
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4">
-            <h4 className="text-sm text-gray-700 mb-3">Legenda de Prioridade</h4>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                <span className="text-xs text-gray-600">Alta - Ação imediata recomendada</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-                <span className="text-xs text-gray-600">Média - Revisar em breve</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                <span className="text-xs text-gray-600">Baixa - Informativo</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
   );

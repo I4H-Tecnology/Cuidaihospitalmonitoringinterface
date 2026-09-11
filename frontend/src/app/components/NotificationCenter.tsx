@@ -92,29 +92,6 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  // Simular notificações em tempo real
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const interval = setInterval(() => {
-      // 20% de chance de nova notificação a cada 10 segundos
-      if (Math.random() < 0.2) {
-        const newNotification: Notification = {
-          id: Date.now(),
-          type: ['critical', 'warning', 'info', 'success'][Math.floor(Math.random() * 4)] as any,
-          title: 'Nova Notificação em Tempo Real',
-          message: 'Esta é uma notificação simulada do sistema.',
-          timestamp: new Date(),
-          read: false,
-          source: 'Sistema'
-        };
-        setNotifications(prev => [newNotification, ...prev]);
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [isOpen]);
-
   const markAsRead = (id: number) => {
     setNotifications(prev =>
       prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)

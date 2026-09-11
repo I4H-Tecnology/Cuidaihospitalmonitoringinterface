@@ -7,7 +7,6 @@ import { MessagesScreen } from './components/mobile/MessagesScreen';
 import { PatientDetailScreen } from './components/mobile/PatientDetailScreen';
 import { AlertsScreen } from './components/mobile/AlertsScreen';
 import { ReportsScreen } from './components/mobile/ReportsScreen';
-import { AIAssistant } from './components/AIAssistant';
 
 import type { MobilePatient as Patient } from './components/mobile/types';
 
@@ -123,9 +122,6 @@ export function MobileApp() {
       {activeTab === 'alerts' && <AlertsScreen />}
 
       <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      {/* AI Assistant - Mobile optimized */}
-      <AIAssistant isMobile={true} />
     </div>
   );
 }

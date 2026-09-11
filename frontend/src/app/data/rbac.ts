@@ -15,7 +15,8 @@ export type Screen =
   | 'hospital-management'
   | 'financial'
   | 'inventory'
-  | 'hr';
+  | 'hr'
+  | 'saude';
 
 export const screenModuleMap: Record<Screen, string> = {
   dashboard: 'dashboard',
@@ -33,7 +34,9 @@ export const screenModuleMap: Record<Screen, string> = {
   'hospital-management': 'hospital_management',
   financial: 'financial',
   inventory: 'inventory',
-  hr: 'hr'
+  hr: 'hr',
+  // Observabilidade: quem acompanha o monitoramento precisa ver a saúde dele.
+  saude: 'monitoring'
 };
 
 export const getModuleForScreen = (screen: Screen) => screenModuleMap[screen];

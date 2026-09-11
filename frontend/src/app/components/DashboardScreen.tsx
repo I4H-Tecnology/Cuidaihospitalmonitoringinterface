@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Bell, BedDouble, Users, Building, ChevronDown, Plus, Edit, LayoutDashboard, BarChart3, TrendingUp, AlertTriangle, Clock, Target, Lightbulb, ArrowUpRight, ArrowDownRight, Heart, Thermometer, Wind, CheckCircle, XCircle, MapPin, Filter, Search, Bot } from 'lucide-react';
+import { Activity, Bell, BedDouble, Users, Building, ChevronDown, Plus, Edit, LayoutDashboard, BarChart3, TrendingUp, AlertTriangle, Clock, Target, Lightbulb, ArrowUpRight, ArrowDownRight, Heart, Thermometer, Wind, CheckCircle, XCircle, MapPin, Filter, Search } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StatCard } from './StatCard';
 import { EventCard } from './EventCard';
@@ -56,17 +56,7 @@ interface Alert {
   severity: 'critical' | 'warning';
 }
 
-interface AIInsight {
-  id: number;
-  title: string;
-  description: string;
-  reason: string;
-  sector: string;
-  action: string;
-  severity: 'critical' | 'warning' | 'info';
-}
-
-type DashboardView = 'overview' | 'realtime' | 'alerts' | 'beds' | 'clinical' | 'ai-insights';
+type DashboardView = 'overview' | 'realtime' | 'alerts' | 'beds' | 'clinical';
 
 interface DashboardConfig {
   id: string;
@@ -239,45 +229,6 @@ const mockAlerts: Alert[] = [
   { id: 5, type: 'saida-leito', patient: 'Ana Costa Lima', sector: 'Geriatria', status: 'resolvido', time: 'há 8 min', responseTime: 1.5, severity: 'warning' }
 ];
 
-const mockAIInsights: AIInsight[] = [
-  {
-    id: 1,
-    title: 'Padrão de Risco Detectado',
-    description: 'Aumento de 45% nos casos de queda em pacientes acima de 75 anos no turno noturno',
-    reason: 'Análise de 30 dias identificou correlação entre idade, horário e mobilidade reduzida',
-    sector: 'Geriatria e UTI',
-    action: 'Recomendar aumento de rondas de enfermagem entre 22h-06h',
-    severity: 'critical'
-  },
-  {
-    id: 2,
-    title: 'Alerta Preditivo de Capacidade',
-    description: 'UTI apresenta tendência de atingir capacidade máxima nas próximas 12h',
-    reason: 'Baseado em histórico de admissões e alta taxa de ocupação atual (92%)',
-    sector: 'UTI',
-    action: 'Preparar leitos alternativos e equipe de apoio',
-    severity: 'warning'
-  },
-  {
-    id: 3,
-    title: 'Oportunidade de Otimização',
-    description: 'Tempo de resposta a alertas 32% acima do padrão no setor de Cardiologia',
-    reason: 'Análise comparativa com outros setores e histórico dos últimos 7 dias',
-    sector: 'Cardiologia',
-    action: 'Revisar escala de enfermagem e distribuição de pacientes',
-    severity: 'warning'
-  },
-  {
-    id: 4,
-    title: 'Sucesso de Protocolo IA',
-    description: 'Redução de 40% em quedas após implementação de alertas preditivos',
-    reason: 'Comparação com período anterior à ativação do sistema',
-    sector: 'Geral',
-    action: 'Expandir protocolo para demais unidades',
-    severity: 'info'
-  }
-];
-
 // Data for charts
 const occupationBySectorData = [
   { sector: 'UTI', ocupacao: 92 },
@@ -294,6 +245,18 @@ const alerts24hData = [
   { hour: '16h', alerts: 5 },
   { hour: '20h', alerts: 3 },
   { hour: '24h', alerts: 4 }
+];
+
+// Fixo de propósito: este gráfico era sorteado a cada renderização, e número
+// que muda sozinho na tela é o que a banca chama de "resultado não replicável".
+const occupation24hData = [
+  { hour: '00h', ocupacao: 74 },
+  { hour: '04h', ocupacao: 72 },
+  { hour: '08h', ocupacao: 78 },
+  { hour: '12h', ocupacao: 85 },
+  { hour: '16h', ocupacao: 88 },
+  { hour: '20h', ocupacao: 82 },
+  { hour: '24h', ocupacao: 76 }
 ];
 
 const patientStatusDistribution = [
@@ -348,7 +311,6 @@ export function DashboardScreen() {
   const [selectedDashboard, setSelectedDashboard] = useState<string>('default');
   const [showDashboardMenu, setShowDashboardMenu] = useState(false);
   const [showNewDashboardModal, setShowNewDashboardModal] = useState(false);
-  const [showAIChat, setShowAIChat] = useState(false);
   const [selectedSectorFilter, setSelectedSectorFilter] = useState<string>('all');
 
   const filteredPatients = selectedFilter === 'all' 
@@ -367,8 +329,7 @@ export function DashboardScreen() {
     { id: 'realtime' as const, label: 'Tempo Real', icon: Activity },
     { id: 'alerts' as const, label: 'Alertas & Incidentes', icon: Bell },
     { id: 'beds' as const, label: 'Leitos & Ocupação', icon: BedDouble },
-    { id: 'clinical' as const, label: 'Indicadores Clínicos', icon: BarChart3 },
-    { id: 'ai-insights' as const, label: 'Insights de IA', icon: Lightbulb }
+    { id: 'clinical' as const, label: 'Indicadores Clínicos', icon: BarChart3 }
   ];
 
   return (
@@ -610,16 +571,19 @@ export function DashboardScreen() {
               </div>
             </div>
 
+            {/* Sem número aqui até existir um número medido. Os valores vêm
+                da validação com vídeos anotados (visao/avaliar.py); antes
+                disso, qualquer porcentagem seria inventada. */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100 p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-gray-700">Precisão da IA</h3>
+                <h3 className="text-gray-700">Detecção de Quedas</h3>
                 <Target className="w-5 h-5 text-purple-600" />
               </div>
-              <p className="text-3xl text-gray-800 mb-1">94.2%</p>
-              <p className="text-sm text-gray-600">Últimas 24 horas</p>
+              <p className="text-3xl text-gray-800 mb-1">—</p>
+              <p className="text-sm text-gray-600">Precisão e recall ainda não medidos</p>
               <div className="mt-3 flex items-center gap-1 text-xs text-purple-700">
                 <Lightbulb className="w-3 h-3" />
-                <span>12 falsos positivos</span>
+                <span>Publicados após a validação com vídeos anotados</span>
               </div>
             </div>
 
@@ -1004,7 +968,7 @@ export function DashboardScreen() {
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <h3 className="text-gray-800 mb-4">Tendência de Ocupação (24h)</h3>
               <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={alerts24hData.map(d => ({ ...d, ocupacao: 70 + Math.random() * 20 }))}>
+                <AreaChart data={occupation24hData}>
                   <defs>
                     <linearGradient id="colorOcupacao" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
@@ -1118,230 +1082,6 @@ export function DashboardScreen() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI Insights View */}
-      {currentView === 'ai-insights' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] rounded-lg p-6 text-white">
-            <div className="flex items-center gap-3 mb-2">
-              <Lightbulb className="w-8 h-8" />
-              <div>
-                <h2 className="text-xl">Insights de IA do MedSignal</h2>
-                <p className="text-sm opacity-90">Análise preditiva e recomendações inteligentes baseadas em dados em tempo real</p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Insight Cards */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Target className="w-5 h-5 text-purple-600" />
-                </div>
-                <h3 className="text-gray-800">Padrões Detectados</h3>
-              </div>
-              <p className="text-3xl text-gray-800 mb-2">4</p>
-              <p className="text-sm text-gray-600">Últimos 30 dias</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                </div>
-                <h3 className="text-gray-800">Alertas Preditivos</h3>
-              </div>
-              <p className="text-3xl text-gray-800 mb-2">2</p>
-              <p className="text-sm text-gray-600">Ação recomendada</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Lightbulb className="w-5 h-5 text-blue-600" />
-                </div>
-                <h3 className="text-gray-800">Sugestões Operacionais</h3>
-              </div>
-              <p className="text-3xl text-gray-800 mb-2">3</p>
-              <p className="text-sm text-gray-600">Oportunidades de melhoria</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-orange-600" />
-                </div>
-                <h3 className="text-gray-800">Riscos Emergentes</h3>
-              </div>
-              <p className="text-3xl text-gray-800 mb-2">1</p>
-              <p className="text-sm text-gray-600">Monitoramento ativo</p>
-            </div>
-          </div>
-
-          {/* Detailed AI Insights */}
-          <div className="space-y-4">
-            {mockAIInsights.map(insight => (
-              <div key={insight.id} className={`bg-white rounded-lg border-2 p-5 ${
-                insight.severity === 'critical' ? 'border-red-200 bg-red-50' :
-                insight.severity === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-                'border-blue-200 bg-blue-50'
-              }`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      insight.severity === 'critical' ? 'bg-red-100' :
-                      insight.severity === 'warning' ? 'bg-yellow-100' :
-                      'bg-blue-100'
-                    }`}>
-                      <Lightbulb className={`w-5 h-5 ${
-                        insight.severity === 'critical' ? 'text-red-600' :
-                        insight.severity === 'warning' ? 'text-yellow-600' :
-                        'text-blue-600'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className={`text-sm mb-1 ${
-                        insight.severity === 'critical' ? 'text-red-800' :
-                        insight.severity === 'warning' ? 'text-yellow-800' :
-                        'text-blue-800'
-                      }`}>
-                        {insight.title}
-                      </h4>
-                      <p className={`text-sm mb-2 ${
-                        insight.severity === 'critical' ? 'text-red-700' :
-                        insight.severity === 'warning' ? 'text-yellow-700' :
-                        'text-blue-700'
-                      }`}>
-                        {insight.description}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs uppercase ${
-                    insight.severity === 'critical' ? 'bg-red-200 text-red-800' :
-                    insight.severity === 'warning' ? 'bg-yellow-200 text-yellow-800' :
-                    'bg-blue-200 text-blue-800'
-                  }`}>
-                    {insight.severity === 'critical' ? 'Crítico' : insight.severity === 'warning' ? 'Atenção' : 'Info'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
-                  <div>
-                    <p className={`text-xs mb-1 ${
-                      insight.severity === 'critical' ? 'text-red-600' :
-                      insight.severity === 'warning' ? 'text-yellow-600' :
-                      'text-blue-600'
-                    }`}>Motivo</p>
-                    <p className={`${
-                      insight.severity === 'critical' ? 'text-red-800' :
-                      insight.severity === 'warning' ? 'text-yellow-800' :
-                      'text-blue-800'
-                    }`}>{insight.reason}</p>
-                  </div>
-                  <div>
-                    <p className={`text-xs mb-1 ${
-                      insight.severity === 'critical' ? 'text-red-600' :
-                      insight.severity === 'warning' ? 'text-yellow-600' :
-                      'text-blue-600'
-                    }`}>Setor Afetado</p>
-                    <p className={`${
-                      insight.severity === 'critical' ? 'text-red-800' :
-                      insight.severity === 'warning' ? 'text-yellow-800' :
-                      'text-blue-800'
-                    }`}>{insight.sector}</p>
-                  </div>
-                  <div>
-                    <p className={`text-xs mb-1 ${
-                      insight.severity === 'critical' ? 'text-red-600' :
-                      insight.severity === 'warning' ? 'text-yellow-600' :
-                      'text-blue-600'
-                    }`}>Ação Sugerida</p>
-                    <p className={`${
-                      insight.severity === 'critical' ? 'text-red-800' :
-                      insight.severity === 'warning' ? 'text-yellow-800' :
-                      'text-blue-800'
-                    }`}>{insight.action}</p>
-                  </div>
-                </div>
-
-                <button className={`text-xs underline ${
-                  insight.severity === 'critical' ? 'text-red-700 hover:text-red-800' :
-                  insight.severity === 'warning' ? 'text-yellow-700 hover:text-yellow-800' :
-                  'text-blue-700 hover:text-blue-800'
-                }`}>
-                  Ver análise completa →
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* AI Chat Button (Fixed) */}
-      <button
-        onClick={() => setShowAIChat(!showAIChat)}
-        className="fixed bottom-8 right-8 bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white rounded-full px-6 py-4 shadow-lg hover:shadow-xl transition-all flex items-center gap-3 z-40"
-      >
-        <Bot className="w-6 h-6" />
-        <div className="text-left">
-          <p className="text-sm">IA Ativa</p>
-          <p className="text-xs opacity-90">insights disponíveis</p>
-        </div>
-      </button>
-
-      {/* AI Chat Modal */}
-      {showAIChat && (
-        <div className="fixed bottom-24 right-8 bg-white rounded-2xl border-2 border-[#0EA5E9] shadow-2xl w-96 z-50">
-          <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <div className="flex items-center gap-3 text-white">
-              <Bot className="w-6 h-6" />
-              <div>
-                <h3 className="text-sm">Assistente IA MedSignal</h3>
-                <p className="text-xs opacity-90">Sempre disponível</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowAIChat(false)}
-              className="text-white hover:bg-white/20 rounded-lg p-1"
-            >
-              ×
-            </button>
-          </div>
-          <div className="p-6 h-96 overflow-y-auto">
-            <div className="space-y-4">
-              <div className="bg-blue-50 rounded-lg p-3">
-                <p className="text-sm text-blue-900">
-                  Olá! Sou a IA do MedSignal. Como posso ajudar com os dados do {viewTabs.find(t => t.id === currentView)?.label}?
-                </p>
-              </div>
-              <div className="flex flex-col gap-2">
-                <button className="text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-sm">
-                  💡 Explique os gráficos desta tela
-                </button>
-                <button className="text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-sm">
-                  📊 Quais são os principais riscos agora?
-                </button>
-                <button className="text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-sm">
-                  🎯 Sugestões de ação prioritária
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Pergunte qualquer coisa..."
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-              />
-              <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg hover:bg-[#0284C7]">
-                Enviar
-              </button>
             </div>
           </div>
         </div>
