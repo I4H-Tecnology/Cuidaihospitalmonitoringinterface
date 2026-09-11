@@ -1,8 +1,9 @@
 """Ingestão da detecção, histórico e ciclo de atendimento (RF13-RF22)."""
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
 
-from .. import db
+from .. import clipes, db
 from ..comum import agora_iso, clinica_por_slug, iso, logger
 from ..seguranca import (
     UsuarioAutenticado,
@@ -318,9 +319,41 @@ def listar_ocorrencias(
             cameraIdentificador=l["camera_identificador"],
             alertaNivel=l["alerta_nivel"],
             alertaStatus=l["alerta_status"],
+            temClipe=clipes.tem_clipe(str(l["id"])),
         )
         for l in linhas
     ]
+
+
+@router.get("/api/ocorrencias/{ocorrencia_id}/clipe")
+def clipe_da_ocorrencia(
+    ocorrencia_id: str,
+    tenantId: str,
+    usuario: UsuarioAutenticado = Depends(exigir_permissao("monitoring", "view")),
+):
+    """Clipe de evidência (5 s antes + 5 s depois), enquanto existir.
+
+    Só para usuário autenticado da clínica dona: vídeo de paciente sem
+    credencial seria uma violação de LGPD pior do que não ter o recurso. Sem
+    token a dependência devolve 401; de outra clínica, 404 — a mesma resposta
+    de "não existe", para não confirmar que a ocorrência existe em algum lugar.
+
+    Depois das 24 h de retenção o arquivo some e esta rota devolve 404, mas a
+    ocorrência continua no histórico (RNF18).
+    """
+    exigir_tenant(usuario, tenantId)
+    clinica = clinica_por_slug(tenantId)
+    ocorrencia_da_clinica(ocorrencia_id, clinica["id"])
+
+    caminho = clipes.caminho_do_clipe(ocorrencia_id)
+    if not caminho.is_file():
+        raise HTTPException(404, "Clipe indisponível: ainda não foi gravado ou já foi expurgado (retenção de 24 h).")
+    return FileResponse(
+        caminho,
+        media_type="video/mp4",
+        filename=f"ocorrencia-{ocorrencia_id}.mp4",
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 # -----------------------------------------------------------------------------

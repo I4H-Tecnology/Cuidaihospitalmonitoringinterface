@@ -193,6 +193,9 @@ class OcorrenciaResumo(BaseModel):
     cameraIdentificador: str | None = None
     alertaNivel: str | None = None
     alertaStatus: str | None = None
+    # Há clipe de evidência em disco agora? False também quando já foi
+    # expurgado (24 h): a ocorrência continua, o vídeo não (RN09, RNF18).
+    temClipe: bool = False
 
 
 class AmbienteResumo(BaseModel):
