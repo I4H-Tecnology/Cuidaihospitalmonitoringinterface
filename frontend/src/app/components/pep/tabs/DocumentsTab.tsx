@@ -1,14 +1,6 @@
 import React from 'react';
 import { FileText, Download, Eye, Upload, Trash2, File } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-}
-
-interface DocumentsTabProps {
-  patient: Patient;
-}
+import { AvisoForaDoMVP, BotaoIndisponivel } from '../ForaDoMVP';
 
 interface Document {
   id: number;
@@ -77,7 +69,7 @@ const mockDocuments: Document[] = [
   }
 ];
 
-export function DocumentsTab({ patient }: DocumentsTabProps) {
+export function DocumentsTab() {
   const typeConfig = {
     term: { icon: '📋', label: 'Termo', color: 'text-blue-600' },
     report: { icon: '📊', label: 'Relatório', color: 'text-purple-600' },
@@ -90,6 +82,8 @@ export function DocumentsTab({ patient }: DocumentsTabProps) {
   const categories = Array.from(new Set(mockDocuments.map(doc => doc.category)));
   
   return (
+    <>
+      <AvisoForaDoMVP oque={'Documentos e anexos do paciente'} />
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -97,10 +91,7 @@ export function DocumentsTab({ patient }: DocumentsTabProps) {
           <h2 className="text-gray-800 mb-1">Documentos do Paciente</h2>
           <p className="text-sm text-gray-500">{mockDocuments.length} documentos anexados</p>
         </div>
-        <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors flex items-center gap-2">
-          <Upload className="w-4 h-4" />
-          Upload Documento
-        </button>
+        <BotaoIndisponivel motivo="Documentos e anexos do paciente está fora do MVP (RFC, seção 2.6)">Upload Documento</BotaoIndisponivel>
       </div>
 
       {/* Stats */}
@@ -159,19 +150,22 @@ export function DocumentsTab({ patient }: DocumentsTabProps) {
                         
                         {/* Actions */}
                         <div className="flex items-center gap-2">
-                          <button 
+                          <button
+                    disabled 
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Visualizar"
                           >
                             <Eye className="w-5 h-5 text-gray-600" />
                           </button>
-                          <button 
+                          <button
+                    disabled 
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Baixar"
                           >
                             <Download className="w-5 h-5 text-gray-600" />
                           </button>
-                          <button 
+                          <button
+                    disabled 
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Excluir"
                           >
@@ -188,5 +182,6 @@ export function DocumentsTab({ patient }: DocumentsTabProps) {
         );
       })}
     </div>
+    </>
   );
 }

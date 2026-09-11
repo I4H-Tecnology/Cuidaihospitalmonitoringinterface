@@ -1,14 +1,6 @@
 import React from 'react';
 import { Plus, FileText, Upload, Download, Eye, AlertCircle } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-}
-
-interface ExamsTabProps {
-  patient: Patient;
-}
+import { AvisoForaDoMVP, BotaoIndisponivel } from '../ForaDoMVP';
 
 interface Exam {
   id: number;
@@ -80,7 +72,7 @@ const mockExams: Exam[] = [
   }
 ];
 
-export function ExamsTab({ patient }: ExamsTabProps) {
+export function ExamsTab() {
   const statusConfig = {
     requested: { 
       label: 'Solicitado', 
@@ -116,6 +108,8 @@ export function ExamsTab({ patient }: ExamsTabProps) {
   const critical = mockExams.filter(e => e.status === 'critical').length;
 
   return (
+    <>
+      <AvisoForaDoMVP oque={'Solicitação e laudo de exames'} />
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -123,10 +117,7 @@ export function ExamsTab({ patient }: ExamsTabProps) {
           <h2 className="text-gray-800 mb-1">Exames Complementares</h2>
           <p className="text-sm text-gray-500">{mockExams.length} exames registrados</p>
         </div>
-        <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Solicitar Exame
-        </button>
+        <BotaoIndisponivel motivo="Solicitação e laudo de exames está fora do MVP (RFC, seção 2.6)">Solicitar Exame</BotaoIndisponivel>
       </div>
 
       {/* Stats */}
@@ -183,16 +174,19 @@ export function ExamsTab({ patient }: ExamsTabProps) {
                   <div className="flex items-center gap-2">
                     {exam.status === 'available' && (
                       <>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Visualizar">
+                        <button
+                    disabled className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Visualizar">
                           <Eye className="w-5 h-5 text-gray-600" />
                         </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Baixar">
+                        <button
+                    disabled className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Baixar">
                           <Download className="w-5 h-5 text-gray-600" />
                         </button>
                       </>
                     )}
                     {exam.status === 'requested' && exam.type === 'image' && (
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Upload de Resultado">
+                      <button
+                    disabled className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Upload de Resultado">
                         <Upload className="w-5 h-5 text-gray-600" />
                       </button>
                     )}
@@ -217,5 +211,6 @@ export function ExamsTab({ patient }: ExamsTabProps) {
         })}
       </div>
     </div>
+    </>
   );
 }

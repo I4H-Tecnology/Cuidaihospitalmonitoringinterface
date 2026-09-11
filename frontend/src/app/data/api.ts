@@ -88,6 +88,8 @@ const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> 
 export interface TenantInfo {
   id: string;
   active: boolean;
+  /** Nome da clinica, para o rodape do menu. */
+  nome?: string;
 }
 
 export interface PermissionRow {
@@ -305,3 +307,148 @@ export const fetchOcorrencias = (tenantId: string, limite = 20) =>
   request<OcorrenciaResumo[]>(
     `/api/ocorrencias?tenantId=${encodeURIComponent(tenantId)}&limite=${limite}`
   );
+
+/* ---------------------------------------------------------------------------
+ * Ciclo de atendimento (RF17-RF20)
+ * -------------------------------------------------------------------------- */
+
+export type ClassificacaoOcorrencia = 'encerrada' | 'falso_positivo' | 'queda_confirmada';
+
+export const darCiencia = (tenantId: string, ocorrenciaId: string) =>
+  request<{ ok: boolean }>(
+    `/api/ocorrencias/${ocorrenciaId}/ciencia?tenantId=${encodeURIComponent(tenantId)}`,
+    { method: 'POST' }
+  );
+
+export const iniciarAtendimento = (tenantId: string, ocorrenciaId: string) =>
+  request<{ ok: boolean }>(`/api/ocorrencias/${ocorrenciaId}/atendimento`, {
+    method: 'POST',
+    body: JSON.stringify({ tenantId })
+  });
+
+export const encerrarOcorrencia = (
+  tenantId: string,
+  ocorrenciaId: string,
+  classificacao: ClassificacaoOcorrencia,
+  observacao?: string
+) =>
+  request<{ ok: boolean }>(`/api/ocorrencias/${ocorrenciaId}/encerrar`, {
+    method: 'POST',
+    body: JSON.stringify({ tenantId, classificacao, observacao })
+  });
+
+/** Endereco do canal de tempo real, derivado da URL da API. */
+export const urlDoCanalDeAlertas = (): string => {
+  const base = API_BASE_URL || window.location.origin;
+  return base.replace(/^http/, 'ws') + '/api/ws/alertas';
+};
+
+/* ---------------------------------------------------------------------------
+ * Pacientes (RF05, RF21, RF22)
+ *
+ * Só os campos que a entidade Paciente do DER tem. Sexo, leito e setor nao
+ * existem no modelo -- a tela nao inventa o que o banco nao guarda.
+ * -------------------------------------------------------------------------- */
+
+export interface PacienteResumo {
+  id: string;
+  nome: string;
+  idade?: number | null;
+  dataNascimento?: string | null;
+  status: string;
+  dataAdmissao: string;
+  dataAlta?: string | null;
+  ambienteId?: string | null;
+  ambienteNome?: string | null;
+  ambienteTipo?: string | null;
+  /** Derivada das ocorrencias abertas, nao de julgamento clinico (RN16). */
+  situacao: 'stable' | 'attention' | 'critical';
+  ocorrenciasAbertas: number;
+  quedasConfirmadas: number;
+  totalOcorrencias: number;
+  ultimaOcorrencia?: string | null;
+}
+
+export const fetchPacientes = (tenantId: string, incluirAlta = false) =>
+  request<PacienteResumo[]>(
+    `/api/pacientes?tenantId=${encodeURIComponent(tenantId)}` +
+      (incluirAlta ? '&incluirAlta=true' : '')
+  );
+
+export const fetchPaciente = (tenantId: string, pacienteId: string) =>
+  request<PacienteResumo>(
+    `/api/pacientes/${pacienteId}?tenantId=${encodeURIComponent(tenantId)}`
+  );
+
+export const fetchOcorrenciasDoPaciente = (tenantId: string, pacienteId: string) =>
+  request<OcorrenciaResumo[]>(
+    `/api/ocorrencias?tenantId=${encodeURIComponent(tenantId)}` +
+      `&pacienteId=${encodeURIComponent(pacienteId)}&limite=100`
+  );
+
+/**
+ * Nome do ambiente com o tipo na frente, sem repetir.
+ *
+ * O cadastro costuma nomear o ambiente ja com o tipo dentro ("Quarto 101"), e
+ * prefixar de novo produzia "Quarto · Quarto 101" na tela.
+ */
+export const descreverAmbiente = (nome?: string | null, tipo?: string | null): string => {
+  if (!nome) return 'Sem ambiente vinculado';
+  const rotulos: Record<string, string> = {
+    quarto: 'Quarto',
+    corredor: 'Corredor',
+    sala_convivencia: 'Sala de convivência',
+    refeitorio: 'Refeitório',
+    banheiro: 'Banheiro',
+    outro: 'Outro'
+  };
+  const rotulo = rotulos[tipo ?? ''];
+  if (!rotulo) return nome;
+  const jaTemOTipo = nome.toLowerCase().startsWith(rotulo.toLowerCase());
+  return jaTemOTipo ? nome : `${rotulo} · ${nome}`;
+};
+
+export interface AltaResultado {
+  ok: boolean;
+  paciente: PacienteResumo;
+  /** Acessos de acompanhante revogados junto com a alta (RN07). */
+  acessosRevogados: number;
+}
+
+export const darAltaPaciente = (
+  tenantId: string,
+  pacienteId: string,
+  motivo: 'alta' | 'transferido',
+  observacao?: string
+) =>
+  request<AltaResultado>(`/api/pacientes/${pacienteId}/alta`, {
+    method: 'POST',
+    body: JSON.stringify({ tenantId, motivo, observacao })
+  });
+
+export const criarPaciente = (payload: {
+  tenantId: string;
+  nome: string;
+  dataNascimento?: string | null;
+  ambienteId?: string | null;
+  dataAdmissao?: string | null;
+}) =>
+  request<PacienteResumo>('/api/pacientes', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const editarPaciente = (
+  pacienteId: string,
+  payload: {
+    tenantId: string;
+    nome?: string;
+    dataNascimento?: string | null;
+    ambienteId?: string | null;
+    status?: 'internado';
+  }
+) =>
+  request<PacienteResumo>(`/api/pacientes/${pacienteId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });

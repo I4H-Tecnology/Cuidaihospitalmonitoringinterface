@@ -17,6 +17,8 @@ TipoEvento = Literal["queda", "perda_verticalidade", "permanencia_solo", "ausenc
 
 class TenantInfo(BaseModel):
     id: str
+    # Nome da clinica, para o rodape do menu nao precisar de outra rota.
+    nome: str | None = None
     active: bool
 
 
@@ -226,3 +228,93 @@ class CameraPayload(BaseModel):
     # RTSP, HTTP ou o que a câmera expuser. Validação leve de propósito: exigir
     # esquema fixo aqui barraria fonte legítima que o MVP ainda nem conhece.
     urlStream: str = Field(min_length=4, max_length=500)
+
+
+# -----------------------------------------------------------------------------
+# Ciclo de atendimento (RF17-RF20, RN11)
+# -----------------------------------------------------------------------------
+
+# Só os três estados de encerramento da RN11. 'pendente' e 'em_atendimento'
+# ficam de fora de propósito: são estados de passagem, não desfecho, e chegam
+# pelas rotas de ciência e atendimento.
+Classificacao = Literal["encerrada", "falso_positivo", "queda_confirmada"]
+
+
+class AtendimentoPayload(BaseModel):
+    tenantId: str
+
+
+class EncerramentoPayload(BaseModel):
+    tenantId: str
+    # Obrigatória (RF20): é o que separa queda real de alarme falso, e sem essa
+    # separação não há como aferir a precisão que a RFC promete.
+    classificacao: Classificacao
+    observacao: str | None = Field(default=None, max_length=2000)
+
+
+# -----------------------------------------------------------------------------
+# Pacientes (RF05, RF21, RF22)
+#
+# Só o que o DER modela. Sexo, leito e setor não existem na entidade Paciente
+# da RFC -- e inventar campo para a tela ficar cheia é o mesmo defeito do
+# "97,4% de precisão" que saiu do monitoramento.
+# -----------------------------------------------------------------------------
+
+class PacienteResumo(BaseModel):
+    id: str
+    nome: str
+    # Calculada de data_nascimento. None quando a data não foi cadastrada.
+    idade: int | None = None
+    dataNascimento: str | None = None
+    status: str
+    dataAdmissao: str
+    dataAlta: str | None = None
+    ambienteId: str | None = None
+    ambienteNome: str | None = None
+    ambienteTipo: str | None = None
+    # Derivado das ocorrências, não de uma coluna de gravidade: o sistema não
+    # emite diagnóstico (RN16), então "atenção" aqui significa evento aberto.
+    situacao: str
+    ocorrenciasAbertas: int = 0
+    quedasConfirmadas: int = 0
+    totalOcorrencias: int = 0
+    ultimaOcorrencia: str | None = None
+
+
+class AltaPayload(BaseModel):
+    tenantId: str
+    # A RN07 fala em "alta ou remoção do paciente". O CHECK da tabela recusa
+    # status 'internado' com data_alta, então os dois têm de andar juntos.
+    motivo: Literal["alta", "transferido"] = "alta"
+    observacao: str | None = Field(default=None, max_length=500)
+
+
+class AltaResultado(BaseModel):
+    ok: bool = True
+    paciente: PacienteResumo
+    # Quantos acessos de acompanhante caíram junto (RN07). Aparece na tela
+    # porque é consequência que quem dá alta precisa saber que aconteceu.
+    acessosRevogados: int = 0
+
+
+class PacientePayload(BaseModel):
+    """Cadastro de paciente (RF05) com vínculo a ambiente (RF08)."""
+
+    tenantId: str
+    nome: str = Field(min_length=3, max_length=120)
+    # Opcional porque nem toda clínica tem a data na admissão. Sem ela a idade
+    # some da tela em vez de virar um número inventado.
+    dataNascimento: str | None = None
+    # RF08: é o vínculo que faz a ocorrência saber onde aconteceu. Sem ambiente
+    # a câmera detecta e não tem a quem atribuir.
+    ambienteId: str | None = None
+    dataAdmissao: str | None = None
+
+
+class PacienteEdicaoPayload(BaseModel):
+    tenantId: str
+    nome: str | None = Field(default=None, min_length=3, max_length=120)
+    dataNascimento: str | None = None
+    ambienteId: str | None = None
+    # Permite reinternar quem recebeu alta, sem apagar o histórico dele.
+    status: Literal["internado"] | None = None

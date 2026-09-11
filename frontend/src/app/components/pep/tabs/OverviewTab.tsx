@@ -1,190 +1,191 @@
-import React from 'react';
-import { Activity, Thermometer, Heart, Droplet, User, AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, BedDouble, CalendarDays, CheckCircle, Clock, Info, User } from 'lucide-react';
+import { descreverAmbiente } from '../../../data/api';
+import type { OcorrenciaResumo, PacienteResumo } from '../../../data/api';
 
-interface Patient {
-  id: number;
-  name: string;
+/**
+ * Visao geral do paciente.
+ *
+ * Antes esta aba mostrava cinco sinais vitais e quatro eventos clinicos, todos
+ * com valor fixo no codigo. Nenhum deles existe no modelo de dados: a entidade
+ * Paciente do DER tem nome, status, datas e o vinculo com o ambiente -- e nada
+ * mais. Numero clinico inventado numa tela de prontuario e pior que numero
+ * ausente, porque parece medicao.
+ *
+ * O que sobrou e o que o banco sustenta de verdade: o cadastro e o historico
+ * de quedas daquele paciente (RF21, RF22).
+ */
+
+interface Props {
+  paciente: PacienteResumo;
+  ocorrencias: OcorrenciaResumo[];
 }
 
-interface OverviewTabProps {
-  patient: Patient;
+const ROTULO_EVENTO: Record<string, string> = {
+  queda: 'Queda',
+  permanencia_solo: 'Permanência no chão',
+  perda_verticalidade: 'Perda de verticalidade',
+  ausencia_prolongada: 'Ausência prolongada',
+};
+
+const ROTULO_STATUS: Record<string, string> = {
+  pendente: 'Pendente',
+  em_atendimento: 'Em atendimento',
+  encerrada: 'Encerrada',
+  falso_positivo: 'Falso positivo',
+  queda_confirmada: 'Queda confirmada',
+};
+
+function dataBR(iso: string): string {
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
 }
 
-export function OverviewTab({ patient }: OverviewTabProps) {
-  const vitalSigns = [
-    { 
-      icon: <Activity className="w-5 h-5" />, 
-      label: 'Frequência Cardíaca', 
-      value: '72', 
-      unit: 'bpm',
-      status: 'normal',
-      color: 'from-green-400 to-green-500'
-    },
-    { 
-      icon: <Heart className="w-5 h-5" />, 
-      label: 'Pressão Arterial', 
-      value: '120/80', 
-      unit: 'mmHg',
-      status: 'normal',
-      color: 'from-blue-400 to-blue-500'
-    },
-    { 
-      icon: <Thermometer className="w-5 h-5" />, 
-      label: 'Temperatura', 
-      value: '36.5', 
-      unit: '°C',
-      status: 'normal',
-      color: 'from-orange-400 to-orange-500'
-    },
-    { 
-      icon: <Droplet className="w-5 h-5" />, 
-      label: 'Saturação O₂', 
-      value: '98', 
-      unit: '%',
-      status: 'normal',
-      color: 'from-cyan-400 to-cyan-500'
-    },
-    { 
-      icon: <Droplet className="w-5 h-5" />, 
-      label: 'Glicemia', 
-      value: '95', 
-      unit: 'mg/dL',
-      status: 'normal',
-      color: 'from-purple-400 to-purple-500'
-    }
-  ];
+function quando(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+}
 
-  const recentEvents = [
-    { time: '14:30', type: 'Evolução médica', professional: 'Dr. Carlos Silva', description: 'Paciente estável, sem queixas' },
-    { time: '12:00', type: 'Medicação', professional: 'Enf. Maria Santos', description: 'Omeprazol 40mg administrado' },
-    { time: '10:15', type: 'Sinais vitais', professional: 'Enf. João Costa', description: 'PA: 120/80 | FC: 72 | T: 36.5°C' },
-    { time: '08:00', type: 'Evolução enfermagem', professional: 'Enf. Ana Paula', description: 'Paciente alimentou-se bem, deambulando' }
-  ];
+function diasInternado(admissao: string): number {
+  const ms = Date.now() - new Date(`${admissao}T00:00:00`).getTime();
+  return Math.max(0, Math.floor(ms / 86400000));
+}
+
+export function OverviewTab({ paciente, ocorrencias }: Props) {
+  const abertas = ocorrencias.filter(
+    (o) => o.status === 'pendente' || o.status === 'em_atendimento'
+  );
+  const confirmadas = ocorrencias.filter((o) => o.status === 'queda_confirmada');
+  const falsos = ocorrencias.filter((o) => o.status === 'falso_positivo');
+  const recentes = ocorrencias.slice(0, 5);
 
   return (
     <div className="space-y-6">
-      {/* Clinical Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Diagnosis */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-          <h3 className="text-gray-800 mb-3 flex items-center gap-2">
-            <span className="text-lg">🩺</span>
-            Diagnóstico Principal
-          </h3>
-          <p className="text-sm text-gray-700 mb-3">
-            Hipertensão Arterial Sistêmica (CID I10)
+        <section className="lg:col-span-1 bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <h2 className="text-gray-800 mb-4">Cadastro</h2>
+          <dl className="space-y-3 text-sm">
+            <Linha icone={<User className="w-4 h-4" />} rotulo="Nome" valor={paciente.nome} />
+            {paciente.idade != null && (
+              <Linha
+                icone={<CalendarDays className="w-4 h-4" />}
+                rotulo="Idade"
+                valor={`${paciente.idade} anos${
+                  paciente.dataNascimento ? ` · ${dataBR(paciente.dataNascimento)}` : ''
+                }`}
+              />
+            )}
+            <Linha
+              icone={<BedDouble className="w-4 h-4" />}
+              rotulo="Ambiente monitorado"
+              valor={descreverAmbiente(paciente.ambienteNome, paciente.ambienteTipo)}
+            />
+            <Linha
+              icone={<Clock className="w-4 h-4" />}
+              rotulo="Internação"
+              valor={`${dataBR(paciente.dataAdmissao)} · ${diasInternado(paciente.dataAdmissao)} dias`}
+            />
+            <Linha
+              icone={<CheckCircle className="w-4 h-4" />}
+              rotulo="Situação cadastral"
+              valor={paciente.status}
+            />
+          </dl>
+
+          {/* Diz o que a tela NAO tem, em vez de preencher com valor fictício.
+              Quem abre um prontuário precisa saber a diferença entre "normal"
+              e "não medido". */}
+          <p className="mt-5 flex items-start gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 text-xs text-gray-600">
+            <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>
+              Sinais vitais, medicações e exames não fazem parte do MVP (RFC, seção 2.6) e
+              não existem no modelo de dados. Esta aba mostra apenas o que a clínica cadastrou.
+            </span>
           </p>
-          <p className="text-xs text-gray-500">
-            Diagnóstico secundário: Diabetes Mellitus Tipo 2 (CID E11)
-          </p>
-        </div>
+        </section>
 
-        {/* Responsible Doctor */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-          <h3 className="text-gray-800 mb-3 flex items-center gap-2">
-            <User className="w-5 h-5 text-[#0A7EA4]" />
-            Médico Responsável
-          </h3>
-          <p className="text-sm text-gray-700 mb-1">Dr. Carlos Alberto Silva</p>
-          <p className="text-xs text-gray-500">CRM: 12345-SP</p>
-          <p className="text-xs text-gray-500">Cardiologia</p>
-        </div>
-
-        {/* Allergies */}
-        <div className="bg-red-50 rounded-lg border border-red-200 p-5 shadow-sm">
-          <h3 className="text-red-800 mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            Alergias
-          </h3>
-          <div className="space-y-2">
-            <div className="px-3 py-2 bg-red-100 text-red-700 rounded text-sm">
-              Penicilina
-            </div>
-            <div className="px-3 py-2 bg-red-100 text-red-700 rounded text-sm">
-              Dipirona
-            </div>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Indicador rotulo="Ocorrências" valor={ocorrencias.length} cor="text-gray-800" />
+            <Indicador rotulo="Em aberto" valor={abertas.length} cor="text-red-600" />
+            <Indicador rotulo="Quedas confirmadas" valor={confirmadas.length} cor="text-red-700" />
+            <Indicador rotulo="Falsos positivos" valor={falsos.length} cor="text-gray-500" />
           </div>
-        </div>
-      </div>
 
-      {/* Vital Signs */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-gray-800">Sinais Vitais Atuais</h2>
-          <span className="text-xs text-gray-500">Última atualização: há 2 horas</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {vitalSigns.map((vital, index) => (
-            <div key={index} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 bg-gradient-to-br ${vital.color} rounded-lg flex items-center justify-center text-white`}>
-                  {vital.icon}
-                </div>
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              </div>
-              <p className="text-xs text-gray-500 mb-1">{vital.label}</p>
-              <p className="text-2xl text-gray-800">{vital.value}</p>
-              <p className="text-xs text-gray-400">{vital.unit}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* AI Monitoring Status */}
-      <div className="bg-gradient-to-r from-[#E8F4F8] to-[#F0F9FF] rounded-lg border border-[#7DD3FC] p-5 shadow-sm">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-              <Activity className="w-6 h-6 text-[#0EA5E9]" />
-            </div>
-            <div>
-              <h3 className="text-gray-800 mb-1 flex items-center gap-2">
-                Monitoramento por IA
-                <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                  Ativo
-                </span>
-              </h3>
-              <p className="text-sm text-gray-600 mb-2">
-                Câmera: CAM-UTI-101A | Última detecção: há 5 min
+          <section className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-gray-800">Ocorrências recentes</h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Detectadas pelo serviço de visão neste ambiente
               </p>
-              <p className="text-xs text-gray-500">
-                Sistema detectando: Movimento, Posição no leito, Sinais de queda, Comportamento de risco
-              </p>
-            </div>
-          </div>
-          <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-            Configurar
-          </button>
-        </div>
-      </div>
+            </header>
 
-      {/* Recent Clinical Events */}
-      <div>
-        <h2 className="text-gray-800 mb-4">Últimos Eventos Clínicos</h2>
-        
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          {recentEvents.map((event, index) => (
-            <div key={index} className="px-5 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="text-sm font-medium text-[#0A7EA4]">{event.type}</span>
-                    <span className="text-xs text-gray-400">{event.time}</span>
-                  </div>
-                  <p className="text-sm text-gray-700 mb-1">{event.description}</p>
-                  <p className="text-xs text-gray-500">👤 {event.professional}</p>
-                </div>
+            {recentes.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <CheckCircle className="mx-auto mb-2 h-7 w-7 text-green-500" />
+                <p className="text-gray-700">Nenhuma ocorrência registrada.</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Este paciente não teve queda detectada desde a internação.
+                </p>
               </div>
-            </div>
-          ))}
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {recentes.map((o) => (
+                  <li key={o.id} className="flex items-start gap-3 px-5 py-3">
+                    <AlertTriangle
+                      className={`mt-0.5 h-4 w-4 shrink-0 ${
+                        o.status === 'queda_confirmada' ? 'text-red-600' : 'text-gray-400'
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-gray-800">
+                          {ROTULO_EVENTO[o.tipoEvento] ?? o.tipoEvento}
+                        </span>
+                        <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                          {ROTULO_STATUS[o.status] ?? o.status}
+                        </span>
+                      </div>
+                      {o.observacao && (
+                        <p className="mt-0.5 text-sm text-gray-600">{o.observacao}</p>
+                      )}
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {quando(o.dataHora)}
+                        {o.cameraIdentificador && ` · ${o.cameraIdentificador}`}
+                        {o.confianca != null && ` · escore ${o.confianca.toFixed(2)}`}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
-
-        <button className="w-full mt-4 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-          Ver histórico completo
-        </button>
       </div>
+    </div>
+  );
+}
+
+function Linha({
+  icone, rotulo, valor,
+}: { icone: React.ReactNode; rotulo: string; valor: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 text-gray-400">{icone}</span>
+      <div className="min-w-0">
+        <dt className="text-xs text-gray-500">{rotulo}</dt>
+        <dd className="text-gray-800">{valor}</dd>
+      </div>
+    </div>
+  );
+}
+
+function Indicador({ rotulo, valor, cor }: { rotulo: string; valor: number; cor: string }) {
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+      <p className={`text-2xl ${cor}`}>{valor}</p>
+      <p className="text-xs text-gray-500">{rotulo}</p>
     </div>
   );
 }

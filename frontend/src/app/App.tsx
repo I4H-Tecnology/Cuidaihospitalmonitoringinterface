@@ -29,94 +29,11 @@ import { AIAssistant } from './components/AIAssistant';
 import { getModuleForScreen, type Screen } from './data/rbac';
 import { SystemToastProvider, useSystemToast } from './components/ui/SystemToast';
 import { TarjaModoTeste } from './components/TarjaModoTeste';
+import type { PacienteResumo } from './data/api';
+import { useResumoOperacional } from './data/useResumoOperacional';
 
-interface Patient {
-  id: number;
-  name: string;
-  age: number;
-  gender: 'M' | 'F';
-  room: string;
-  bed: string;
-  sector: string;
-  status: 'stable' | 'attention' | 'critical';
-  admissionDate: string;
-  activeAlerts: number;
-}
-
-const mockPatients: Patient[] = [
-  {
-    id: 1,
-    name: 'Maria Silva Santos',
-    age: 78,
-    gender: 'F',
-    room: 'Quarto 301',
-    bed: 'A',
-    sector: 'UTI',
-    status: 'critical',
-    admissionDate: '18/12/2024',
-    activeAlerts: 2
-  },
-  {
-    id: 2,
-    name: 'João Pereira Souza',
-    age: 65,
-    gender: 'M',
-    room: 'Quarto 205',
-    bed: 'B',
-    sector: 'Cardiologia',
-    status: 'attention',
-    admissionDate: '19/12/2024',
-    activeAlerts: 1
-  },
-  {
-    id: 3,
-    name: 'Ana Costa Lima',
-    age: 82,
-    gender: 'F',
-    room: 'Quarto 412',
-    bed: 'C',
-    sector: 'Geriatria',
-    status: 'stable',
-    admissionDate: '20/12/2024',
-    activeAlerts: 0
-  },
-  {
-    id: 4,
-    name: 'Carlos Mendes Oliveira',
-    age: 70,
-    gender: 'M',
-    room: 'Quarto 302',
-    bed: 'A',
-    sector: 'UTI',
-    status: 'attention',
-    admissionDate: '20/12/2024',
-    activeAlerts: 1
-  },
-  {
-    id: 5,
-    name: 'Lucia Martins Rocha',
-    age: 75,
-    gender: 'F',
-    room: 'Quarto 206',
-    bed: 'A',
-    sector: 'Cardiologia',
-    status: 'stable',
-    admissionDate: '21/12/2024',
-    activeAlerts: 0
-  },
-  {
-    id: 6,
-    name: 'Roberto Alves Ferreira',
-    age: 80,
-    gender: 'M',
-    room: 'Quarto 410',
-    bed: 'B',
-    sector: 'Geriatria',
-    status: 'stable',
-    admissionDate: '21/12/2024',
-    activeAlerts: 0
-  }
-];
+// Os 6 pacientes ficticios que moravam aqui sairam: a lista do prontuario
+// agora vem de GET /api/pacientes, com o cadastro real da clinica.
 
 function AppContent() {
   const { isAuthenticated, isLoading, can, recordAccess } = useAuth();
@@ -126,8 +43,11 @@ function AppContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [viewMode, setViewMode] = useState<'web' | 'mobile'>('web');
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<PacienteResumo | null>(null);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  // Uma consulta so alimenta sidebar e header. Os numeros vinham fixos
+  // do codigo e por isso nao batiam com o que as telas mostravam.
+  const resumo = useResumoOperacional(tenant);
 
   useEffect(() => {
     const handlePopState = () => setRoute(window.location.pathname);
@@ -195,7 +115,7 @@ function AppContent() {
     return null;
   }
 
-  const handleSelectPatient = (patient: Patient) => {
+  const handleSelectPatient = (patient: PacienteResumo) => {
     setSelectedPatient(patient);
   };
 
@@ -259,7 +179,7 @@ function AppContent() {
       if (selectedPatient) {
         return {
           title: 'Prontuário Eletrônico',
-          subtitle: `Paciente: ${selectedPatient.name}`
+          subtitle: `Paciente: ${selectedPatient.nome}`
         };
       }
       return {
@@ -298,6 +218,9 @@ function AppContent() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         currentScreen={currentScreen}
         onNavigate={handleNavigate}
+        casosAbertos={resumo.casosAbertos}
+        alertasCriticos={resumo.alertasCriticos}
+        nomeDaClinica={resumo.nomeDaClinica}
       />
 
       {/* Main Content */}
@@ -306,7 +229,7 @@ function AppContent() {
         <Header
           title={headerInfo.title}
           subtitle={headerInfo.subtitle}
-          unreadNotifications={7}
+          unreadNotifications={resumo.alertasCriticos}
           onNotificationClick={() => setNotificationCenterOpen(true)}
         />
 
@@ -336,14 +259,20 @@ function AppContent() {
           {isScreenAllowed(currentScreen) && currentScreen === 'operational-overview' && <OperationalOverviewScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'monitoring' && <MonitoringScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'alerts' && <AlertsScreen />}
-          {isScreenAllowed(currentScreen) && currentScreen === 'patients' && <PatientsScreen />}
+          {isScreenAllowed(currentScreen) && currentScreen === 'patients' && (
+            <PatientsScreen
+              aoAbrirPaciente={(paciente) => {
+                // Abrir o prontuario a partir da gestao de pacientes: os dois
+                // caminhos levam ao mesmo lugar, com o mesmo paciente do banco.
+                setSelectedPatient(paciente);
+                handleNavigate('pep');
+              }}
+            />
+          )}
           {isScreenAllowed(currentScreen) && currentScreen === 'beds-rooms' && <BedsRoomsScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'scheduling' && <SchedulingScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'pep' && !selectedPatient && (
-            <PatientListScreen
-              patients={mockPatients}
-              onSelectPatient={handleSelectPatient}
-            />
+            <PatientListScreen onSelectPatient={handleSelectPatient} />
           )}
           {isScreenAllowed(currentScreen) && currentScreen === 'pep' && selectedPatient && (
             <PEPScreen
@@ -371,9 +300,9 @@ function AppContent() {
       <AIChatbot />
 
       {/* Legacy AI Assistant (can be removed if not needed) */}
-      <AIAssistant 
+      <AIAssistant
         onNavigate={handleNavigate}
-        patients={mockPatients}
+        patients={[]}
         onOpenPatient={handleSelectPatient}
       />
     </div>

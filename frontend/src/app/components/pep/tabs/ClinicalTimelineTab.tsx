@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Pill, Activity, AlertTriangle, Beaker, UserCheck, Clock, Filter, ThumbsUp, ThumbsDown, Lightbulb, Stethoscope } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-}
-
-interface ClinicalTimelineTabProps {
-  patient: Patient;
-}
+import { AvisoForaDoMVP, BotaoIndisponivel } from '../ForaDoMVP';
 
 interface TimelineEvent {
   id: string;
@@ -121,7 +113,7 @@ const mockTimelineEvents: TimelineEvent[] = [
   }
 ];
 
-export function ClinicalTimelineTab({ patient }: ClinicalTimelineTabProps) {
+export function ClinicalTimelineTab() {
   const [filterType, setFilterType] = useState<'all' | 'clinical' | 'ai'>('all');
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
 
@@ -211,6 +203,8 @@ export function ClinicalTimelineTab({ patient }: ClinicalTimelineTabProps) {
   };
 
   return (
+    <>
+      <AvisoForaDoMVP oque={'A linha do tempo clínica'} />
     <div className="space-y-6">
       {/* Header with Filters */}
       <div className="flex items-center justify-between">
@@ -359,9 +353,12 @@ export function ClinicalTimelineTab({ patient }: ClinicalTimelineTabProps) {
       </div>
 
       {/* Load More */}
-      <button className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+      <button
+                    disabled
+                    title="Ação indisponível: este módulo é demonstração da visão de produto (RFC, seção 2.6)" className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
         Carregar eventos anteriores
       </button>
     </div>
+    </>
   );
 }

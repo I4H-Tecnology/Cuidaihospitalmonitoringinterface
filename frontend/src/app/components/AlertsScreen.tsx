@@ -1,250 +1,349 @@
-import React, { useState } from 'react';
-import { Search, Volume2, Filter, MoreVertical, MapPin, User, BedDouble, Clock, MessageSquare, Phone } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  AlertTriangle, Check, CheckCircle, Clock, Loader2, MapPin, Search, User, Wifi, WifiOff,
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useAlertas } from '../data/useAlertas';
+import { ApiError, darCiencia, encerrarOcorrencia, iniciarAtendimento } from '../data/api';
+import type { ClassificacaoOcorrencia, OcorrenciaResumo } from '../data/api';
+import { ModalEncerrarOcorrencia } from './ModalEncerrarOcorrencia';
 
-interface Alert {
-  id: number;
-  type: 'critical' | 'warning' | 'attending' | 'resolved';
-  title: string;
-  description: string;
-  patient: string;
-  location: string;
-  bed: string;
-  sector: string;
-  time: string;
-  attendedBy?: string;
-  responseTime?: string;
+/**
+ * Central de alertas.
+ *
+ * Substitui a lista fixa de seis alertas inventados pelas ocorrencias reais, e
+ * fecha o ciclo do RF17 ao RF20: ciencia, atendimento e encerramento com
+ * classificacao.
+ *
+ * O alerta permanece visivel ate alguem dar ciencia (RN12). Nada some por
+ * tempo -- alerta que desaparece sozinho vira alerta esquecido.
+ */
+
+const ROTULO_EVENTO: Record<string, string> = {
+  queda: 'Queda',
+  permanencia_solo: 'Permanência no chão',
+  perda_verticalidade: 'Perda de verticalidade',
+  ausencia_prolongada: 'Ausência prolongada',
+};
+
+const ESTILO: Record<string, { fundo: string; barra: string; chip: string; rotulo: string }> = {
+  pendente: {
+    fundo: 'bg-red-50', barra: 'border-l-red-500',
+    chip: 'bg-red-500 text-white', rotulo: 'Pendente',
+  },
+  em_atendimento: {
+    fundo: 'bg-blue-50', barra: 'border-l-blue-500',
+    chip: 'bg-blue-500 text-white', rotulo: 'Em atendimento',
+  },
+  queda_confirmada: {
+    fundo: 'bg-white', barra: 'border-l-red-700',
+    chip: 'bg-red-700 text-white', rotulo: 'Queda confirmada',
+  },
+  falso_positivo: {
+    fundo: 'bg-white', barra: 'border-l-gray-400',
+    chip: 'bg-gray-400 text-white', rotulo: 'Falso positivo',
+  },
+  encerrada: {
+    fundo: 'bg-white', barra: 'border-l-green-500',
+    chip: 'bg-green-500 text-white', rotulo: 'Encerrada',
+  },
+};
+
+type Filtro = 'todos' | 'pendente' | 'em_atendimento' | 'encerrados';
+
+function quandoFoi(iso: string): string {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `${min} min atrás`;
+  const h = Math.floor(min / 60);
+  return h < 24 ? `${h}h atrás` : `${Math.floor(h / 24)}d atrás`;
 }
 
-const mockAlerts: Alert[] = [
-  {
-    id: 1,
-    type: 'critical',
-    title: 'Queda Detectada',
-    description: 'Movimento de queda identificado pela IA com 98.5% de confiança',
-    patient: 'João P.',
-    location: 'Leito 101-B',
-    bed: '101-B',
-    sector: 'UTI',
-    time: '5 min atrás'
-  },
-  {
-    id: 2,
-    type: 'warning',
-    title: 'Saída de Leito Não Autorizada',
-    description: 'Paciente detectado fora do leito por mais de 3 minutos',
-    patient: 'Maria S.',
-    location: 'Leito 101-A',
-    bed: '101-A',
-    sector: 'UTI',
-    time: '8 min atrás',
-    attendedBy: 'Enf. Carla',
-    responseTime: 'Tempo de resposta: 2 min'
-  },
-  {
-    id: 3,
-    type: 'warning',
-    title: 'Chamada de Enfermagem',
-    description: 'Solicitação de assistência no tablet do paciente',
-    patient: 'Ana L.',
-    location: 'Leito 102-B',
-    bed: '102-B',
-    sector: 'UTI',
-    time: '12 min atrás',
-    attendedBy: 'Enf. Roberto',
-    responseTime: 'Tempo de resposta: 3 min'
-  },
-  {
-    id: 4,
-    type: 'attending',
-    title: 'Medicação Pendente',
-    description: 'Horário de administração de Omeprazol 40mg próximo',
-    patient: 'Carlos M.',
-    location: 'Leito 201-A',
-    bed: '201-A',
-    sector: 'Enfermaria',
-    time: '15 min atrás'
-  }
-];
-
 export function AlertsScreen() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'critical' | 'warning' | 'attending' | 'resolved'>('all');
+  const { tenantId, can } = useAuth();
+  const { ocorrencias, canal, carregando, erro, recarregar } = useAlertas(tenantId);
+  const [busca, setBusca] = useState('');
+  const [filtro, setFiltro] = useState<Filtro>('todos');
+  const [ocupado, setOcupado] = useState<string | null>(null);
+  const [falha, setFalha] = useState<string | null>(null);
+  const [encerrando, setEncerrando] = useState<OcorrenciaResumo | null>(null);
 
-  const filteredAlerts = mockAlerts.filter(alert => {
-    const matchesSearch = alert.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         alert.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || alert.type === filterType;
-    return matchesSearch && matchesFilter;
-  });
+  const podeAtender = can('alerts', 'edit');
 
-  const stats = [
-    { label: 'Total Hoje', value: 6, color: 'border-gray-300' },
-    { label: 'Críticos Ativos', value: 1, color: 'border-red-500' },
-    { label: 'Alertas', value: 2, color: 'border-yellow-500' },
-    { label: 'Em Atendimento', value: 2, color: 'border-blue-500' },
-    { label: 'Resolvidos', value: 2, color: 'border-green-500' }
-  ];
+  const visiveis = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    return ocorrencias.filter((o) => {
+      const casaBusca =
+        !termo ||
+        (o.pacienteNome ?? '').toLowerCase().includes(termo) ||
+        o.ambienteNome.toLowerCase().includes(termo) ||
+        (o.cameraIdentificador ?? '').toLowerCase().includes(termo);
+      const casaFiltro =
+        filtro === 'todos' ||
+        (filtro === 'encerrados'
+          ? ['encerrada', 'falso_positivo', 'queda_confirmada'].includes(o.status)
+          : o.status === filtro);
+      return casaBusca && casaFiltro;
+    });
+  }, [ocorrencias, busca, filtro]);
 
-  const getAlertStyles = (type: string) => {
-    switch (type) {
-      case 'critical':
-        return { bg: 'bg-red-50', border: 'border-l-red-500', badge: 'bg-red-500 text-white', label: 'Crítico' };
-      case 'warning':
-        return { bg: 'bg-yellow-50', border: 'border-l-yellow-500', badge: 'bg-yellow-500 text-white', label: 'Alerta' };
-      case 'attending':
-        return { bg: 'bg-blue-50', border: 'border-l-blue-500', badge: 'bg-blue-500 text-white', label: 'Em atendimento' };
-      case 'resolved':
-        return { bg: 'bg-green-50', border: 'border-l-green-500', badge: 'bg-green-500 text-white', label: 'Resolvido' };
-      default:
-        return { bg: 'bg-gray-50', border: 'border-l-gray-500', badge: 'bg-gray-500 text-white', label: 'Info' };
+  const contagem = useMemo(() => {
+    const de = (s: string) => ocorrencias.filter((o) => o.status === s).length;
+    return {
+      total: ocorrencias.length,
+      pendente: de('pendente'),
+      atendendo: de('em_atendimento'),
+      confirmadas: de('queda_confirmada'),
+      falsos: de('falso_positivo'),
+    };
+  }, [ocorrencias]);
+
+  const agir = async (id: string, acao: () => Promise<unknown>) => {
+    setOcupado(id);
+    setFalha(null);
+    try {
+      await acao();
+      await recarregar();
+    } catch (e) {
+      setFalha(e instanceof ApiError ? e.message : 'Não foi possível concluir a ação.');
+    } finally {
+      setOcupado(null);
     }
   };
 
   return (
     <main className="px-8 py-6 flex-1 overflow-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl text-gray-800 mb-1">Central de Alertas</h1>
-          <p className="text-sm text-gray-500">Monitoramento em tempo real de alertas clínicos</p>
+          <p className="text-sm text-gray-500">
+            Ocorrências detectadas pelo serviço de visão, em tempo real
+          </p>
         </div>
-        <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
-          <Volume2 className="w-4 h-4" />
-          Som Ativo
-        </button>
+        {/* O estado do canal fica visivel de proposito: se o tempo real caiu, a
+            equipe precisa saber que esta vendo dado com ate 20s de atraso. */}
+        <IndicadorDoCanal estado={canal} />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
-        {stats.map((stat, index) => (
-          <div key={index} className={`bg-white rounded-lg border-l-4 ${stat.color} p-4 shadow-sm`}>
-            <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-            <p className="text-3xl text-gray-800">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar por paciente, leito ou tipo..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent"
-            />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Tipo
-            </button>
-            <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Status
-            </button>
-            <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Setor
-            </button>
-          </div>
+      {(erro || falha) && (
+        <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700">{falha ?? erro}</p>
         </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <Indicador rotulo="Total" valor={contagem.total} cor="border-gray-300" />
+        <Indicador rotulo="Pendentes" valor={contagem.pendente} cor="border-red-500" />
+        <Indicador rotulo="Em atendimento" valor={contagem.atendendo} cor="border-blue-500" />
+        <Indicador rotulo="Quedas confirmadas" valor={contagem.confirmadas} cor="border-red-700" />
+        {/* Falso positivo aparece no painel porque e insumo da RN14: e o unico
+            rotulo que vem da operacao real e alimenta a recalibragem. */}
+        <Indicador rotulo="Falsos positivos" valor={contagem.falsos} cor="border-gray-400" />
       </div>
 
-      {/* Alerts List */}
-      <div className="space-y-4">
-        {filteredAlerts.map(alert => {
-          const styles = getAlertStyles(alert.type);
-          
-          return (
-            <div
-              key={alert.id}
-              className={`${styles.bg} ${styles.border} border-l-4 bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow`}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por paciente, ambiente ou câmera"
+            className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2.5 text-sm
+                       focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+          />
+        </div>
+        <div className="flex gap-1">
+          {([
+            ['todos', 'Todos'],
+            ['pendente', 'Pendentes'],
+            ['em_atendimento', 'Em atendimento'],
+            ['encerrados', 'Encerrados'],
+          ] as [Filtro, string][]).map(([valor, texto]) => (
+            <button
+              key={valor}
+              type="button"
+              onClick={() => setFiltro(valor)}
+              className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                filtro === valor
+                  ? 'bg-[#0A7EA4] text-white'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
             >
-              <div className="p-5">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                      {alert.type === 'critical' ? '⚠️' : alert.type === 'warning' ? '⚡' : alert.type === 'attending' ? '🔵' : '✅'}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-gray-800">{alert.title}</h3>
-                        <span className={`px-3 py-1 rounded-full text-xs ${styles.badge}`}>
-                          {styles.label}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">{alert.description}</p>
-                      
-                      {/* Patient Info */}
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          <span>{alert.patient}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <BedDouble className="w-4 h-4" />
-                          <span>{alert.location}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          <span>{alert.sector}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 text-sm text-gray-400">
-                      <Clock className="w-4 h-4" />
-                      <span>{alert.time}</span>
-                    </div>
-                    <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors">
-                      <MoreVertical className="w-5 h-5 text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                  <div className="flex items-center gap-2">
-                    {alert.attendedBy ? (
-                      <div className="text-sm text-gray-600">
-                        <span className="text-gray-500">Atendido por:</span> <span className="text-gray-800">{alert.attendedBy}</span>
-                        {alert.responseTime && <span className="text-gray-400 ml-2">• {alert.responseTime}</span>}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-400">Aguardando atendimento</span>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {alert.type === 'critical' && !alert.attendedBy && (
-                      <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors">
-                        Iniciar Atendimento
-                      </button>
-                    )}
-                    <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4" />
-                      Ligar
-                    </button>
-                    <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      WhatsApp
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+              {texto}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {carregando ? (
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-8 text-gray-500">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Carregando ocorrências…</span>
+        </div>
+      ) : visiveis.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+          <CheckCircle className="mx-auto mb-3 h-8 w-8 text-gray-400" />
+          <p className="text-gray-700">
+            {ocorrencias.length === 0 ? 'Nenhuma ocorrência registrada.' : 'Nada neste filtro.'}
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
+            O que aparecer aqui vem do serviço de visão. Nenhum alerta desta tela é de exemplo.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visiveis.map((o) => (
+            <CartaoAlerta
+              key={o.id}
+              ocorrencia={o}
+              ocupado={ocupado === o.id}
+              podeAtender={podeAtender}
+              aoDarCiencia={() => agir(o.id, () => darCiencia(tenantId!, o.id))}
+              aoAtender={() => agir(o.id, () => iniciarAtendimento(tenantId!, o.id))}
+              aoEncerrar={() => setEncerrando(o)}
+            />
+          ))}
+        </div>
+      )}
+
+      {encerrando && tenantId && (
+        <ModalEncerrarOcorrencia
+          ocorrencia={encerrando}
+          aoFechar={() => setEncerrando(null)}
+          aoConfirmar={async (classificacao: ClassificacaoOcorrencia, observacao?: string) => {
+            await agir(encerrando.id, () =>
+              encerrarOcorrencia(tenantId, encerrando.id, classificacao, observacao)
+            );
+            setEncerrando(null);
+          }}
+        />
+      )}
     </main>
+  );
+}
+
+function IndicadorDoCanal({ estado }: { estado: 'conectando' | 'conectado' | 'desconectado' }) {
+  if (estado === 'conectado') {
+    return (
+      <span className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+        <Wifi className="w-4 h-4" />
+        Tempo real ativo
+      </span>
+    );
+  }
+  if (estado === 'conectando') {
+    return (
+      <span className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Conectando…
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+      <WifiOff className="w-4 h-4" />
+      Sem tempo real — atualizando a cada 20s
+    </span>
+  );
+}
+
+function Indicador({ rotulo, valor, cor }: { rotulo: string; valor: number; cor: string }) {
+  return (
+    <div className={`bg-white rounded-lg border-l-4 ${cor} border border-gray-200 p-4 shadow-sm`}>
+      <p className="text-2xl text-gray-800">{valor}</p>
+      <p className="text-xs text-gray-500">{rotulo}</p>
+    </div>
+  );
+}
+
+function CartaoAlerta({
+  ocorrencia: o, ocupado, podeAtender, aoDarCiencia, aoAtender, aoEncerrar,
+}: {
+  ocorrencia: OcorrenciaResumo;
+  ocupado: boolean;
+  podeAtender: boolean;
+  aoDarCiencia: () => void;
+  aoAtender: () => void;
+  aoEncerrar: () => void;
+}) {
+  const estilo = ESTILO[o.status] ?? ESTILO.encerrada;
+  const aberta = o.status === 'pendente' || o.status === 'em_atendimento';
+  const semCiencia = o.alertaStatus && o.alertaStatus !== 'ciente';
+
+  return (
+    <div className={`${estilo.fundo} ${estilo.barra} border-l-4 border border-gray-200 rounded-lg p-4 shadow-sm`}>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-gray-600" />
+          <span className="text-gray-800">{ROTULO_EVENTO[o.tipoEvento] ?? o.tipoEvento}</span>
+          {semCiencia && (
+            <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700">
+              sem ciência
+            </span>
+          )}
+        </div>
+        <span className={`rounded px-2 py-1 text-xs ${estilo.chip}`}>{estilo.rotulo}</span>
+      </div>
+
+      <div className="grid gap-1 text-sm text-gray-600">
+        {o.pacienteNome && (
+          <span className="flex items-center gap-2">
+            <User className="w-3.5 h-3.5" /> {o.pacienteNome}
+          </span>
+        )}
+        <span className="flex items-center gap-2">
+          <MapPin className="w-3.5 h-3.5" /> {o.ambienteNome}
+          {o.cameraIdentificador && ` · ${o.cameraIdentificador}`}
+        </span>
+        <span className="flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5" /> {quandoFoi(o.dataHora)}
+          {o.confianca != null && ` · escore ${o.confianca.toFixed(2)}`}
+        </span>
+      </div>
+
+      {o.observacao && (
+        <p className="mt-3 rounded bg-white/60 px-3 py-2 text-sm text-gray-600">{o.observacao}</p>
+      )}
+
+      {podeAtender && aberta && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {semCiencia && (
+            <button
+              type="button"
+              onClick={aoDarCiencia}
+              disabled={ocupado}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2
+                         text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              <Check className="w-4 h-4" />
+              Dar ciência
+            </button>
+          )}
+          {o.status === 'pendente' && (
+            <button
+              type="button"
+              onClick={aoAtender}
+              disabled={ocupado}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm
+                         text-white hover:bg-[#0EA5E9] disabled:opacity-60"
+            >
+              {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
+              Iniciar atendimento
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={aoEncerrar}
+            disabled={ocupado}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2
+                       text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Encerrar
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

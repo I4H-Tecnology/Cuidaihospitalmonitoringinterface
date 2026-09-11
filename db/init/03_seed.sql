@@ -40,8 +40,9 @@ INSERT INTO paciente (clinica_id, ambiente_id, nome, data_nascimento, data_admis
 SELECT c.id, a.id, p.nome, p.nasc, CURRENT_DATE - p.dias
 FROM clinica c
 JOIN ambiente a ON a.clinica_id = c.id
+-- Um paciente só: o suficiente para exercitar as telas sem encher o banco de
+-- gente que não existe. Cadastrar mais é trabalho de quem administra a clínica.
 JOIN (VALUES
-  ('Quarto 101', 'Paciente Demo A', DATE '1942-03-11', 12),
-  ('Quarto 102', 'Paciente Demo B', DATE '1938-07-25', 5)
+  ('Quarto 101', 'Paciente Demo A', DATE '1942-03-11', 12)
 ) AS p(ambiente, nome, nasc, dias) ON a.nome = p.ambiente
 WHERE c.slug = 'clinica-demo';

@@ -29,6 +29,11 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
   currentScreen?: Screen;
   onNavigate?: (screen: Screen) => void;
+  /** Ocorrencias abertas; alimenta o contador de monitoramento. */
+  casosAbertos?: number;
+  /** Alertas criticos sem ciencia (RN12). */
+  alertasCriticos?: number;
+  nomeDaClinica?: string | null;
 }
 
 interface MenuItem {
@@ -94,7 +99,10 @@ function SidebarModule({ title, icon, isCollapsed, isOpen, onToggle, children }:
   );
 }
 
-export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen = 'dashboard', onNavigate }: SidebarProps) {
+export function Sidebar({
+  isCollapsed = false, onToggleCollapse, currentScreen = 'dashboard', onNavigate,
+  casosAbertos = 0, alertasCriticos = 0, nomeDaClinica = null,
+}: SidebarProps) {
   const { can } = useAuth();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
@@ -144,8 +152,8 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
       title: 'MONITORAMENTO INTELIGENTE',
       icon: <Activity className="w-4 h-4" />,
       items: [
-        { icon: <Activity className="w-5 h-5" />, label: 'Monitoramento em Tempo Real', badge: { value: 3, variant: 'critical' }, screen: 'monitoring' },
-        { icon: <Bell className="w-5 h-5" />, label: 'Alertas Clínicos', badge: { value: 7, variant: 'warning' }, screen: 'alerts' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Monitoramento em Tempo Real', badge: casosAbertos > 0 ? { value: casosAbertos, variant: 'critical' } : undefined, screen: 'monitoring' },
+        { icon: <Bell className="w-5 h-5" />, label: 'Alertas Clínicos', badge: alertasCriticos > 0 ? { value: alertasCriticos, variant: 'warning' } : undefined, screen: 'alerts' },
         { icon: <Shield className="w-5 h-5" />, label: 'Detecção de Quedas', disabled: true },
         { icon: <BedDouble className="w-5 h-5" />, label: 'Ausência no Quarto', disabled: true },
         { icon: <Activity className="w-5 h-5" />, label: 'Agitação Noturna', disabled: true },
@@ -431,8 +439,8 @@ export function Sidebar({ isCollapsed = false, onToggleCollapse, currentScreen =
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-800 dark:text-gray-200 truncate">Hospital Central</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Unidade Principal</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{nomeDaClinica ?? 'Carregando…'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Clínica monitorada</p>
             </div>
           </div>
         </div>

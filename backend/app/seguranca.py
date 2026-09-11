@@ -119,6 +119,44 @@ def usuario_atual(
     )
 
 
+def identificar_por_token(token: str) -> UsuarioAutenticado | None:
+    """Mesma conferência de `usuario_atual`, mas devolvendo None em vez de 401.
+
+    Existe para o WebSocket: lá não há resposta HTTP onde devolver um status,
+    e uma HTTPException levantada dentro do handler viraria erro 500 no log em
+    vez de um fechamento limpo com motivo. Quem chama decide como recusar.
+    """
+    try:
+        carga = _decodificar(token)
+    except HTTPException:
+        return None
+
+    linha = db.buscar_um(
+        """
+        SELECT u.id, u.login, u.nome, u.status, u.clinica_id,
+               c.slug, c.ativa, p.nome AS papel
+        FROM usuario u
+        JOIN clinica c ON c.id = u.clinica_id
+        JOIN perfil  p ON p.id = u.perfil_id
+        WHERE u.id = %s
+        """,
+        (carga.get("sub"),),
+    )
+    # As mesmas três condições de `usuario_atual`: token válido não basta se a
+    # conta foi desativada ou a clínica saiu do ar depois que ele foi emitido.
+    if not linha or linha["status"] != "ativo" or not linha["ativa"]:
+        return None
+
+    return UsuarioAutenticado(
+        id=str(linha["id"]),
+        login=linha["login"],
+        nome=linha["nome"],
+        papel=linha["papel"],
+        clinica_id=str(linha["clinica_id"]),
+        tenant=linha["slug"],
+    )
+
+
 def exigir_tenant(usuario: UsuarioAutenticado, tenant_pedido: str) -> None:
     """Impede que um token de uma clínica leia dado de outra.
 

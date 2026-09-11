@@ -1,14 +1,6 @@
 import React from 'react';
 import { Plus, User, Clock, FileText } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-}
-
-interface EvolutionsTabProps {
-  patient: Patient;
-}
+import { AvisoForaDoMVP, BotaoIndisponivel } from '../ForaDoMVP';
 
 interface Evolution {
   id: number;
@@ -59,7 +51,7 @@ const mockEvolutions: Evolution[] = [
   }
 ];
 
-export function EvolutionsTab({ patient }: EvolutionsTabProps) {
+export function EvolutionsTab() {
   const typeConfig = {
     medical: { label: 'Evolução Médica', color: 'bg-blue-100 text-blue-700', icon: '🩺' },
     nursing: { label: 'Evolução de Enfermagem', color: 'bg-green-100 text-green-700', icon: '👨‍⚕️' },
@@ -67,6 +59,8 @@ export function EvolutionsTab({ patient }: EvolutionsTabProps) {
   };
 
   return (
+    <>
+      <AvisoForaDoMVP oque={'Evoluções clínicas'} />
     <div className="space-y-6">
       {/* Header Actions */}
       <div className="flex items-center justify-between">
@@ -74,10 +68,7 @@ export function EvolutionsTab({ patient }: EvolutionsTabProps) {
           <h2 className="text-gray-800 mb-1">Evoluções Clínicas</h2>
           <p className="text-sm text-gray-500">{mockEvolutions.length} registros encontrados</p>
         </div>
-        <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Nova Evolução
-        </button>
+        <BotaoIndisponivel motivo="Evoluções clínicas está fora do MVP (RFC, seção 2.6)">Nova Evolução</BotaoIndisponivel>
       </div>
 
       {/* Evolutions Timeline */}
@@ -110,7 +101,9 @@ export function EvolutionsTab({ patient }: EvolutionsTabProps) {
                       </div>
                     </div>
                   </div>
-                  <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <button
+                    disabled
+                    title="Ação indisponível: este módulo é demonstração da visão de produto (RFC, seção 2.6)" className="text-gray-400 hover:text-gray-600 transition-colors">
                     <FileText className="w-5 h-5" />
                   </button>
                 </div>
@@ -128,9 +121,12 @@ export function EvolutionsTab({ patient }: EvolutionsTabProps) {
       </div>
 
       {/* Load More */}
-      <button className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+      <button
+                    disabled
+                    title="Ação indisponível: este módulo é demonstração da visão de produto (RFC, seção 2.6)" className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
         Carregar mais evoluções antigas
       </button>
     </div>
+    </>
   );
 }
