@@ -77,6 +77,9 @@ services:
       # O Vite só expõe variáveis com prefixo VITE_. Derivar aqui evita ter a
       # mesma flag escrita duas vezes no .env, com risco de dessincronizar.
       VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
+      # Servico de visao. Roda fora do compose quando a fonte e webcam, porque
+      # container no Windows nao enxerga dispositivo de video.
+      VITE_VISAO_URL: ${VITE_VISAO_URL:-http://localhost:8001}
       # Necessário para o HMR enxergar alterações vindas de um bind mount Windows.
       CHOKIDAR_USEPOLLING: 'true'
     volumes:
@@ -123,6 +126,21 @@ services:
       # chave publicada, e qualquer um forjaria um token valido.
       SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
       TOKEN_HORAS: ${TOKEN_HORAS:-8}
+      # Log estruturado (json|texto) e nivel, iguais aos do servico de visao.
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMATO: ${LOG_FORMATO:-json}
+      # Clipes de evidencia gravados pelo servico de visao. A API so serve e
+      # expurga (24 h); a pasta e a mesma do host, montada abaixo.
+      CLIPES_DIR: /app/dados/clipes
+    volumes:
+      - ./visao/dados/clipes:/app/dados/clipes
+    healthcheck:
+      # A imagem python:slim nao tem curl; o proprio Python faz o GET.
+      test: ['CMD', 'python', '-c', "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy

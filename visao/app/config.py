@@ -54,6 +54,16 @@ class Config:
     webcam_indice: int = field(default_factory=lambda: _int("VISAO_WEBCAM_INDICE", 0))
     rtsp_url: str = field(default_factory=lambda: os.environ.get("VISAO_RTSP_URL", "").strip())
     arquivo: str = field(default_factory=lambda: os.environ.get("VISAO_ARQUIVO", "").strip())
+    # Como um ARQUIVO é lido. Em tempo real (padrão), o vídeo se comporta como
+    # uma câmera: os quadros chegam no ritmo do relógio e o timestamp é o
+    # horário de agora — é o modo da demonstração, em que a ocorrência
+    # registrada precisa ter data e hora de verdade. Desligado, o arquivo é
+    # lido o mais rápido possível e o timestamp é a posição no vídeo, em
+    # segundos: é o que o arnês de avaliação precisa para casar a ocorrência
+    # com a anotação (`inicio_s`, `fim_s`) do mesmo clipe.
+    arquivo_tempo_real: bool = field(
+        default_factory=lambda: _bool("VISAO_ARQUIVO_TEMPO_REAL", True)
+    )
 
     # --- amostragem ------------------------------------------------------
     # A RFC pede alerta em até 5s. Processar 30 fps é desperdício: queda é um
@@ -61,9 +71,33 @@ class Config:
     fps_alvo: float = field(default_factory=lambda: _float("VISAO_FPS_ALVO", 8.0))
     largura: int = field(default_factory=lambda: _int("VISAO_LARGURA", 640))
 
+    # --- clipe de evidência (RNF05, RN08, RN09) --------------------------
+    # 5 s antes + 5 s depois da ocorrência, apagado após 24 h. A pasta é a
+    # mesma que o backend monta para servir o clipe ao painel.
+    clipes_ativos: bool = field(default_factory=lambda: _bool("VISAO_CLIPES", True))
+    clipes_pasta: str = field(default_factory=lambda: os.environ.get("VISAO_CLIPES_PASTA", "").strip())
+    clipes_segundos_antes: float = field(default_factory=lambda: _float("VISAO_CLIPES_SEGUNDOS_ANTES", 5.0))
+    clipes_segundos_depois: float = field(default_factory=lambda: _float("VISAO_CLIPES_SEGUNDOS_DEPOIS", 5.0))
+    clipes_retencao_horas: float = field(default_factory=lambda: _float("VISAO_CLIPES_RETENCAO_HORAS", 24.0))
+
     # --- integração ------------------------------------------------------
     api_url: str = field(default_factory=lambda: os.environ.get("VISAO_API_URL", "http://localhost:8000").rstrip("/"))
     tenant: str = field(default_factory=lambda: os.environ.get("VISAO_TENANT", "clinica-demo"))
+
+    # Câmera cadastrada que este processo observa. Vazio = não publica: o
+    # pipeline roda, mostra na tela e não registra nada. É o modo de quem está
+    # só ensaiando o enquadramento, e continua sendo o padrão.
+    camera_id: str = field(default_factory=lambda: os.environ.get("VISAO_CAMERA_ID", "").strip())
+    # Credencial do usuário de serviço. O serviço faz login como qualquer outro
+    # usuário e recebe um JWT — reaproveitar a autenticação que já existe é
+    # menos código e menos superfície de ataque que inventar um token estático
+    # sem prazo de validade só para máquina.
+    api_login: str = field(default_factory=lambda: os.environ.get("VISAO_API_LOGIN", "").strip())
+    api_senha: str = field(default_factory=lambda: os.environ.get("VISAO_API_SENHA", ""))
+
+    @property
+    def publica_ocorrencias(self) -> bool:
+        return bool(self.camera_id)
 
     def validar(self) -> None:
         """Falha cedo e com mensagem clara, em vez de travar em runtime."""
@@ -81,6 +115,18 @@ class Config:
             )
         if self.fps_alvo <= 0:
             raise ValueError("VISAO_FPS_ALVO precisa ser maior que zero")
+        # A RFC fixa o teto em 24 h (RNF05). Guardar mais seria descumprir a
+        # própria regra que o sistema promete — falha na subida, não em auditoria.
+        if not 0 < self.clipes_retencao_horas <= 24:
+            raise ValueError("VISAO_CLIPES_RETENCAO_HORAS precisa estar entre 0 e 24 (RNF05)")
+        # Câmera configurada sem credencial publicaria em silêncio no vazio: o
+        # pipeline detectaria, tentaria enviar, tomaria 401 a cada evento e o
+        # banco ficaria vazio. Melhor não subir.
+        if self.camera_id and not (self.api_login and self.api_senha):
+            raise ValueError(
+                "VISAO_CAMERA_ID exige VISAO_API_LOGIN e VISAO_API_SENHA "
+                "(usuário de serviço criado por db/scripts/criar-servico-visao.sql)"
+            )
 
     def descrever_fonte(self) -> str:
         if self.fonte is Fonte.WEBCAM:

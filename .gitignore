@@ -25,3 +25,15 @@ visao/capturas/
 visao/saida/
 __pycache__/
 *.pyc
+frontend/.vite/
+
+# Ocorrencias aguardando reenvio quando a API esteve fora do ar.
+# Sao dados de operacao, e podem conter horario e camera de um evento real.
+visao/dados/fila/
+
+# Dados de validacao da IA: videos e cache de features nao entram no Git.
+# Sao dados de imagem (LGPD) e o repositorio e publico. Anotacoes e
+# resultados (metricas.md, erros.csv) sao rastreados.
+visao/dados/videos/
+visao/dados/clipes/
+visao/dados/cache/

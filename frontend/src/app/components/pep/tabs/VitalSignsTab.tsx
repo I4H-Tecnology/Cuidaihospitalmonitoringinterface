@@ -1,18 +1,10 @@
 import React, { useState } from 'react';
 import { Activity, TrendingUp, TrendingDown } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-}
-
-interface VitalSignsTabProps {
-  patient: Patient;
-}
+import { AvisoForaDoMVP, BotaoIndisponivel } from '../ForaDoMVP';
 
 type Period = '24h' | '48h' | 'all';
 
-export function VitalSignsTab({ patient }: VitalSignsTabProps) {
+export function VitalSignsTab() {
   const [period, setPeriod] = useState<Period>('24h');
 
   const vitalSignsData = [
@@ -76,6 +68,8 @@ export function VitalSignsTab({ patient }: VitalSignsTabProps) {
   ];
 
   return (
+    <>
+      <AvisoForaDoMVP oque={'Sinais vitais'} />
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -220,5 +214,6 @@ export function VitalSignsTab({ patient }: VitalSignsTabProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }

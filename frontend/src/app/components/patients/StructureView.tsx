@@ -1,209 +1,141 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Building, AlertCircle, BedDouble, Eye } from 'lucide-react';
-import { PatientData } from '../PatientsScreen';
+import { AlertTriangle, BedDouble, Camera, User, UserPlus } from 'lucide-react';
+import { descreverAmbiente } from '../../data/api';
+import type { AmbienteResumo, PacienteResumo } from '../../data/api';
 
-interface StructureViewProps {
-  patients: PatientData[];
+/**
+ * Estrutura fisica da clinica.
+ *
+ * Agrupava por andar -> quarto -> leito, campos que nao existem no DER. O que o
+ * modelo tem e AMBIENTE (quarto, corredor, sala de convivencia), e e por ele
+ * que a estrutura e montada agora -- que tambem e a unidade que a camera
+ * observa e a que a ocorrencia se vincula.
+ */
+
+interface Props {
+  pacientes: PacienteResumo[];
+  ambientes: AmbienteResumo[];
+  aoAbrir?: (paciente: PacienteResumo) => void;
 }
 
-interface FloorData {
-  name: string;
-  rooms: RoomData[];
+const SITUACAO = {
+  stable: { rotulo: 'Estável', chip: 'bg-green-100 text-green-700' },
+  attention: { rotulo: 'Atenção', chip: 'bg-yellow-100 text-yellow-700' },
+  critical: { rotulo: 'Crítico', chip: 'bg-red-100 text-red-700' },
+} as const;
+
+function quando(iso?: string | null): string {
+  if (!iso) return 'sem ocorrência';
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 60) return `há ${Math.max(1, min)} min`;
+  const h = Math.floor(min / 60);
+  return h < 24 ? `há ${h}h` : `há ${Math.floor(h / 24)}d`;
 }
 
-interface RoomData {
-  number: string;
-  patients: PatientData[];
-}
-
-export function StructureView({ patients }: StructureViewProps) {
-  const [expandedFloor, setExpandedFloor] = useState<string | null>(null);
-  const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
-
-  // Group patients by floor and room
-  const floors: FloorData[] = [];
-  const floorNames = Array.from(new Set(patients.map(p => p.floor)));
-  
-  floorNames.forEach(floorName => {
-    const floorPatients = patients.filter(p => p.floor === floorName);
-    const roomNumbers = Array.from(new Set(floorPatients.map(p => p.room)));
-    
-    const rooms: RoomData[] = roomNumbers.map(roomNumber => ({
-      number: roomNumber,
-      patients: floorPatients.filter(p => p.room === roomNumber)
-    }));
-    
-    floors.push({ name: floorName, rooms });
-  });
-
-  const toggleFloor = (floorName: string) => {
-    setExpandedFloor(expandedFloor === floorName ? null : floorName);
-    setExpandedRoom(null);
-  };
-
-  const toggleRoom = (roomNumber: string) => {
-    setExpandedRoom(expandedRoom === roomNumber ? null : roomNumber);
-  };
-
-  const getRoomStatus = (room: RoomData) => {
-    const totalBeds = room.patients.length;
-    const occupied = room.patients.length;
-    
-    if (occupied === 0) return { label: 'Vazio', color: 'bg-gray-100 text-gray-700' };
-    return { label: 'Ocupado', color: 'bg-green-100 text-green-700' };
-  };
-
-  const statusConfig = {
-    stable: { label: 'Estável', color: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
-    attention: { label: 'Atenção', color: 'bg-yellow-100 text-yellow-700', dot: 'bg-yellow-500' },
-    critical: { label: 'Crítico', color: 'bg-red-100 text-red-700', dot: 'bg-red-500' }
-  };
-
-  const aiRiskConfig = {
-    low: { label: 'Baixo', color: 'bg-blue-100 text-blue-700' },
-    moderate: { label: 'Moderado', color: 'bg-yellow-100 text-yellow-700' },
-    high: { label: 'Alto', color: 'bg-red-100 text-red-700' }
-  };
+export function StructureView({ pacientes, ambientes, aoAbrir }: Props) {
+  const semAmbiente = pacientes.filter((p) => !p.ambienteId);
 
   return (
     <div className="space-y-4">
-      {floors.map(floor => {
-        const floorPatients = floor.rooms.flatMap(r => r.patients);
-        const totalBeds = floorPatients.length;
-        const occupiedBeds = floorPatients.length;
-        const activeAlerts = floorPatients.reduce((sum, p) => sum + p.activeAlerts, 0);
-        const isExpanded = expandedFloor === floor.name;
-
+      {ambientes.map((amb) => {
+        const dentro = pacientes.filter((p) => p.ambienteId === amb.id);
         return (
-          <div key={floor.name} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            {/* Floor Header */}
-            <button
-              onClick={() => toggleFloor(floor.name)}
-              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#E8F4F8] rounded-lg flex items-center justify-center">
-                  <Building className="w-6 h-6 text-[#0A7EA4]" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-gray-800 mb-1">{floor.name}</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>🛏️ {occupiedBeds}/{totalBeds} leitos ocupados</span>
-                    {activeAlerts > 0 && (
-                      <span className="flex items-center gap-1 text-red-600">
-                        <AlertCircle className="w-4 h-4" />
-                        {activeAlerts} alertas
-                      </span>
-                    )}
-                  </div>
-                </div>
+          <section key={amb.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-3">
+              <div className="flex items-center gap-2">
+                <BedDouble className="h-4 w-4 text-gray-400" />
+                <h3 className="text-gray-800">{descreverAmbiente(amb.nome, amb.tipo)}</h3>
               </div>
-              {isExpanded ? (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-
-            {/* Rooms */}
-            {isExpanded && (
-              <div className="px-6 pb-4 space-y-3">
-                {floor.rooms.map(room => {
-                  const roomStatus = getRoomStatus(room);
-                  const isRoomExpanded = expandedRoom === room.number;
-                  const roomAlerts = room.patients.reduce((sum, p) => sum + p.activeAlerts, 0);
-
-                  return (
-                    <div key={room.number} className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-                      {/* Room Header */}
-                      <button
-                        onClick={() => toggleRoom(room.number)}
-                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <BedDouble className="w-5 h-5 text-[#0A7EA4]" />
-                          <div className="text-left">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm text-gray-800">{room.number}</span>
-                              <span className={`px-2 py-0.5 rounded-full text-xs ${roomStatus.color}`}>
-                                {roomStatus.label}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              {room.patients.length} paciente(s)
-                              {roomAlerts > 0 && ` • ${roomAlerts} alerta(s)`}
-                            </p>
-                          </div>
-                        </div>
-                        {isRoomExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-
-                      {/* Patients in Room */}
-                      {isRoomExpanded && (
-                        <div className="px-4 pb-3 space-y-2">
-                          {room.patients.map(patient => {
-                            const status = statusConfig[patient.status];
-                            const aiRisk = patient.aiRisk ? aiRiskConfig[patient.aiRisk] : null;
-
-                            return (
-                              <div
-                                key={patient.id}
-                                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
-                              >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <h4 className="text-gray-800">{patient.name}</h4>
-                                      <span className={`px-2 py-1 rounded-full text-xs ${status.color} flex items-center gap-1`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`}></span>
-                                        {status.label}
-                                      </span>
-                                      {aiRisk && (
-                                        <span className={`px-2 py-1 rounded-full text-xs ${aiRisk.color} flex items-center gap-1`}>
-                                          🤖 Risco {aiRisk.label}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
-                                      <span>{patient.age} anos • {patient.gender === 'M' ? 'Masculino' : 'Feminino'}</span>
-                                      <span>🛏️ {patient.bed}</span>
-                                      <span>📋 {patient.diagnosis}</span>
-                                      <span>📅 Internado em {patient.admissionDate}</span>
-                                    </div>
-                                    <p className="text-xs text-gray-500">
-                                      Último evento: {patient.lastEvent}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-2 ml-4">
-                                    {patient.activeAlerts > 0 && (
-                                      <span className="px-2 py-1 bg-red-50 text-red-600 rounded text-xs flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" />
-                                        {patient.activeAlerts}
-                                      </span>
-                                    )}
-                                    <button className="px-3 py-1.5 bg-[#E8F4F8] text-[#0A7EA4] rounded-lg text-xs hover:bg-[#D6EEF5] transition-colors flex items-center gap-1">
-                                      <Eye className="w-3 h-3" />
-                                      Ver PEP
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Camera className="h-3.5 w-3.5" />
+                  {amb.cameras > 0
+                    ? `${amb.cameras} câmera${amb.cameras > 1 ? 's' : ''}`
+                    : 'sem câmera'}
+                </span>
+                <span>{dentro.length} paciente(s)</span>
               </div>
+            </header>
+
+            {dentro.length === 0 ? (
+              <p className="px-5 py-6 text-center text-sm text-gray-500">
+                Ambiente vago.
+                {amb.cameras === 0 && ' Nenhuma câmera cadastrada aqui.'}
+              </p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {dentro.map((p) => (
+                  <CartaoPaciente key={p.id} paciente={p} aoAbrir={aoAbrir} />
+                ))}
+              </ul>
             )}
-          </div>
+          </section>
         );
       })}
+
+      {/* Paciente sem vinculo nao e detalhe: e queda que a camera nao vai
+          conseguir atribuir a ninguem. */}
+      {semAmbiente.length > 0 && (
+        <section className="bg-white rounded-lg border border-amber-200 shadow-sm overflow-hidden">
+          <header className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-5 py-3">
+            <AlertTriangle className="h-4 w-4 text-amber-700" />
+            <h3 className="text-amber-900">Sem ambiente vinculado</h3>
+            <span className="text-sm text-amber-800">
+              — as ocorrências detectadas não terão a quem ser atribuídas
+            </span>
+          </header>
+          <ul className="divide-y divide-gray-100">
+            {semAmbiente.map((p) => (
+              <CartaoPaciente key={p.id} paciente={p} aoAbrir={aoAbrir} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {ambientes.length === 0 && (
+        <div className="rounded-lg border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+          <UserPlus className="mx-auto mb-3 h-8 w-8 text-gray-400" />
+          <p className="text-gray-700">Nenhum ambiente cadastrado.</p>
+        </div>
+      )}
     </div>
+  );
+}
+
+function CartaoPaciente({
+  paciente: p, aoAbrir,
+}: { paciente: PacienteResumo; aoAbrir?: (p: PacienteResumo) => void }) {
+  const s = SITUACAO[p.situacao];
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => aoAbrir?.(p)}
+        disabled={!aoAbrir}
+        className="flex w-full items-center gap-4 px-5 py-3 text-left transition-colors
+                   hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] text-white">
+          <User className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-gray-800">{p.nome}</span>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs ${s.chip}`}>{s.rotulo}</span>
+            {p.ocorrenciasAbertas > 0 && (
+              <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-600">
+                {p.ocorrenciasAbertas} em aberto
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 flex flex-wrap gap-3 text-sm text-gray-500">
+            {p.idade != null && <span>{p.idade} anos</span>}
+            <span>última ocorrência: {quando(p.ultimaOcorrencia)}</span>
+            {p.quedasConfirmadas > 0 && (
+              <span>{p.quedasConfirmadas} queda(s) confirmada(s)</span>
+            )}
+          </div>
+        </div>
+      </button>
+    </li>
   );
 }

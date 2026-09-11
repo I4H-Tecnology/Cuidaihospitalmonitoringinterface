@@ -19,6 +19,7 @@ const TELAS: Screen[] = [
   'financial',
   'inventory',
   'hr',
+  'saude',
 ];
 
 describe('mapa de telas para módulos de permissão', () => {
@@ -35,8 +36,11 @@ describe('mapa de telas para módulos de permissão', () => {
   it('só permite um módulo compartilhado: o apelido documentado da visão operacional', () => {
     // 'operational-overview' aponta para 'dashboard' de propósito, porque o
     // backend ainda não expõe permissão própria para esse módulo — há um TODO
-    // no rbac.ts registrando isso. Qualquer OUTRA duplicata é engano: duas
-    // telas dividindo módulo significa que uma delas não é controlável sozinha.
+    // no rbac.ts registrando isso. 'saude' (observabilidade) aponta para
+    // 'monitoring': é uma leitura do estado do monitoramento, e quem pode ver
+    // o monitoramento pode ver se ele está de pé. Qualquer OUTRA duplicata é
+    // engano: duas telas dividindo módulo significa que uma delas não é
+    // controlável sozinha.
     const modulos = Object.entries(screenModuleMap);
     const contagem = new Map<string, string[]>();
     for (const [tela, modulo] of modulos) {
@@ -47,7 +51,10 @@ describe('mapa de telas para módulos de permissão', () => {
       .filter(([, telas]) => telas.length > 1)
       .map(([modulo, telas]) => `${modulo}: ${telas.sort().join(', ')}`);
 
-    expect(compartilhados).toEqual(['dashboard: dashboard, operational-overview']);
+    expect(compartilhados).toEqual([
+      'dashboard: dashboard, operational-overview',
+      'monitoring: monitoring, saude',
+    ]);
   });
 
   it('mapeia o PEP para o módulo de registros clínicos', () => {

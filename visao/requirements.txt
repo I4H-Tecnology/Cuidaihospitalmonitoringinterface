@@ -13,3 +13,11 @@ mediapipe==0.10.20
 
 # Envio de ocorrencias para a API
 httpx==0.28.1
+
+# Codificacao H.264 do clipe de evidencia. Traz um ffmpeg estatico: o OpenCV
+# do Windows nao grava H.264, e mp4v nao toca no navegador.
+imageio-ffmpeg==0.6.0
+
+# Servidor que publica o video anotado para o frontend
+fastapi==0.115.6
+uvicorn[standard]==0.34.0

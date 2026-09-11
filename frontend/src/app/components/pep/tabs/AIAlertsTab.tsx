@@ -1,15 +1,7 @@
 import React from 'react';
 import { Camera, AlertTriangle, CheckCircle, Eye, User } from 'lucide-react';
 import { AISuggestionCard } from '../AISuggestionCard';
-
-interface Patient {
-  id: number;
-  name: string;
-}
-
-interface AIAlertsTabProps {
-  patient: Patient;
-}
+import { AvisoForaDoMVP, BotaoIndisponivel } from '../ForaDoMVP';
 
 interface AISuggestion {
   level: 'low' | 'moderate' | 'high';
@@ -124,7 +116,7 @@ const mockAIAlerts: AIAlert[] = [
   }
 ];
 
-export function AIAlertsTab({ patient }: AIAlertsTabProps) {
+export function AIAlertsTab() {
   const typeConfig = {
     fall: { 
       label: 'Queda Detectada', 
@@ -173,6 +165,8 @@ export function AIAlertsTab({ patient }: AIAlertsTabProps) {
   ];
 
   return (
+    <>
+      <AvisoForaDoMVP oque={'Os alertas clínicos deste módulo'} />
     <div className="space-y-6">
       {/* Header */}
       <div>
@@ -290,9 +284,12 @@ export function AIAlertsTab({ patient }: AIAlertsTabProps) {
       </div>
 
       {/* Load More */}
-      <button className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+      <button
+                    disabled
+                    title="Ação indisponível: este módulo é demonstração da visão de produto (RFC, seção 2.6)" className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
         Carregar mais detecções antigas
       </button>
     </div>
+    </>
   );
 }

@@ -1,0 +1,7 @@
+arquivo,tem_queda,inicio_s,fim_s,cenario,observacao,conjunto
+queda-cama-01.mp4,sim,4.2,6.0,queda_da_cama,,
+queda-caminhando-01.mp4,sim,3.0,4.5,queda_ao_caminhar,,
+ja-no-chao-01.mp4,sim,0.0,0.5,ja_no_chao,entra em cena deitado,
+sentar-rapido-01.mp4,nao,,,sentar,negativo dificil,
+agachar-01.mp4,nao,,,agachar,,
+deitar-levantar-01.mp4,nao,,,deitar_e_levantar,levanta em 2 s,

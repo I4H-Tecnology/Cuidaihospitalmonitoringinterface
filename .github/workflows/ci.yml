@@ -55,10 +55,42 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
 
+  visao:
+    name: Serviço de visão e backend (Python)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: visao/requirements.txt
+
+      # O torch precisa vir do índice CPU: o padrão do PyPI traz CUDA, são
+      # gigabytes, e o job estoura o tempo. Instalado ANTES do requirements
+      # para o ultralytics não puxar a versão com GPU como dependência.
+      - name: Instalar torch (CPU)
+        run: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchvision==0.20.1
+
+      - name: Instalar dependências da visão
+        run: pip install -r visao/requirements.txt
+
+      # unittest, não pytest: é o que o venv do projeto tem, e é o que roda na
+      # máquina do aluno. Um runner diferente no CI mediria outra coisa.
+      - name: Testes da visão
+        run: python -m unittest discover -s visao/testes -t . -v
+
+      - name: Compilar backend e visão
+        run: python -m py_compile backend/app/*.py backend/app/rotas/*.py visao/app/*.py visao/*.py
+
   imagem:
     name: Imagens Docker
     runs-on: ubuntu-latest
-    needs: qualidade
+    needs: [qualidade, visao]
     # Sem working-directory aqui: os contextos de build sao passados explicitos.
     # Só valida a imagem no que vai para produção.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

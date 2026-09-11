@@ -12,7 +12,6 @@ interface Bed {
     lastEvent: string;
   };
   alerts: number;
-  aiRisk?: 'low' | 'moderate' | 'high';
   blockReason?: string;
 }
 
@@ -50,8 +49,7 @@ const mockData: Floor[] = [
               status: 'critical',
               lastEvent: 'Queda detectada - há 2h'
             },
-            alerts: 2,
-            aiRisk: 'high'
+            alerts: 2
           },
           {
             id: 'bed-101b',
@@ -62,8 +60,7 @@ const mockData: Floor[] = [
               status: 'attention',
               lastEvent: 'FC elevada - há 5h'
             },
-            alerts: 1,
-            aiRisk: 'moderate'
+            alerts: 1
           }
         ]
       },
@@ -82,8 +79,7 @@ const mockData: Floor[] = [
               status: 'attention',
               lastEvent: 'Temperatura elevada - há 3h'
             },
-            alerts: 1,
-            aiRisk: 'moderate'
+            alerts: 1
           },
           {
             id: 'bed-102b',
@@ -135,8 +131,7 @@ const mockData: Floor[] = [
               status: 'stable',
               lastEvent: 'Sinais vitais normais - há 1h'
             },
-            alerts: 0,
-            aiRisk: 'low'
+            alerts: 0
           }
         ]
       },
@@ -155,8 +150,7 @@ const mockData: Floor[] = [
               status: 'stable',
               lastEvent: 'Evolução médica - há 2h'
             },
-            alerts: 0,
-            aiRisk: 'low'
+            alerts: 0
           },
           {
             id: 'bed-202b',
@@ -167,8 +161,7 @@ const mockData: Floor[] = [
               status: 'attention',
               lastEvent: 'Medicação administrada - há 30min'
             },
-            alerts: 1,
-            aiRisk: 'moderate'
+            alerts: 1
           }
         ]
       },
@@ -214,8 +207,7 @@ const mockData: Floor[] = [
               status: 'stable',
               lastEvent: 'Glicemia controlada - há 4h'
             },
-            alerts: 0,
-            aiRisk: 'low'
+            alerts: 0
           },
           {
             id: 'bed-301b',
@@ -226,8 +218,7 @@ const mockData: Floor[] = [
               status: 'stable',
               lastEvent: 'Deambulando com auxílio - há 1h'
             },
-            alerts: 0,
-            aiRisk: 'low'
+            alerts: 0
           }
         ]
       },
@@ -246,8 +237,7 @@ const mockData: Floor[] = [
               status: 'stable',
               lastEvent: 'Fisioterapia realizada - há 2h'
             },
-            alerts: 0,
-            aiRisk: 'low'
+            alerts: 0
           }
         ]
       },
@@ -310,12 +300,6 @@ export function BedsRoomsScreen() {
     stable: { label: 'Estável', color: 'bg-green-100 text-green-700' },
     attention: { label: 'Atenção', color: 'bg-yellow-100 text-yellow-700' },
     critical: { label: 'Crítico', color: 'bg-red-100 text-red-700' }
-  };
-
-  const aiRiskConfig = {
-    low: { label: 'Baixo', color: 'bg-blue-100 text-blue-700' },
-    moderate: { label: 'Moderado', color: 'bg-yellow-100 text-yellow-700' },
-    high: { label: 'Alto', color: 'bg-red-100 text-red-700' }
   };
 
   const toggleFloor = (floorId: string) => {
@@ -542,11 +526,6 @@ export function BedsRoomsScreen() {
                                             <span className="px-2 py-1 bg-yellow-50 text-yellow-600 rounded text-xs flex items-center gap-1">
                                               <AlertCircle className="w-3 h-3" />
                                               {bed.alerts}
-                                            </span>
-                                          )}
-                                          {bed.aiRisk && (
-                                            <span className={`px-2 py-1 rounded-full text-xs ${aiRiskConfig[bed.aiRisk].color}`}>
-                                              🤖 Risco {aiRiskConfig[bed.aiRisk].label}
                                             </span>
                                           )}
                                         </div>

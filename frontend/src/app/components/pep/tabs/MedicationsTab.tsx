@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Clock, CheckCircle, AlertTriangle, XCircle, FileText, Edit, Ban, History, User, Calendar, Eye, MessageSquare, Pause } from 'lucide-react';
-
-interface Patient {
-  id: number;
-  name: string;
-}
-
-interface MedicationsTabProps {
-  patient: Patient;
-}
+import { AvisoForaDoMVP, BotaoIndisponivel } from '../ForaDoMVP';
 
 interface MedicationSchedule {
   time: string;
@@ -245,7 +237,7 @@ const mockHistory: MedicationHistory[] = [
   }
 ];
 
-export function MedicationsTab({ patient }: MedicationsTabProps) {
+export function MedicationsTab() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -336,6 +328,8 @@ export function MedicationsTab({ patient }: MedicationsTabProps) {
   };
 
   return (
+    <>
+      <AvisoForaDoMVP oque={'Prescrição e administração de medicamentos'} />
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -351,10 +345,7 @@ export function MedicationsTab({ patient }: MedicationsTabProps) {
             <History className="w-4 h-4" />
             {showHistory ? 'Ocultar Histórico' : 'Ver Histórico'}
           </button>
-          <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Nova Prescrição
-          </button>
+          <BotaoIndisponivel motivo="Prescrição e administração de medicamentos está fora do MVP (RFC, seção 2.6)">Nova Prescrição</BotaoIndisponivel>
         </div>
       </div>
 
@@ -482,7 +473,8 @@ export function MedicationsTab({ patient }: MedicationsTabProps) {
                     >
                       <Pause className="w-4 h-4" />
                     </button>
-                    <button className="p-2 text-gray-400 hover:text-[#0A7EA4] hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalhes">
+                    <button
+                    disabled className="p-2 text-gray-400 hover:text-[#0A7EA4] hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalhes">
                       <Eye className="w-4 h-4" />
                     </button>
                   </div>
@@ -728,5 +720,6 @@ export function MedicationsTab({ patient }: MedicationsTabProps) {
         </div>
       )}
     </div>
+    </>
   );
 }

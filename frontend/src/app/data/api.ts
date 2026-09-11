@@ -88,6 +88,8 @@ const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> 
 export interface TenantInfo {
   id: string;
   active: boolean;
+  /** Nome da clinica, para o rodape do menu. */
+  nome?: string;
 }
 
 export interface PermissionRow {
@@ -232,3 +234,276 @@ export const recordAccessLog = (tenantId: string, log: any) =>
 
 export const fetchOperationalOverview = (tenantId: string) =>
   request<OperationalOverviewResponse>(`/api/operational-overview?tenantId=${encodeURIComponent(tenantId)}`);
+
+/* ---------------------------------------------------------------------------
+ * Monitoramento — câmeras, ambientes e ocorrências
+ * -------------------------------------------------------------------------- */
+
+export interface AmbienteResumo {
+  id: string;
+  nome: string;
+  tipo: string;
+  cameras: number;
+  pacienteNome?: string | null;
+}
+
+export interface CameraResumo {
+  id: string;
+  identificador: string;
+  /** Credencial vem mascarada pela API; nunca chega inteira ao navegador. */
+  urlStream: string;
+  status: string;
+  /** Derivada do último ping no servidor, não da coluna de status. */
+  conectada: boolean;
+  ultimoPing?: string | null;
+  ambienteId: string;
+  ambienteNome: string;
+  ambienteTipo: string;
+  pacienteId?: string | null;
+  pacienteNome?: string | null;
+  ocorrencias24h: number;
+  ultimaOcorrencia?: string | null;
+}
+
+export interface OcorrenciaResumo {
+  id: string;
+  tipoEvento: string;
+  status: string;
+  confianca?: number | null;
+  dataHora: string;
+  encerradaEm?: string | null;
+  observacao?: string | null;
+  ambienteId: string;
+  ambienteNome: string;
+  pacienteId?: string | null;
+  pacienteNome?: string | null;
+  cameraId?: string | null;
+  cameraIdentificador?: string | null;
+  alertaNivel?: string | null;
+  alertaStatus?: string | null;
+  /** Clipe de evidência em disco agora. Some após 24 h; a ocorrência fica. */
+  temClipe?: boolean;
+}
+
+export const fetchAmbientes = (tenantId: string) =>
+  request<AmbienteResumo[]>(`/api/ambientes?tenantId=${encodeURIComponent(tenantId)}`);
+
+export const fetchCameras = (tenantId: string, somenteConectadas = false) =>
+  request<CameraResumo[]>(
+    `/api/cameras?tenantId=${encodeURIComponent(tenantId)}` +
+      (somenteConectadas ? '&somenteConectadas=true' : '')
+  );
+
+export const createCamera = (payload: {
+  tenantId: string;
+  ambienteId: string;
+  identificador: string;
+  urlStream: string;
+}) =>
+  request<CameraResumo>('/api/cameras', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const fetchOcorrencias = (tenantId: string, limite = 20) =>
+  request<OcorrenciaResumo[]>(
+    `/api/ocorrencias?tenantId=${encodeURIComponent(tenantId)}&limite=${limite}`
+  );
+
+/* ---------------------------------------------------------------------------
+ * Ciclo de atendimento (RF17-RF20)
+ * -------------------------------------------------------------------------- */
+
+export type ClassificacaoOcorrencia = 'encerrada' | 'falso_positivo' | 'queda_confirmada';
+
+export const darCiencia = (tenantId: string, ocorrenciaId: string) =>
+  request<{ ok: boolean }>(
+    `/api/ocorrencias/${ocorrenciaId}/ciencia?tenantId=${encodeURIComponent(tenantId)}`,
+    { method: 'POST' }
+  );
+
+export const iniciarAtendimento = (tenantId: string, ocorrenciaId: string) =>
+  request<{ ok: boolean }>(`/api/ocorrencias/${ocorrenciaId}/atendimento`, {
+    method: 'POST',
+    body: JSON.stringify({ tenantId })
+  });
+
+export const encerrarOcorrencia = (
+  tenantId: string,
+  ocorrenciaId: string,
+  classificacao: ClassificacaoOcorrencia,
+  observacao?: string
+) =>
+  request<{ ok: boolean }>(`/api/ocorrencias/${ocorrenciaId}/encerrar`, {
+    method: 'POST',
+    body: JSON.stringify({ tenantId, classificacao, observacao })
+  });
+
+/** Endereco do canal de tempo real, derivado da URL da API. */
+export const urlDoCanalDeAlertas = (): string => {
+  const base = API_BASE_URL || window.location.origin;
+  return base.replace(/^http/, 'ws') + '/api/ws/alertas';
+};
+
+/* ---------------------------------------------------------------------------
+ * Pacientes (RF05, RF21, RF22)
+ *
+ * Só os campos que a entidade Paciente do DER tem. Sexo, leito e setor nao
+ * existem no modelo -- a tela nao inventa o que o banco nao guarda.
+ * -------------------------------------------------------------------------- */
+
+export interface PacienteResumo {
+  id: string;
+  nome: string;
+  idade?: number | null;
+  dataNascimento?: string | null;
+  status: string;
+  dataAdmissao: string;
+  dataAlta?: string | null;
+  ambienteId?: string | null;
+  ambienteNome?: string | null;
+  ambienteTipo?: string | null;
+  /** Derivada das ocorrencias abertas, nao de julgamento clinico (RN16). */
+  situacao: 'stable' | 'attention' | 'critical';
+  ocorrenciasAbertas: number;
+  quedasConfirmadas: number;
+  totalOcorrencias: number;
+  ultimaOcorrencia?: string | null;
+}
+
+export const fetchPacientes = (tenantId: string, incluirAlta = false) =>
+  request<PacienteResumo[]>(
+    `/api/pacientes?tenantId=${encodeURIComponent(tenantId)}` +
+      (incluirAlta ? '&incluirAlta=true' : '')
+  );
+
+export const fetchPaciente = (tenantId: string, pacienteId: string) =>
+  request<PacienteResumo>(
+    `/api/pacientes/${pacienteId}?tenantId=${encodeURIComponent(tenantId)}`
+  );
+
+export const fetchOcorrenciasDoPaciente = (tenantId: string, pacienteId: string) =>
+  request<OcorrenciaResumo[]>(
+    `/api/ocorrencias?tenantId=${encodeURIComponent(tenantId)}` +
+      `&pacienteId=${encodeURIComponent(pacienteId)}&limite=100`
+  );
+
+/**
+ * Nome do ambiente com o tipo na frente, sem repetir.
+ *
+ * O cadastro costuma nomear o ambiente ja com o tipo dentro ("Quarto 101"), e
+ * prefixar de novo produzia "Quarto · Quarto 101" na tela.
+ */
+export const descreverAmbiente = (nome?: string | null, tipo?: string | null): string => {
+  if (!nome) return 'Sem ambiente vinculado';
+  const rotulos: Record<string, string> = {
+    quarto: 'Quarto',
+    corredor: 'Corredor',
+    sala_convivencia: 'Sala de convivência',
+    refeitorio: 'Refeitório',
+    banheiro: 'Banheiro',
+    outro: 'Outro'
+  };
+  const rotulo = rotulos[tipo ?? ''];
+  if (!rotulo) return nome;
+  const jaTemOTipo = nome.toLowerCase().startsWith(rotulo.toLowerCase());
+  return jaTemOTipo ? nome : `${rotulo} · ${nome}`;
+};
+
+export interface AltaResultado {
+  ok: boolean;
+  paciente: PacienteResumo;
+  /** Acessos de acompanhante revogados junto com a alta (RN07). */
+  acessosRevogados: number;
+}
+
+export const darAltaPaciente = (
+  tenantId: string,
+  pacienteId: string,
+  motivo: 'alta' | 'transferido',
+  observacao?: string
+) =>
+  request<AltaResultado>(`/api/pacientes/${pacienteId}/alta`, {
+    method: 'POST',
+    body: JSON.stringify({ tenantId, motivo, observacao })
+  });
+
+export const criarPaciente = (payload: {
+  tenantId: string;
+  nome: string;
+  dataNascimento?: string | null;
+  ambienteId?: string | null;
+  dataAdmissao?: string | null;
+}) =>
+  request<PacienteResumo>('/api/pacientes', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+export const editarPaciente = (
+  pacienteId: string,
+  payload: {
+    tenantId: string;
+    nome?: string;
+    dataNascimento?: string | null;
+    ambienteId?: string | null;
+    status?: 'internado';
+  }
+) =>
+  request<PacienteResumo>(`/api/pacientes/${pacienteId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+
+/* ---------------------------------------------------------------------------
+ * Clipe de evidência e saúde do sistema
+ * -------------------------------------------------------------------------- */
+
+/** Como `request`, mas devolve o corpo bruto — para vídeo, não JSON. */
+const requestBlob = async (path: string): Promise<Blob> => {
+  const token = lerToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      descartarToken();
+      aoPerderSessao?.();
+    }
+    throw new ApiError(payload.error || 'Erro inesperado.', response.status, payload);
+  }
+  return response.blob();
+};
+
+/**
+ * O clipe vem por fetch, e não por `<video src=...>` direto: a tag não manda
+ * o cabeçalho Authorization, e vídeo de paciente sem credencial seria uma
+ * violação de LGPD. Quem chama transforma o Blob em URL de objeto.
+ */
+export const fetchClipeDaOcorrencia = (tenantId: string, ocorrenciaId: string) =>
+  requestBlob(`/api/ocorrencias/${ocorrenciaId}/clipe?tenantId=${encodeURIComponent(tenantId)}`);
+
+export interface SaudeApi {
+  status: 'ok' | 'degradado';
+  versao: string;
+  hora_servidor: string;
+  uptime_s: number;
+  banco: { ok: boolean; latencia_ms: number | null; erro: string | null };
+  canal_alertas: { ouvintes_desta_clinica: number; ouvintes_total: number };
+  cameras: { total: number; conectadas: number; janela_de_ping: string };
+  ocorrencias: { ultimas_24h: number; abertas: number };
+  clipes: {
+    pasta: string;
+    pasta_existe: boolean;
+    clipes_em_disco: number;
+    bytes_em_disco: number;
+    retencao_horas: number;
+    ultimo_expurgo: string | null;
+    ultimo_expurgo_removeu: number;
+  };
+  log: { nivel: string; formato: string };
+}
+
+export const fetchSaude = (tenantId: string) =>
+  request<SaudeApi>(`/api/saude?tenantId=${encodeURIComponent(tenantId)}`);

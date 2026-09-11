@@ -150,10 +150,28 @@ class PipelineDeteccao:
         resultado.ms_total = (time.monotonic() - inicio) * 1000
         return resultado
 
-    def executar(self, limite_quadros: int | None = None) -> Iterator[ResultadoQuadro]:
-        """Roda o pipeline sobre a fonte configurada."""
+    def reiniciar(self, limiares: Limiares | None = None) -> None:
+        """Esquece tudo o que foi visto, mantendo os modelos carregados.
+
+        Serve para encadear vários vídeos no mesmo processo — o arnês de
+        avaliação faz isso — sem que as pessoas do clipe anterior continuem
+        sendo procuradas no novo, e sem pagar de novo o carregamento dos
+        modelos. Se `limiares` vier, a camada de regras passa a usá-los.
+        """
+        self.detector.reiniciar_rastreio()
+        # O MediaPipe em modo vídeo reaproveita a detecção anterior; fechar e
+        # reabrir é o jeito de apagar essa memória.
+        self.estimador.fechar()
+        self.estimador.carregar()
+        self.extrator = ExtratorCaracteristicas()
+        self.classificador = ClassificadorQuedas(limiares or self.classificador.limiares)
+
+    def executar(
+        self, limite_quadros: int | None = None, cfg: Config | None = None
+    ) -> Iterator[ResultadoQuadro]:
+        """Roda o pipeline sobre a fonte configurada (ou sobre `cfg`, se vier)."""
         self.preparar()
-        with FonteVideo(self.cfg) as fonte:
+        with FonteVideo(cfg or self.cfg) as fonte:
             for quadro in fonte.quadros():
                 yield self.processar_quadro(quadro)
                 if limite_quadros is not None and quadro.indice >= limite_quadros:

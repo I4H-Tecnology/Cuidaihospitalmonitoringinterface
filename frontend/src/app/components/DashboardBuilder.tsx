@@ -4,7 +4,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { 
   Save, Eye, Upload, X, Plus, Grip, Trash2, Settings, 
   Activity, Users, AlertCircle, Bed, TrendingUp, BarChart3, 
-  PieChart, LineChart, Table, Brain, Zap, Calendar, Heart,
+  PieChart, LineChart, Table, Zap, Calendar, Heart,
   Target, Clock, Shield, Sparkles, Layout, Grid3x3, MonitorDot,
   Filter, Palette, RefreshCw, ArrowLeft, Download, Copy,
   CheckCircle2, XCircle, AlertTriangle, TrendingDown, Percent
@@ -19,7 +19,6 @@ const WIDGET_TYPES = {
   PIE_CHART: 'pie_chart',
   AREA_CHART: 'area_chart',
   TABLE: 'table',
-  AI_INSIGHTS: 'ai_insights',
   ALERTS: 'alerts',
   HEATMAP: 'heatmap'
 };
@@ -81,20 +80,6 @@ const WIDGET_LIBRARY = [
       change: '+5%',
       trend: 'up',
       color: '#10B981'
-    }
-  },
-  {
-    id: 'kpi-ai-accuracy',
-    type: WIDGET_TYPES.KPI,
-    category: 'KPIs',
-    name: 'Precisão da IA',
-    icon: Brain,
-    defaultConfig: {
-      metric: 'Precisão da IA',
-      value: '94.7%',
-      change: '+0.3%',
-      trend: 'up',
-      color: '#8B5CF6'
     }
   },
   // Charts
@@ -165,62 +150,6 @@ const WIDGET_LIBRARY = [
       refreshRate: '30s'
     }
   },
-  // AI Widgets
-  {
-    id: 'ai-predictive',
-    type: WIDGET_TYPES.AI_INSIGHTS,
-    category: 'IA',
-    name: 'Alertas Preditivos',
-    icon: Brain,
-    defaultConfig: {
-      title: 'Previsões da IA',
-      type: 'predictive'
-    }
-  },
-  {
-    id: 'ai-suggestions',
-    type: WIDGET_TYPES.AI_INSIGHTS,
-    category: 'IA',
-    name: 'Sugestões Operacionais',
-    icon: Zap,
-    defaultConfig: {
-      title: 'Sugestões Inteligentes',
-      type: 'suggestions'
-    }
-  },
-  {
-    id: 'ai-risks',
-    type: WIDGET_TYPES.AI_INSIGHTS,
-    category: 'IA',
-    name: 'Riscos Emergentes',
-    icon: Shield,
-    defaultConfig: {
-      title: 'Riscos Detectados',
-      type: 'risks'
-    }
-  },
-  {
-    id: 'ai-patterns',
-    type: WIDGET_TYPES.AI_INSIGHTS,
-    category: 'IA',
-    name: 'Padrões Detectados',
-    icon: Target,
-    defaultConfig: {
-      title: 'Padrões Identificados',
-      type: 'patterns'
-    }
-  },
-  {
-    id: 'ai-summary',
-    type: WIDGET_TYPES.AI_INSIGHTS,
-    category: 'IA',
-    name: 'Resumo do Turno',
-    icon: Sparkles,
-    defaultConfig: {
-      title: 'Resumo Inteligente',
-      type: 'summary'
-    }
-  }
 ];
 
 // Mock data for charts
@@ -269,26 +198,6 @@ const mockAlerts = [
   { patient: 'Carlos Mendes', type: 'Queda Detectada', severity: 'Crítico', time: '5 min' },
   { patient: 'Maria Silva', type: 'Rotina', severity: 'Normal', time: '15 min' }
 ];
-
-const mockAIInsights = {
-  predictive: [
-    { title: 'Risco de queda elevado', patient: 'Ana Costa', probability: '78%', time: '2h' },
-    { title: 'Possível arritmia', patient: 'João Santos', probability: '65%', time: '30min' }
-  ],
-  suggestions: [
-    { title: 'Redistribuir equipe', description: 'UTI necessita mais 2 enfermeiros no próximo turno', priority: 'Alta' },
-    { title: 'Revisar medicação', description: 'Paciente 301-A pode reduzir dosagem', priority: 'Média' }
-  ],
-  risks: [
-    { title: 'Sobrecarga UTI', level: 'Alto', impact: 'Operacional', eta: '4h' },
-    { title: 'Estoque baixo', level: 'Médio', impact: 'Material', eta: '2 dias' }
-  ],
-  patterns: [
-    { pattern: 'Alertas mais frequentes às 14h', frequency: 'Diário', confidence: '89%' },
-    { pattern: 'Queda de saturação após refeições', frequency: '3x/semana', confidence: '76%' }
-  ],
-  summary: 'Turno da manhã com 156 pacientes. 3 casos críticos estabilizados. IA detectou padrão de alertas no horário de almoço. Recomenda-se ajustar escala.'
-};
 
 // Widget Component
 interface WidgetProps {
@@ -476,65 +385,6 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
           </div>
         );
 
-      case WIDGET_TYPES.AI_INSIGHTS:
-        const insightType = widget.config.type;
-        const data = mockAIInsights[insightType as keyof typeof mockAIInsights];
-        
-        return (
-          <div className="h-full flex flex-col p-4 bg-gradient-to-br from-purple-50 to-blue-50">
-            <div className="flex items-center gap-2 mb-4">
-              <Brain className="w-5 h-5 text-purple-600" />
-              <h3 className="font-semibold">{widget.config.title}</h3>
-            </div>
-            <div className="overflow-auto flex-1 space-y-3">
-              {insightType === 'summary' ? (
-                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-lg border border-purple-200">
-                  {/* `insightType` é string, então o TS não consegue provar que
-                      este ramo só recebe o resumo em texto. A guarda abaixo faz
-                      o estreitamento de verdade, em vez de mascarar com `as`. */}
-                  <p className="text-sm leading-relaxed">{typeof data === 'string' ? data : null}</p>
-                </div>
-              ) : Array.isArray(data) ? (
-                data.map((item: any, idx: number) => (
-                  <div key={idx} className="bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-purple-200">
-                    <div className="flex items-start justify-between mb-1">
-                      <p className="font-medium text-sm">{item.title || item.pattern}</p>
-                      {item.priority && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          item.priority === 'Alta' ? 'bg-red-100 text-red-700' :
-                          item.priority === 'Média' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {item.priority}
-                        </span>
-                      )}
-                      {item.level && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          item.level === 'Alto' ? 'bg-red-100 text-red-700' :
-                          item.level === 'Médio' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {item.level}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      {item.description || item.patient || item.impact || item.frequency}
-                      {item.probability && ` • ${item.probability}`}
-                      {item.confidence && ` • Confiança: ${item.confidence}`}
-                    </p>
-                    {(item.time || item.eta) && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.time ? `Próximo: ${item.time}` : `ETA: ${item.eta}`}
-                      </p>
-                    )}
-                  </div>
-                ))
-              ) : null}
-            </div>
-          </div>
-        );
-
       default:
         return <div className="p-4">Widget não implementado</div>;
     }
@@ -658,7 +508,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  const categories = ['Todos', 'KPIs', 'Gráficos', 'Tabelas', 'IA'];
+  const categories = ['Todos', 'KPIs', 'Gráficos', 'Tabelas'];
 
   const filteredLibrary = selectedCategory === 'Todos' 
     ? WIDGET_LIBRARY 
@@ -693,24 +543,25 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
   const handleAISuggest = () => {
     setShowAISuggestions(true);
     
-    // Sugestões da IA baseadas no perfil
+    // Conjunto fixo de widgets por perfil. Não há modelo envolvido — é uma
+    // tabela, e a tela não deve dizer que é IA.
     const suggestions: { [key: string]: any[] } = {
       admin: [
         WIDGET_LIBRARY.find(w => w.id === 'kpi-patients'),
         WIDGET_LIBRARY.find(w => w.id === 'kpi-occupancy'),
         WIDGET_LIBRARY.find(w => w.id === 'chart-bar-sectors'),
-        WIDGET_LIBRARY.find(w => w.id === 'ai-summary')
+        WIDGET_LIBRARY.find(w => w.id === 'table-alerts')
       ],
       enfermagem: [
         WIDGET_LIBRARY.find(w => w.id === 'kpi-alerts'),
         WIDGET_LIBRARY.find(w => w.id === 'table-patients'),
-        WIDGET_LIBRARY.find(w => w.id === 'ai-predictive'),
+        WIDGET_LIBRARY.find(w => w.id === 'kpi-critical'),
         WIDGET_LIBRARY.find(w => w.id === 'chart-line-24h')
       ],
       medico: [
         WIDGET_LIBRARY.find(w => w.id === 'kpi-critical'),
         WIDGET_LIBRARY.find(w => w.id === 'table-alerts'),
-        WIDGET_LIBRARY.find(w => w.id === 'ai-risks'),
+        WIDGET_LIBRARY.find(w => w.id === 'kpi-alerts'),
         WIDGET_LIBRARY.find(w => w.id === 'chart-pie-status')
       ]
     };
@@ -771,7 +622,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Montar com IA</span>
+                <span>Sugerir por perfil</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
                 <Eye className="w-4 h-4" />
@@ -808,12 +659,12 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
           {showAISuggestions && (
             <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-200 p-4">
               <div className="flex items-start gap-3">
-                <Brain className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                <Layout className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-purple-900">🎯 IA montou o dashboard ideal para {selectedProfile === 'admin' ? 'Administradores' : selectedProfile === 'enfermagem' ? 'Enfermagem' : 'Médicos'}</p>
+                  <p className="font-medium text-purple-900">Sugestão de widgets para {selectedProfile === 'admin' ? 'Administradores' : selectedProfile === 'enfermagem' ? 'Enfermagem' : 'Médicos'}</p>
                   <p className="text-sm text-purple-700 mt-1">
                     {selectedProfile === 'admin' && 'Dashboard executivo com visão geral, métricas de ocupação e análise por setores.'}
-                    {selectedProfile === 'enfermagem' && 'Dashboard operacional focado em alertas em tempo real e previsões de IA.'}
+                    {selectedProfile === 'enfermagem' && 'Dashboard operacional focado em alertas em tempo real.'}
                     {selectedProfile === 'medico' && 'Dashboard clínico com casos críticos, alertas e análise de riscos.'}
                   </p>
                 </div>
@@ -884,14 +735,14 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                         Canvas Vazio
                       </h3>
                       <p className="text-gray-500 mb-6">
-                        Arraste widgets da biblioteca à esquerda ou use a IA para montar automaticamente
+                        Arraste widgets da biblioteca à esquerda ou use a sugestão por perfil
                       </p>
                       <button
                         onClick={handleAISuggest}
                         className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white rounded-xl hover:shadow-lg transition-all"
                       >
                         <Sparkles className="w-5 h-5" />
-                        <span>Montar Dashboard com IA</span>
+                        <span>Sugerir por perfil</span>
                       </button>
                     </div>
                   </div>

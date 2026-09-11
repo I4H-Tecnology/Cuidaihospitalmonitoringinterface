@@ -75,6 +75,14 @@ class Avaliacao:
     mudou_de_estado: bool
     deve_gerar_ocorrencia: bool
     motivo: str
+    # Quando a pessoa chegou ao chão. É o instante do evento — e não o momento
+    # em que o limiar de permanência foi cruzado, segundos depois. Vira a
+    # data_hora da ocorrência e entra na chave que evita alerta duplicado.
+    inicio_caido: float | None = None
+    # True quando a queda foi vista acontecer (NORMAL → CAINDO → CAIDO). False
+    # quando a pessoa já apareceu no chão: a postura sustenta o alerta, mas o
+    # movimento não foi observado — e isso muda o tipo do evento registrado.
+    viu_transicao: bool = False
 
 
 @dataclass
@@ -85,6 +93,7 @@ class _Contexto:
     quadros_caido: int = 0
     quadros_normal: int = 0
     inicio_caido: float | None = None
+    viu_transicao: bool = False
     ocorrencia_gerada: bool = False
     historico_confianca: list[float] = field(default_factory=list)
 
@@ -154,12 +163,14 @@ class ClassificadorQuedas:
                 # visto o movimento.
                 ctx.estado = Estado.CAIDO
                 ctx.inicio_caido = timestamp
+                ctx.viu_transicao = False
                 motivo = "postura horizontal sustentada, sem transição observada"
 
         elif ctx.estado is Estado.CAINDO:
             if ctx.quadros_caido >= L.quadros_para_confirmar:
                 ctx.estado = Estado.CAIDO
                 ctx.inicio_caido = timestamp
+                ctx.viu_transicao = True
                 motivo = f"postura de queda mantida por {ctx.quadros_caido} quadros"
             elif ctx.quadros_normal >= L.quadros_para_recuperar:
                 ctx.estado = Estado.NORMAL
@@ -169,6 +180,7 @@ class ClassificadorQuedas:
             if ctx.quadros_normal >= L.quadros_para_recuperar:
                 ctx.estado = Estado.NORMAL
                 ctx.inicio_caido = None
+                ctx.viu_transicao = False
                 ctx.ocorrencia_gerada = False
                 motivo = "pessoa levantou"
 
@@ -202,6 +214,8 @@ class ClassificadorQuedas:
             mudou_de_estado=mudou,
             deve_gerar_ocorrencia=deve_gerar,
             motivo=motivo,
+            inicio_caido=ctx.inicio_caido,
+            viu_transicao=ctx.viu_transicao,
         )
 
     def estado_de(self, id_rastreio: int) -> Estado:

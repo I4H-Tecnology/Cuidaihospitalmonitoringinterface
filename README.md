@@ -175,9 +175,22 @@ da seção 2.5 estão codificadas como constraints, não só na aplicação — 
 dado inválido mesmo que a API esqueça de validar. Cada constraint referencia a regra
 correspondente (RN01, RN05, RN11...) em comentário.
 
-`db/init/02_seed.sql` cria os perfis de acesso e uma clínica de demonstração com
-ambientes, câmeras e pacientes fictícios. **Não cria usuários**: a senha exige hash real
-gerado pelo backend, e credencial versionada não entra neste repositório.
+`db/init/02_perfis.sql` cria os perfis de acesso (ADMIN, MANAGER, NURSE) com a matriz
+de permissão por módulo. É **idempotente**: serve de init num volume novo e de reparo num
+banco que já existe, sem duplicar a matriz em dois arquivos.
+
+```bash
+docker compose exec -T db psql -U medsignal -d medsignal   -f /docker-entrypoint-initdb.d/02_perfis.sql
+```
+
+Duas armadilhas que ele existe para evitar: o **nome** do perfil precisa estar na união
+`Role` do frontend (`authStore.ts`), e o **formato** é dicionário de módulo para ações em
+inglês — `{"monitoring": {"view": true}}` —, que é o que `exigir_permissao` lê. Perfil
+fora de qualquer uma das duas regras falha em toda rota protegida, em silêncio.
+
+`db/init/03_seed.sql` cria uma clínica de demonstração com ambientes, câmeras e pacientes
+fictícios. **Não cria usuários**: a senha exige hash real gerado pelo backend, e
+credencial versionada não entra neste repositório.
 
 Imagens e vídeos não ficam neste banco. Pela RN08/RN09, são retidos por no máximo 24h
 no serviço de visão computacional, que tem rotina de expurgo própria; aqui persiste
