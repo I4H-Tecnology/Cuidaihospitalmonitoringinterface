@@ -15,7 +15,6 @@ Ctrl+C.
 from __future__ import annotations
 
 import argparse
-import logging
 import os
 import sys
 from pathlib import Path
@@ -38,11 +37,12 @@ def carregar_env() -> None:
 
 carregar_env()
 
+from visao.app import registro  # noqa: E402
 from visao.app.config import carregar  # noqa: E402
 from visao.app.servidor import criar_app  # noqa: E402
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s", datefmt="%H:%M:%S")
-logging.getLogger("ultralytics").setLevel(logging.WARNING)
+# Log estruturado: LOG_LEVEL e LOG_FORMATO (json|texto), como no backend.
+registro.configurar()
 
 
 def main() -> int:
@@ -63,6 +63,8 @@ def main() -> int:
     print(f"Registro      : {registro}")
     print(f"Vídeo         : http://localhost:{args.porta}/stream")
     print(f"Estado        : http://localhost:{args.porta}/estado")
+    print(f"Saúde         : http://localhost:{args.porta}/health")
+    print(f"Clipes        : {'ligados' if cfg.clipes_ativos else 'DESLIGADOS (VISAO_CLIPES=false)'}")
     print("\nCarregando modelos...\n")
 
     import uvicorn

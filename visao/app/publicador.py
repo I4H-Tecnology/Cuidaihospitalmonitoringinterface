@@ -59,6 +59,12 @@ INTERVALO_DE_REENVIO = 30.0
 # rede antes de o painel acusar problema.
 INTERVALO_DE_PING = 30.0
 
+# O ping só sai se houve quadro capturado há menos que isto. Sem esta regra, o
+# processo vivo com a câmera morta continuaria pingando, e o painel mostraria
+# "conectada" para uma câmera que não enxerga nada — mentira silenciosa, o
+# pior estado possível para um monitor.
+JANELA_DE_CAPTURA_VIVA = 10.0
+
 
 @dataclass
 class ContextoCamera:
@@ -117,6 +123,11 @@ class Publicador:
         self.duplicadas = 0
         self.em_disco = 0
         self.ultimo_ping: float | None = None
+        self.ultimo_quadro_em: float | None = None
+        self.pings_suprimidos = 0
+        # Chamado com (chave_do_evento, id_da_ocorrencia) quando a API confirma
+        # o registro. É como o clipe de evidência recebe o nome definitivo.
+        self.ao_registrar = None
 
         self._fila: queue.Queue[dict] = queue.Queue(maxsize=TAMANHO_DA_FILA)
         self._thread: threading.Thread | None = None
@@ -142,7 +153,6 @@ class Publicador:
             self._autenticar()
             self.contexto = self._buscar_contexto()
             logger.info("Publicando ocorrências de: %s", self.contexto.descrever())
-            self._pingar()
             if self.contexto.paciente_id is None:
                 logger.warning(
                     "Nenhum paciente internado neste ambiente — a ocorrência será "
@@ -163,6 +173,17 @@ class Publicador:
         self._cliente.close()
 
     # -- entrada ----------------------------------------------------------
+
+    def marcar_quadro(self, timestamp: float) -> None:
+        """O serviço avisa que capturou um quadro. É o que autoriza o ping."""
+        self.ultimo_quadro_em = timestamp
+
+    def captura_viva(self, agora: float | None = None) -> bool:
+        """Houve quadro há menos de JANELA_DE_CAPTURA_VIVA segundos?"""
+        if self.ultimo_quadro_em is None:
+            return False
+        agora = time.time() if agora is None else agora
+        return (agora - self.ultimo_quadro_em) <= JANELA_DE_CAPTURA_VIVA
 
     def registrar(self, r: ResultadoPessoa) -> None:
         """Enfileira uma ocorrência. Retorna na hora, sempre."""
@@ -240,6 +261,11 @@ class Publicador:
                         corpo.get("id"), corpo.get("alertaId"),
                     )
                 self.ultimo_erro = None
+                if self.ao_registrar is not None and corpo.get("id"):
+                    try:
+                        self.ao_registrar(evento["chaveEvento"], str(corpo["id"]))
+                    except Exception:  # noqa: BLE001
+                        logger.exception("Callback de registro falhou")
                 return True
 
             # 4xx que não seja 401 é evento malformado: reenviar não conserta,
@@ -322,8 +348,13 @@ class Publicador:
 
             agora = time.monotonic()
             if agora >= proximo_ping:
-                proximo_ping = agora + INTERVALO_DE_PING
-                self._pingar()
+                if self.captura_viva():
+                    proximo_ping = agora + INTERVALO_DE_PING
+                    self._pingar()
+                else:
+                    # Não avança o relógio: assim que a captura voltar, o ping
+                    # sai no segundo seguinte, e o painel vê a câmera voltar.
+                    self.pings_suprimidos += 1
 
             if agora >= proximo_reenvio:
                 proximo_reenvio = agora + INTERVALO_DE_REENVIO
@@ -343,6 +374,8 @@ class Publicador:
             "duplicadas": self.duplicadas,
             "aguardando_em_disco": self.em_disco,
             "ultimo_ping": self.ultimo_ping,
+            "pingando": self.captura_viva(),
+            "pings_suprimidos": self.pings_suprimidos,
             "ultimo_erro": self.ultimo_erro,
         }
 
@@ -355,9 +388,13 @@ class PublicadorInativo:
     """
 
     contexto = None
+    ao_registrar = None
 
     def iniciar(self) -> None:
         logger.info("VISAO_CAMERA_ID não definido: detectando sem registrar ocorrência.")
+
+    def marcar_quadro(self, timestamp: float) -> None:
+        pass
 
     def parar(self) -> None:
         pass

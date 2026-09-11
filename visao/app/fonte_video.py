@@ -126,6 +126,10 @@ class FonteVideo:
             self.abrir()
         assert self._cap is not None
 
+        if self.cfg.fonte is Fonte.ARQUIVO and not self.cfg.arquivo_tempo_real:
+            yield from self._quadros_em_tempo_de_video()
+            return
+
         intervalo = 1.0 / self.cfg.fps_alvo
         proximo = time.monotonic()
         ao_vivo = self.cfg.fonte is not Fonte.ARQUIVO
@@ -152,6 +156,41 @@ class FonteVideo:
                 timestamp=time.time(),
             )
 
+    def _quadros_em_tempo_de_video(self) -> Iterator[Quadro]:
+        """Lê um arquivo sem esperar o relógio, com timestamp em segundos de vídeo.
+
+        A amostragem é por passo fixo de quadros (fps do arquivo / fps alvo),
+        não por relógio de parede: assim o mesmo arquivo produz sempre a mesma
+        sequência de quadros, com os mesmos timestamps — condição para o
+        resultado da avaliação ser replicável.
+        """
+        assert self._cap is not None
+        fps_arquivo = float(self._cap.get(cv2.CAP_PROP_FPS) or 0.0)
+        if fps_arquivo <= 0:
+            # Contêiner sem metadado de fps. Assume que já está na taxa alvo:
+            # é o melhor palpite que não inventa tempo.
+            logger.warning("Arquivo sem fps declarado; assumindo %.1f fps", self.cfg.fps_alvo)
+            fps_arquivo = self.cfg.fps_alvo
+        passo = max(1, int(round(fps_arquivo / self.cfg.fps_alvo)))
+        logger.info("Lendo 1 a cada %d quadros (%.1f fps -> %.1f fps)", passo, fps_arquivo, fps_arquivo / passo)
+
+        lidos = 0
+        while True:
+            ok, imagem = self._cap.read()
+            if not ok:
+                logger.info("Fim do arquivo após %d quadros lidos, %d entregues", lidos, self._indice)
+                return
+            posicao = lidos
+            lidos += 1
+            if posicao % passo != 0:
+                continue
+            self._indice += 1
+            yield Quadro(
+                imagem=self._redimensionar(imagem),
+                indice=self._indice,
+                timestamp=posicao / fps_arquivo,
+            )
+
     # -- ciclo de vida ----------------------------------------------------
 
     def fechar(self) -> None:
@@ -166,6 +205,29 @@ class FonteVideo:
 
     def __exit__(self, *_) -> None:
         self.fechar()
+
+
+class EsperaDeReconexao:
+    """Backoff exponencial para quando a fonte cai: 1 s, 2 s, 4 s... até o teto.
+
+    Insistir a cada segundo contra uma câmera que reinicia só atrasa o reboot
+    dela; esperar um minuto fixo deixa o monitoramento cego por um minuto a
+    mais que o necessário. Dobrar até o teto atende os dois casos.
+    """
+
+    def __init__(self, inicial: float = 1.0, maxima: float = 60.0) -> None:
+        self.inicial = inicial
+        self.maxima = maxima
+        self.tentativa = 0
+
+    def proxima(self) -> float:
+        """Devolve quanto esperar antes da próxima tentativa, e conta uma."""
+        espera = min(self.inicial * (2 ** self.tentativa), self.maxima)
+        self.tentativa += 1
+        return espera
+
+    def zerar(self) -> None:
+        self.tentativa = 0
 
 
 def listar_webcams(maximo: int = 5) -> list[int]:
