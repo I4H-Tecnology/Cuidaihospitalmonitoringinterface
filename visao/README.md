@@ -19,12 +19,34 @@ Implementado:
 - **Registro da ocorrência na API** (RF13, RF14), com fila em disco quando a API
   está fora do ar e chave de deduplicação para não gerar alerta repetido
 
-A implementar:
+- **Arnês de avaliação** (`avaliar.py`) e **calibração por holdout**
+  (`calibrar.py`): vídeos anotados → matriz de confusão → as seis métricas da
+  RFC. Ver `dados/README.md`. Aguarda os clipes encenados para produzir número.
 
-1. Arnês de avaliação: vídeos anotados → matriz de confusão → as seis métricas
-   da RFC (precisão, recall, F1, taxa de falso positivo, acurácia, latência)
-2. Reconexão automática da câmera e sinalização de offline (RF30, RN15)
-3. Clipe de 10s por ocorrência, com expurgo em 24h (RNF05)
+- **Reconexão automática** quando a fonte cai (RF30, RN15, RNF16, RNF17):
+  backoff exponencial de 1 s a 60 s, estado exposto em `/estado` e `/health`
+  (`capturando` / `reconectando` / `parado`), e o ping para a API só sai com
+  captura viva — a câmera aparece desconectada no painel em até 90 s
+- **Clipe de evidência** de 10 s por ocorrência (5 s antes + 5 s depois), em
+  H.264, com **expurgo em 24 h** (RNF05, RN08, RN09). A ocorrência sobrevive
+  ao clipe (RNF18); a API serve o arquivo só a usuário autenticado da clínica
+- **`/health` para observabilidade**: fps real, latência média/p95/máx por
+  quadro, quadros processados, uptime, quedas e reconexões da fonte, clipes
+  em disco e último expurgo. Log estruturado em JSON (`LOG_LEVEL`, `LOG_FORMATO`)
+
+## Validar o detector
+
+```bash
+visao/.venv/Scripts/python.exe -m unittest discover -s visao/testes -t .   # lógica do arnês, sem vídeo
+visao/.venv/Scripts/python.exe visao/calibrar.py                          # divide e varre os limiares
+visao/.venv/Scripts/python.exe visao/avaliar.py --conjunto teste     --divisao <pasta da calibração>/divisao.csv --limiares <pasta da calibração>/limiares.json
+```
+
+O arnês roda o **mesmo** `PipelineDeteccao` do serviço, lendo o arquivo com
+`VISAO_ARQUIVO_TEMPO_REAL=false`: o timestamp passa a ser a posição no vídeo,
+em segundos, e a amostragem é por passo fixo de quadros — assim o mesmo clipe
+produz sempre o mesmo resultado. Não usa câmera. O protocolo de gravação e o
+formato das anotações estão em `dados/README.md`.
 
 ## Registrar ocorrências
 
@@ -84,6 +106,12 @@ Tudo vem do `.env` na raiz do projeto:
 | `VISAO_WEBCAM_INDICE` | qual câmera, quando a fonte é webcam |
 | `VISAO_RTSP_URL` | endereço da câmera IP |
 | `VISAO_ARQUIVO` | caminho do vídeo, para ensaiar sem câmera |
+| `VISAO_ARQUIVO_TEMPO_REAL` | `true` (padrão): o arquivo se comporta como câmera, com horário real; `false`: lê o mais rápido possível com timestamp em segundos de vídeo (é o que o arnês usa) |
+| `VISAO_CLIPES` | `true` (padrão) grava o clipe de evidência de cada ocorrência; `false` desliga |
+| `VISAO_CLIPES_PASTA` | pasta dos clipes (padrão `visao/dados/clipes`, a mesma que o compose monta na API) |
+| `VISAO_CLIPES_RETENCAO_HORAS` | retenção, no máximo 24 (padrão 24) — acima disso a subida falha |
+| `VISAO_CLIPES_SEGUNDOS_ANTES` / `_DEPOIS` | tamanho do clipe em torno da ocorrência (padrão 5 e 5) |
+| `LOG_LEVEL` / `LOG_FORMATO` | nível e formato do log (`json`, padrão, ou `texto`) — iguais aos do backend |
 | `VISAO_FPS_ALVO` | quadros por segundo processados (padrão 8) |
 | `VISAO_LARGURA` | largura de trabalho em pixels (padrão 640) |
 
@@ -94,6 +122,39 @@ fonte tem de ser a câmera IP, como a RFC define. A validação está em
 Sobre os 8 fps: uma queda dura cerca de um segundo. Processar 30 fps gasta CPU
 para produzir quadros quase idênticos; 8 fps dão oito amostras dentro do evento,
 margem confortável para a análise temporal.
+
+## Quando a câmera cai
+
+A thread do pipeline não morre. `ServicoVisao` espera com backoff exponencial
+(1 s, 2 s, 4 s… até 60 s), registra cada tentativa no log e expõe o estado:
+
+```
+GET /health   ->  "estado_da_fonte": "reconectando",
+                  "captura": {"tentativa": 3, "proxima_tentativa_em_s": 3.2, "erro": "..."}
+```
+
+Enquanto não há quadro novo, o ping para a API é **suprimido**: o painel passa
+a mostrar a câmera como desconectada em até 90 s, em vez de "conectada" para
+uma câmera morta. Quando a fonte responde de novo, a captura volta sozinha e o
+ping recomeça no segundo seguinte. Arquivo de vídeo que chega ao fim recomeça
+do início, sem contar como queda — é a demonstração rodando em laço.
+
+Para ensaiar sem câmera: suba com `VISAO_FONTE=arquivo` apontando para um
+clipe curto e renomeie o arquivo com o serviço rodando (no Windows o arquivo
+fica travado durante a leitura; tente de novo até a passada terminar). O
+`/health` vira `reconectando`; restaure o nome e ele volta a `capturando`.
+
+## Clipe de evidência e retenção
+
+A cada ocorrência o serviço grava `visao/dados/clipes/<id da ocorrência>.mp4`
+com os 5 s anteriores (buffer circular) e os 5 s seguintes, em H.264 (ffmpeg
+do pacote `imageio-ffmpeg`; sem ele cai para mp4v, que não toca no navegador).
+O expurgo roda no boot e de hora em hora, aqui e na API, e apaga o que passou
+de 24 h. O registro da ocorrência no banco nunca é tocado.
+
+A pasta é montada no container da API (`docker-compose.yml`), que serve o
+arquivo em `GET /api/ocorrencias/{id}/clipe` só para usuário autenticado da
+clínica dona. **Nunca comite um clipe**: a pasta está no `.gitignore`.
 
 ## Por que a webcam roda fora do container
 
