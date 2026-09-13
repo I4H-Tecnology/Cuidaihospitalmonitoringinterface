@@ -8,14 +8,8 @@ export type Screen =
   | 'pep'
   | 'patients'
   | 'beds-rooms'
-  | 'scheduling'
-  | 'reports'
   | 'settings'
   | 'users'
-  | 'hospital-management'
-  | 'financial'
-  | 'inventory'
-  | 'hr'
   | 'saude';
 
 export const screenModuleMap: Record<Screen, string> = {
@@ -27,14 +21,8 @@ export const screenModuleMap: Record<Screen, string> = {
   pep: 'clinical_logs',
   patients: 'patients',
   'beds-rooms': 'beds',
-  scheduling: 'appointments',
-  reports: 'reports',
   settings: 'settings',
   users: 'users',
-  'hospital-management': 'hospital_management',
-  financial: 'financial',
-  inventory: 'inventory',
-  hr: 'hr',
   // Observabilidade: quem acompanha o monitoramento precisa ver a saúde dele.
   saude: 'monitoring'
 };

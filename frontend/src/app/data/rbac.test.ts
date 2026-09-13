@@ -11,14 +11,8 @@ const TELAS: Screen[] = [
   'pep',
   'patients',
   'beds-rooms',
-  'scheduling',
-  'reports',
   'settings',
   'users',
-  'hospital-management',
-  'financial',
-  'inventory',
-  'hr',
   'saude',
 ];
 
@@ -62,7 +56,6 @@ describe('mapa de telas para módulos de permissão', () => {
     // se alguém "arrumar" isso, as permissões salvas param de casar.
     expect(getModuleForScreen('pep')).toBe('clinical_logs');
     expect(getModuleForScreen('beds-rooms')).toBe('beds');
-    expect(getModuleForScreen('scheduling')).toBe('appointments');
   });
 
   it('assume a plataforma web por padrão', () => {

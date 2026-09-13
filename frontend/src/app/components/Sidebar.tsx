@@ -138,10 +138,9 @@ export function Sidebar({
       title: 'OPERACIONAL ASSISTENCIAL',
       icon: <BedDouble className="w-4 h-4" />,
       items: [
-        { icon: <BedDouble className="w-5 h-5" />, label: 'Leitos & Ocupação', screen: 'beds-rooms' },
+        { icon: <BedDouble className="w-5 h-5" />, label: 'Ambientes Monitorados', screen: 'beds-rooms' },
         { icon: <Building2 className="w-5 h-5" />, label: 'Internações', disabled: true },
         { icon: <Activity className="w-5 h-5" />, label: 'Alta e Transferência', disabled: true },
-        { icon: <Calendar className="w-5 h-5" />, label: 'Agenda Médica', screen: 'scheduling' },
         { icon: <Users className="w-5 h-5" />, label: 'Fluxo do Paciente', disabled: true },
         { icon: <Users2 className="w-5 h-5" />, label: 'Escalas Assistenciais', disabled: true },
         { icon: <ClipboardList className="w-5 h-5" />, label: 'Checklists Operacionais', disabled: true },
@@ -153,7 +152,6 @@ export function Sidebar({
       items: [
         { icon: <Activity className="w-5 h-5" />, label: 'Monitoramento em Tempo Real', badge: casosAbertos > 0 ? { value: casosAbertos, variant: 'critical' } : undefined, screen: 'monitoring' },
         { icon: <Bell className="w-5 h-5" />, label: 'Alertas Clínicos', badge: alertasCriticos > 0 ? { value: alertasCriticos, variant: 'warning' } : undefined, screen: 'alerts' },
-        { icon: <Shield className="w-5 h-5" />, label: 'Detecção de Quedas', disabled: true },
         { icon: <BedDouble className="w-5 h-5" />, label: 'Ausência no Quarto', disabled: true },
         { icon: <Activity className="w-5 h-5" />, label: 'Agitação Noturna', disabled: true },
         { icon: <Package className="w-5 h-5" />, label: 'Sensores IoT', disabled: true },
@@ -180,7 +178,6 @@ export function Sidebar({
       title: 'INTELIGÊNCIA & ANALYTICS',
       icon: <BarChart3 className="w-4 h-4" />,
       items: [
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Dashboards Operacionais', screen: 'reports' },
         { icon: <Activity className="w-5 h-5" />, label: 'Indicadores Clínicos', disabled: true },
         { icon: <ClipboardList className="w-5 h-5" />, label: 'KPIs Assistenciais', disabled: true },
         { icon: <FileText className="w-5 h-5" />, label: 'Relatórios Regulatórios', disabled: true },
@@ -194,10 +191,6 @@ export function Sidebar({
       title: 'ADMINISTRAÇÃO',
       icon: <Building2 className="w-4 h-4" />,
       items: [
-        { icon: <Building2 className="w-5 h-5" />, label: 'Gestão Hospitalar', screen: 'hospital-management' },
-        { icon: <DollarSign className="w-5 h-5" />, label: 'Financeiro', screen: 'financial' },
-        { icon: <Package className="w-5 h-5" />, label: 'Estoque', screen: 'inventory' },
-        { icon: <Users2 className="w-5 h-5" />, label: 'Recursos Humanos', screen: 'hr' },
         { icon: <ClipboardList className="w-5 h-5" />, label: 'Compras', disabled: true },
         { icon: <FileText className="w-5 h-5" />, label: 'Contratos', disabled: true },
         { icon: <BarChart3 className="w-5 h-5" />, label: 'Centros de Custo', disabled: true },
@@ -216,8 +209,11 @@ export function Sidebar({
         },
         { icon: <Settings className="w-5 h-5" />, label: 'Configurações', module: 'settings', screen: 'settings' },
         { icon: <Activity className="w-5 h-5" />, label: 'Saúde do Sistema', module: 'monitoring', screen: 'saude' },
-        { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente' },
-        { icon: <Shield className="w-5 h-5" />, label: 'Segurança', module: 'security' },
+        // App do paciente/família não existe ainda (é outro app, não o da
+        // equipe): esmaecido como os demais itens futuros. "Segurança" saiu:
+        // a política de senha já mora em Usuários, e um item de menu que não
+        // navega para lugar nenhum é botão morto.
+        { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente', disabled: true },
       ],
     },
   ];
