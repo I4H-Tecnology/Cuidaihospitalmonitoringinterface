@@ -19,5 +19,5 @@ httpx==0.28.1
 imageio-ffmpeg==0.6.0
 
 # Servidor que publica o video anotado para o frontend
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
+fastapi==0.141.1
+uvicorn[standard]==0.52.4

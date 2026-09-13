@@ -286,6 +286,7 @@ def editar_paciente(
         raise HTTPException(400, "Nada a alterar.")
 
     valores.append(paciente_id)
-    db.executar(f"UPDATE paciente SET {', '.join(campos)} WHERE id = %s", tuple(valores))
+    # `campos` só tem fragmentos fixos deste módulo; os valores vão por parâmetro.
+    db.executar(f"UPDATE paciente SET {', '.join(campos)} WHERE id = %s", tuple(valores))  # nosec B608
     logger.info("Paciente %s atualizado por %s", paciente_id, usuario.nome)
     return obter_paciente(paciente_id, payload.tenantId, usuario)

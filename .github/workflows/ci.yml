@@ -87,10 +87,89 @@ jobs:
       - name: Compilar backend e visão
         run: python -m py_compile backend/app/*.py backend/app/rotas/*.py visao/app/*.py visao/*.py
 
+  # Análise estática de código e segurança (núcleo comum). Roda dentro do CI,
+  # sem serviço externo, conta ou token: o repositório é privado por decisão
+  # aprovada com o orientador, e nada aqui depende de visibilidade.
+  #
+  # O que derruba o job: achado de segurança de severidade alta (Semgrep ERROR,
+  # Bandit HIGH), CVE conhecida em dependência pinada (pip-audit) e CVE alta ou
+  # crítica no frontend (npm audit). O resto fica visível nos relatórios, que
+  # são publicados como artefato de cada execução.
+  seguranca:
+    name: Análise estática e de segurança
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar ferramentas
+        run: pip install --quiet bandit pip-audit semgrep
+
+      - name: Preparar pasta de relatórios
+        run: mkdir -p relatorios
+
+      # Regras de segurança para Python e TypeScript, mais detecção de segredos.
+      # ERROR derruba; WARNING e INFO ficam no relatório.
+      - name: Semgrep
+        run: |
+          semgrep scan --config p/ci --config p/secrets --metrics=off \
+            --exclude node_modules --exclude .venv --exclude dist \
+            --exclude frontend/src/app/components/ui --exclude frontend/src/app/components/figma \
+            --sarif -o relatorios/semgrep.sarif --error --severity ERROR \
+            backend/app visao/app visao/avaliar.py visao/calibrar.py visao/detectar.py visao/servir.py visao/verificar_camera.py frontend/src
+          semgrep scan --config p/ci --config p/secrets --metrics=off --quiet \
+            --exclude node_modules --exclude .venv --exclude dist \
+            --exclude frontend/src/app/components/ui --exclude frontend/src/app/components/figma \
+            --json -o relatorios/semgrep-completo.json \
+            backend/app visao/app visao/avaliar.py visao/calibrar.py visao/detectar.py visao/servir.py visao/verificar_camera.py frontend/src || true
+
+      # Vulnerabilidades em Python. Relatório completo primeiro; depois só a
+      # severidade alta decide o resultado.
+      - name: Bandit
+        run: |
+          bandit -q -r backend/app visao/app visao/avaliar.py visao/calibrar.py visao/detectar.py visao/servir.py visao/verificar_camera.py -f json -o relatorios/bandit.json || true
+          bandit -q -r backend/app visao/app visao/avaliar.py visao/calibrar.py visao/detectar.py visao/servir.py visao/verificar_camera.py -lll
+
+      # CVE conhecida nas dependências pinadas. --no-deps audita o que está no
+      # arquivo; a resolução completa baixaria o torch com CUDA.
+      - name: pip-audit
+        run: |
+          pip-audit -r backend/requirements.txt --no-deps --desc -f json -o relatorios/pip-audit-backend.json
+          # PYSEC-2026-1805 (protobuf 4.25): a correção está na série 5.x, e o
+          # mediapipe 0.10.20 exige protobuf < 5. Fica ignorada com registro
+          # até o mediapipe ser atualizado; qualquer CVE nova continua derrubando.
+          pip-audit -r visao/requirements.txt --no-deps --desc -f json -o relatorios/pip-audit-visao.json --ignore-vuln PYSEC-2026-1805
+
+      # CVE nas dependências do frontend. Alta ou crítica derruba.
+      - name: npm audit
+        working-directory: frontend
+        run: |
+          npm audit --json > ../relatorios/npm-audit.json || true
+          npm audit --audit-level=high
+
+      - name: Publicar relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analise-de-seguranca
+          path: relatorios/
+          retention-days: 30
+
   imagem:
     name: Imagens Docker
     runs-on: ubuntu-latest
-    needs: [qualidade, visao]
+    needs: [qualidade, visao, seguranca]
     # Sem working-directory aqui: os contextos de build sao passados explicitos.
     # Só valida a imagem no que vai para produção.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

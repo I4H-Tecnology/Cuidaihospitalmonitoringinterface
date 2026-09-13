@@ -83,7 +83,9 @@ def listar_cameras(
     exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
 
-    linhas = db.buscar_todos(
+    # A única interpolação é JANELA_DE_PING, constante deste módulo; o que vem
+    # do cliente entra por parâmetro.
+    linhas = db.buscar_todos(  # nosec B608
         f"""
         SELECT cam.id, cam.identificador, cam.url_stream, cam.status, cam.ultimo_ping,
                amb.id AS ambiente_id, amb.nome AS ambiente_nome, amb.tipo AS ambiente_tipo,

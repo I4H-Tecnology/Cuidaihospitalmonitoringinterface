@@ -282,7 +282,9 @@ def listar_ocorrencias(
         condicoes.append("o.data_hora <= %(ate)s")
         params["ate"] = ate
 
-    linhas = db.buscar_todos(
+    # Só nomes de coluna do mapa FILTROS_OCORRENCIA entram na string; os
+    # valores do cliente vão sempre por parâmetro nomeado.
+    linhas = db.buscar_todos(  # nosec B608
         f"""
         SELECT o.id, o.tipo_evento, o.status, o.confianca, o.data_hora,
                o.encerrada_em, o.observacao,

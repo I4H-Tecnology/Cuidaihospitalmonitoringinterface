@@ -49,7 +49,8 @@ def saude(
 
     numeros = {"cameras": 0, "conectadas": 0, "ocorrencias_24h": 0, "abertas": 0}
     if banco["ok"]:
-        linha = db.buscar_um(
+        # JANELA_DE_PING é constante; o id da clínica vai por parâmetro.
+        linha = db.buscar_um(  # nosec B608
             f"""
             SELECT
               (SELECT count(*) FROM camera cam JOIN ambiente amb ON amb.id = cam.ambiente_id

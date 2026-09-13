@@ -32,6 +32,7 @@ import statistics
 import threading
 import time
 from collections import deque
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -393,7 +394,14 @@ class ServicoVisao:
 
 def criar_app(cfg: Config, pasta_pesos=None, servico: ServicoVisao | None = None) -> FastAPI:
     servico = servico or ServicoVisao(cfg, pasta_pesos)
-    app = FastAPI(title="MedSignal — serviço de visão", version=VERSAO)
+
+    @asynccontextmanager
+    async def ciclo_de_vida(_: FastAPI):
+        servico.iniciar()
+        yield
+        servico.parar()
+
+    app = FastAPI(title="MedSignal — serviço de visão", version=VERSAO, lifespan=ciclo_de_vida)
 
     app.add_middleware(
         CORSMiddleware,
@@ -407,14 +415,6 @@ def criar_app(cfg: Config, pasta_pesos=None, servico: ServicoVisao | None = None
         allow_methods=["GET"],
         allow_headers=["*"],
     )
-
-    @app.on_event("startup")
-    def _subir() -> None:
-        servico.iniciar()
-
-    @app.on_event("shutdown")
-    def _descer() -> None:
-        servico.parar()
 
     @app.get("/health")
     def health():
