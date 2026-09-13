@@ -99,7 +99,7 @@ export function OverviewTab({ paciente, ocorrencias }: Props) {
           <p className="mt-5 flex items-start gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 text-xs text-gray-600">
             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
             <span>
-              Sinais vitais, medicações e exames não fazem parte do MVP (RFC, seção 2.6) e
+              Sinais vitais, medicações e exames não fazem parte do MVP e
               não existem no modelo de dados. Esta aba mostra apenas o que a clínica cadastrou.
             </span>
           </p>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, FileText, Download, UserCheck, AlertCircle, Plus, Activity, Clock } from 'lucide-react';
+import { ArrowLeft, FileText, Download, UserCheck, AlertCircle, Activity, Clock, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { descreverAmbiente, fetchOcorrenciasDoPaciente } from '../../data/api';
 import { baixarHistoricoCsv } from '../../data/exportarCsv';
@@ -7,21 +7,18 @@ import { ModalAlta } from './ModalAlta';
 import { BotaoIndisponivel } from './ForaDoMVP';
 import type { OcorrenciaResumo, PacienteResumo } from '../../data/api';
 import { OverviewTab } from './tabs/OverviewTab';
-import { ClinicalTimelineTab } from './tabs/ClinicalTimelineTab';
-import { EvolutionsTab } from './tabs/EvolutionsTab';
-import { MedicationsTab } from './tabs/MedicationsTab';
-import { ExamsTab } from './tabs/ExamsTab';
-import { VitalSignsTab } from './tabs/VitalSignsTab';
-import { AIAlertsTab } from './tabs/AIAlertsTab';
-import { DocumentsTab } from './tabs/DocumentsTab';
+import { CompanionsTab } from './tabs/CompanionsTab';
 import { HistoryTab } from './tabs/HistoryTab';
+import { RoadmapTab } from './tabs/RoadmapTab';
 
 interface PEPScreenProps {
   patient: PacienteResumo;
   onBack: () => void;
 }
 
-type TabType = 'overview' | 'clinical-timeline' | 'evolutions' | 'medications' | 'exams' | 'vitals' | 'ai-alerts' | 'documents' | 'history';
+// Quatro abas: três com dado real e uma que diz, uma vez só, o que ainda
+// não existe. Eram nove, seis delas repetindo o mesmo aviso de visão de produto.
+type TabType = 'overview' | 'companions' | 'history' | 'roadmap';
 
 export function PEPScreen({ patient, onBack }: PEPScreenProps) {
   const { tenantId } = useAuth();
@@ -52,14 +49,9 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
 
   const tabs = [
     { id: 'overview' as const, label: 'Visão Geral', icon: Activity },
-    { id: 'clinical-timeline' as const, label: 'Linha do Tempo Clínica', icon: Clock },
-    { id: 'evolutions' as const, label: 'Evoluções', icon: FileText },
-    { id: 'medications' as const, label: 'Medicações', icon: Plus },
-    { id: 'exams' as const, label: 'Exames', icon: FileText },
-    { id: 'vitals' as const, label: 'Sinais Vitais', icon: Activity },
-    { id: 'ai-alerts' as const, label: 'Alertas & IA', icon: AlertCircle },
-    { id: 'documents' as const, label: 'Documentos', icon: FileText },
-    { id: 'history' as const, label: 'Histórico Completo', icon: FileText }
+    { id: 'companions' as const, label: 'Acompanhantes', icon: Users },
+    { id: 'history' as const, label: 'Histórico Completo', icon: FileText },
+    { id: 'roadmap' as const, label: 'Em breve', icon: Clock }
   ];
 
   return (
@@ -120,7 +112,7 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
             <div className="flex flex-wrap items-center gap-2">
               {/* Evolução clínica não existe no DER; o botão diz isso em vez
                   de fingir que salva. */}
-              <BotaoIndisponivel motivo="Evoluções clínicas estão fora do MVP (RFC, seção 2.6)">
+              <BotaoIndisponivel motivo="Evoluções clínicas estão fora desta versão">
                 Nova Evolução
               </BotaoIndisponivel>
 
@@ -210,14 +202,9 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
       {/* Tab Content */}
       <div className="px-8 py-6">
         {activeTab === 'overview' && <OverviewTab paciente={paciente} ocorrencias={ocorrencias} />}
-        {activeTab === 'clinical-timeline' && <ClinicalTimelineTab />}
-        {activeTab === 'evolutions' && <EvolutionsTab />}
-        {activeTab === 'medications' && <MedicationsTab />}
-        {activeTab === 'exams' && <ExamsTab />}
-        {activeTab === 'vitals' && <VitalSignsTab />}
-        {activeTab === 'ai-alerts' && <AIAlertsTab />}
-        {activeTab === 'documents' && <DocumentsTab />}
+        {activeTab === 'companions' && <CompanionsTab paciente={paciente} />}
         {activeTab === 'history' && <HistoryTab paciente={paciente} ocorrencias={ocorrencias} />}
+        {activeTab === 'roadmap' && <RoadmapTab />}
       </div>
     </main>
   );

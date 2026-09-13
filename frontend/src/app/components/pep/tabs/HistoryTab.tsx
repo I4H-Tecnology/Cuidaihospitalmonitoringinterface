@@ -175,7 +175,7 @@ export function HistoryTab({ paciente, ocorrencias }: Props) {
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
         <span>
           O histórico cobre as ocorrências detectadas pelo serviço de visão. Evoluções,
-          prescrições e exames estão fora do MVP (RFC, seção 2.6).
+          prescrições e exames estão fora desta versão.
         </span>
       </p>
     </div>

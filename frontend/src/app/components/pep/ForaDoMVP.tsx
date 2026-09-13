@@ -3,10 +3,10 @@ import { Info, Lock } from 'lucide-react';
 /**
  * Marcacao honesta do que ainda nao existe.
  *
- * O prontuario clinico esta fora do MVP pela secao 2.6 da RFC, e fora do DER,
- * que nao tem entidade para evolucao, prescricao nem exame. As telas ficaram
- * no produto para mostrar a visao de produto -- a propria RFC diz isso na
- * legenda da Figura 6.
+ * O prontuario clinico esta fora do MVP (RFC, secao 2.6) e fora do DER, que
+ * nao tem entidade para evolucao, prescricao nem exame. As telas ficaram no
+ * produto para mostrar a visao de produto. A referencia a RFC fica aqui, no
+ * codigo: para quem usa o produto, "RFC, secao 2.6" nao diz nada.
  *
  * O problema nao era terem ficado: era nao dizerem. Botao que nao faz nada e
  * pior que botao ausente, porque o usuario so descobre depois de clicar, e fica
@@ -19,8 +19,8 @@ export function AvisoForaDoMVP({ oque }: { oque: string }) {
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
       <div className="text-sm text-amber-900">
         <p>
-          <strong>Demonstração da visão de produto.</strong> {oque} não faz parte da v1 de
-          detecção de quedas (RFC, seção 2.6) e não existe no modelo de dados.
+          <strong>Demonstração da visão de produto.</strong> {oque} é a visão de produto
+          para uma versão futura e ainda não existe no modelo de dados.
         </p>
         <p className="mt-1 text-amber-800">
           Os dados abaixo são ilustrativos e as ações estão desativadas.
