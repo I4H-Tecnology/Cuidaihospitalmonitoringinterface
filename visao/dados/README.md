@@ -2,7 +2,8 @@
 
 Aqui ficam os vídeos encenados, as anotações e os resultados da avaliação do
 detector de quedas. **Só as anotações e os resultados entram no Git.** Vídeos e
-o cache de features são ignorados: são dados de imagem, e o repositório é público.
+o cache de features são ignorados: são dados de imagem de pessoas, e imagem de pessoa
+não entra em repositório, privado ou não.
 
 ```
 visao/dados/

@@ -1,13 +1,16 @@
 # =============================================================================
 #  MedSignal — ambiente local completo
 #
-#  Sobe por padrão:  banco (Postgres), Adminer e o frontend em modo dev com HMR.
-#
-#    docker compose up -d              # dia a dia: db + adminer + frontend-dev
-#    docker compose --profile api up -d      # sobe tambem a API de autenticacao
+#    docker compose run --rm dev       # dia a dia: db + api + frontend-dev,
+#                                       # com aviso de pronto no terminal
+#    docker compose up -d              # a mesma coisa, sem o aviso
+#    docker compose up -d adminer      # cliente web do banco, à parte (opcional)
 #    docker compose --profile prod up        # testa a imagem de produção (nginx)
 #
 #  Portas:  5173 frontend dev · 8080 frontend prod · 8000 API · 5432 db · 8081 Adminer
+#
+#  A câmera não sobe por aqui: container no Windows não enxerga webcam. Ver
+#  `visao/servir.py`, fora do Docker.
 # =============================================================================
 
 name: medsignal
@@ -105,13 +108,13 @@ services:
       - '${FRONTEND_PORT:-8080}:80'
 
   # ---------------------------------------------------------------------------
-  # Backend de autenticação — provisório, mora em backend/.
-  # Existe só para destravar o login enquanto o FastAPI definitivo não chega.
-  #   docker compose --profile api up -d --build
-  # Substituir pelo FastAPI definitivo quando ele chegar.
+  # Backend — API do produto (FastAPI), mora em backend/. Sem profile: sobe
+  # junto por padrão, porque não há mais uso real do frontend sem ele (login,
+  # pacientes, ocorrências, alertas, tudo passa por aqui). Era opcional
+  # (`--profile api`) de quando ainda era só um andaime para destravar o
+  # login; o comando antigo continua funcionando, só que agora não muda nada.
   # ---------------------------------------------------------------------------
   backend:
-    profiles: ['api']
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -147,9 +150,11 @@ services:
 
   # ---------------------------------------------------------------------------
   # API FastAPI definitiva de outro repositório — alternativa ao serviço acima.
+  # Os dois publicam a porta 8000: pare o padrão antes de subir este
+  # (`docker compose stop backend`), senão a porta já está em uso.
   #
   # Clone o backend em ../medsignal-backend e rode:
-  #   docker compose --profile backend up -d --build
+  #   docker compose --profile externo up -d --build backend-externo
   #
   # Se o caminho for outro, ajuste BACKEND_PATH no .env.
   # ---------------------------------------------------------------------------
@@ -171,6 +176,35 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Atalho do dia a dia: `docker compose run --rm dev` sobe db + backend +
+  # frontend-dev (na ordem certa, esperando o banco ficar saudável) e mostra
+  # os endereços no terminal. Ctrl+C só fecha este aviso — os três serviços
+  # continuam no ar; `docker compose down` para desligar de verdade.
+  # Não é um serviço de verdade: é o alpine parado, só para dar nome ao grupo.
+  # ---------------------------------------------------------------------------
+  dev:
+    image: alpine:3.20
+    command: >
+      sh -c "
+      echo '' &&
+      echo 'MedSignal no ar:' &&
+      echo '  Frontend   http://localhost:5173' &&
+      echo '  API        http://localhost:8000/docs' &&
+      echo '  Banco      localhost:5432' &&
+      echo '' &&
+      echo 'Adminer (cliente do banco, opcional): docker compose up -d adminer' &&
+      echo 'Ctrl+C sai deste aviso sem derrubar nada. Para desligar: docker compose down' &&
+      sleep infinity
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      frontend-dev:
+        condition: service_started
 
 volumes:
   pgdata:

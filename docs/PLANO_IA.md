@@ -318,7 +318,7 @@ pacientes idosos em clínicas envolve barreiras éticas e de privacidade (LGPD)
 que inviabilizam a coleta no escopo acadêmico"*.
 
 Os vídeos **não vão para o Git** — só as anotações. São dados de imagem, e o
-repositório é público.
+repositório é privado, mas imagem de pessoa não entra em repositório nenhum.
 
 ---
 

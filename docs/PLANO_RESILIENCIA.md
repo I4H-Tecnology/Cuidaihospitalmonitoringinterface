@@ -192,7 +192,8 @@ depender de `qualidade` e `visao`. Quando o arnês tiver clipes (ver
 
 ### Sobre os outros dois itens do núcleo comum
 
-- **Análise estática** (SonarCloud ou Codacy) depende de o repositório virar
-  público — decisão do usuário, e também gate do RNF20.
+- **Análise estática**: feita com Semgrep, Bandit e auditoria de dependências
+  dentro do CI (job `seguranca`), sem serviço externo. O repositório é privado
+  por decisão aprovada com o orientador; ver `docs/PLANO_NUCLEO_COMUM.md`.
 - **Wiki** pode ser montada a partir de `README.md`, `docs/PLANO_IA.md`,
   `visao/README.md` e `visao/dados/README.md`.
