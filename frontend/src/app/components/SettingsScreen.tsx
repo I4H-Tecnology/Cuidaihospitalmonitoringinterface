@@ -235,24 +235,6 @@ const mockAlertTypes: AlertType[] = [
     description: 'Alerta quando paciente sai do leito sem permissão'
   },
   {
-    id: 3,
-    name: 'Frequência Cardíaca Anormal',
-    category: 'vital-signs',
-    severity: 'critical',
-    enabled: true,
-    aiEnabled: false,
-    description: 'Monitora alterações na frequência cardíaca'
-  },
-  {
-    id: 4,
-    name: 'Temperatura Elevada',
-    category: 'vital-signs',
-    severity: 'warning',
-    enabled: true,
-    aiEnabled: false,
-    description: 'Detecta febre acima de 37.8°C'
-  },
-  {
     id: 5,
     name: 'Agitação Psicomotora',
     category: 'custom',
