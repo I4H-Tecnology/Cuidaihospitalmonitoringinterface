@@ -12,6 +12,7 @@ from ..seguranca import (
 from psycopg.errors import UniqueViolation
 from ..schemas import (
     AmbienteResumo,
+    CameraEdicaoPayload,
     CameraPayload,
     CameraResumo,
 )
@@ -35,6 +36,59 @@ router = APIRouter()
 # Sem ping nesta janela, a câmera é considerada desconectada. 90s dá folga para
 # três batidas de 30s perdidas antes de acusar problema.
 JANELA_DE_PING = "90 seconds"
+
+
+def consultar_cameras(clinica_id, camera_id: str | None = None) -> list[dict]:
+    """Parque de câmeras da clínica, com "conectada" derivada do último ping.
+
+    A única interpolação é JANELA_DE_PING, constante deste módulo; o que vem
+    do cliente entra por parâmetro.
+    """
+    filtro_camera = " AND cam.id = %(cam)s" if camera_id else ""
+    return db.buscar_todos(  # nosec B608
+        f"""
+        SELECT cam.id, cam.identificador, cam.url_stream, cam.status, cam.ultimo_ping,
+               amb.id AS ambiente_id, amb.nome AS ambiente_nome, amb.tipo AS ambiente_tipo,
+               pac.id AS paciente_id, pac.nome AS paciente_nome,
+               (cam.ultimo_ping IS NOT NULL
+                AND cam.ultimo_ping > now() - interval '{JANELA_DE_PING}') AS conectada,
+               (SELECT count(*) FROM ocorrencia o
+                 WHERE o.camera_id = cam.id
+                   AND o.data_hora > now() - interval '24 hours') AS ocorrencias_24h,
+               (SELECT max(o.data_hora) FROM ocorrencia o WHERE o.camera_id = cam.id)
+                 AS ultima_ocorrencia
+        FROM camera cam
+        JOIN ambiente amb ON amb.id = cam.ambiente_id
+        LEFT JOIN LATERAL (
+          SELECT p.id, p.nome FROM paciente p
+           WHERE p.ambiente_id = amb.id AND p.status = 'internado'
+           ORDER BY p.data_admissao DESC LIMIT 1
+        ) pac ON true
+        WHERE amb.clinica_id = %(cid)s{filtro_camera}
+        ORDER BY conectada DESC, amb.nome, cam.identificador
+        """,
+        {"cid": clinica_id, "cam": camera_id},
+    )
+
+
+def montar_camera(l: dict) -> CameraResumo:
+    return CameraResumo(
+        id=str(l["id"]),
+        identificador=l["identificador"],
+        # A URL costuma carregar usuário e senha. Quem lista o parque não
+        # precisa da credencial para operar, então ela não sai daqui.
+        urlStream=mascarar_credencial(l["url_stream"]),
+        status=l["status"],
+        conectada=bool(l["conectada"]),
+        ultimoPing=iso(l["ultimo_ping"]),
+        ambienteId=str(l["ambiente_id"]),
+        ambienteNome=l["ambiente_nome"],
+        ambienteTipo=l["ambiente_tipo"],
+        pacienteId=str(l["paciente_id"]) if l["paciente_id"] else None,
+        pacienteNome=l["paciente_nome"],
+        ocorrencias24h=l["ocorrencias_24h"] or 0,
+        ultimaOcorrencia=iso(l["ultima_ocorrencia"]),
+    )
 
 
 @router.get("/api/ambientes", response_model=list[AmbienteResumo])
@@ -85,53 +139,11 @@ def listar_cameras(
 
     # A única interpolação é JANELA_DE_PING, constante deste módulo; o que vem
     # do cliente entra por parâmetro.
-    linhas = db.buscar_todos(  # nosec B608
-        f"""
-        SELECT cam.id, cam.identificador, cam.url_stream, cam.status, cam.ultimo_ping,
-               amb.id AS ambiente_id, amb.nome AS ambiente_nome, amb.tipo AS ambiente_tipo,
-               pac.id AS paciente_id, pac.nome AS paciente_nome,
-               (cam.ultimo_ping IS NOT NULL
-                AND cam.ultimo_ping > now() - interval '{JANELA_DE_PING}') AS conectada,
-               (SELECT count(*) FROM ocorrencia o
-                 WHERE o.camera_id = cam.id
-                   AND o.data_hora > now() - interval '24 hours') AS ocorrencias_24h,
-               (SELECT max(o.data_hora) FROM ocorrencia o WHERE o.camera_id = cam.id)
-                 AS ultima_ocorrencia
-        FROM camera cam
-        JOIN ambiente amb ON amb.id = cam.ambiente_id
-        LEFT JOIN LATERAL (
-          SELECT p.id, p.nome FROM paciente p
-           WHERE p.ambiente_id = amb.id AND p.status = 'internado'
-           ORDER BY p.data_admissao DESC LIMIT 1
-        ) pac ON true
-        WHERE amb.clinica_id = %s
-        ORDER BY conectada DESC, amb.nome, cam.identificador
-        """,
-        (clinica["id"],),
-    )
+    linhas = consultar_cameras(clinica["id"])
     if somenteConectadas:
         linhas = [l for l in linhas if l["conectada"]]
 
-    return [
-        CameraResumo(
-            id=str(l["id"]),
-            identificador=l["identificador"],
-            # A URL costuma carregar usuário e senha. Quem lista o parque não
-            # precisa da credencial para operar, então ela não sai daqui.
-            urlStream=mascarar_credencial(l["url_stream"]),
-            status=l["status"],
-            conectada=bool(l["conectada"]),
-            ultimoPing=iso(l["ultimo_ping"]),
-            ambienteId=str(l["ambiente_id"]),
-            ambienteNome=l["ambiente_nome"],
-            ambienteTipo=l["ambiente_tipo"],
-            pacienteId=str(l["paciente_id"]) if l["paciente_id"] else None,
-            pacienteNome=l["paciente_nome"],
-            ocorrencias24h=l["ocorrencias_24h"] or 0,
-            ultimaOcorrencia=iso(l["ultima_ocorrencia"]),
-        )
-        for l in linhas
-    ]
+    return [montar_camera(l) for l in linhas]
 
 
 @router.post("/api/cameras", response_model=CameraResumo, status_code=201)
@@ -192,3 +204,58 @@ def criar_camera(
         ocorrencias24h=0,
         ultimaOcorrencia=None,
     )
+
+
+@router.patch("/api/cameras/{camera_id}", response_model=CameraResumo)
+def editar_camera(
+    camera_id: str,
+    payload: CameraEdicaoPayload,
+    usuario: UsuarioAutenticado = Depends(exigir_permissao("monitoring", "edit")),
+):
+    """Edita identificador, URL do stream ou ambiente de uma câmera já cadastrada.
+
+    A posse é conferida pelo ambiente: a câmera pertence à clínica através
+    dele. Mudar de ambiente exige que o novo também seja da mesma clínica.
+    """
+    exigir_tenant(usuario, payload.tenantId)
+    clinica = clinica_por_slug(payload.tenantId)
+
+    atual = db.buscar_um(
+        """
+        SELECT cam.id, cam.ambiente_id
+          FROM camera cam JOIN ambiente amb ON amb.id = cam.ambiente_id
+         WHERE cam.id = %s AND amb.clinica_id = %s
+        """,
+        (camera_id, clinica["id"]),
+    )
+    if not atual:
+        raise HTTPException(404, "Câmera não encontrada.")
+
+    campos, valores = [], []
+    if payload.identificador is not None:
+        campos.append("identificador = %s")
+        valores.append(payload.identificador.strip())
+    if payload.urlStream is not None:
+        campos.append("url_stream = %s")
+        valores.append(payload.urlStream.strip())
+    if payload.ambienteId is not None:
+        ambiente = db.buscar_um(
+            "SELECT id FROM ambiente WHERE id = %s AND clinica_id = %s",
+            (payload.ambienteId, clinica["id"]),
+        )
+        if not ambiente:
+            raise HTTPException(404, "Ambiente não encontrado nesta clínica.")
+        campos.append("ambiente_id = %s")
+        valores.append(payload.ambienteId)
+    if not campos:
+        raise HTTPException(400, "Nada a alterar.")
+
+    valores.append(camera_id)
+    try:
+        # `campos` só tem fragmentos fixos deste módulo; os valores vão por parâmetro.
+        db.executar(f"UPDATE camera SET {', '.join(campos)} WHERE id = %s", tuple(valores))  # nosec B608
+    except UniqueViolation:
+        raise HTTPException(409, "Já existe uma câmera com esse identificador neste ambiente.")
+
+    logger.info("Câmera %s editada por %s", camera_id, usuario.nome)
+    return montar_camera(consultar_cameras(clinica["id"], camera_id)[0])

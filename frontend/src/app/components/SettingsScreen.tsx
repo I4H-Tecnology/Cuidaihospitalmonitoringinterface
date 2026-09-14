@@ -1,17 +1,9 @@
-import React, { useState } from 'react';
-import { Building2, Layers, Camera, Bell, Plug, Plus, Edit, Trash2, Power, PowerOff, ChevronRight, ChevronDown, Settings, Check, X, Save, MapPin, Phone, Mail } from 'lucide-react';
+import { useState } from 'react';
+import { Building2, Layers, Camera, Bell, Plug, Plus, Edit, ChevronRight, ChevronDown, Settings, Check, X, Save } from 'lucide-react';
+import { AbaClinica } from './settings/AbaClinica';
+import { AbaCameras } from './settings/AbaCameras';
 
 type SettingsTab = 'units' | 'structure' | 'devices' | 'alerts' | 'integrations';
-
-interface Unit {
-  id: number;
-  name: string;
-  type: 'hospital' | 'clinic' | 'nursing-home';
-  address: string;
-  phone: string;
-  email: string;
-  status: 'active' | 'inactive';
-}
 
 interface Floor {
   id: number;
@@ -42,16 +34,6 @@ interface Bed {
   status: 'occupied' | 'available' | 'blocked';
 }
 
-interface Device {
-  id: number;
-  name: string;
-  type: 'camera' | 'sensor' | 'tablet';
-  location: string;
-  status: 'online' | 'offline';
-  lastSync: string;
-  deviceId: string;
-}
-
 interface AlertType {
   id: number;
   name: string;
@@ -70,36 +52,6 @@ interface Integration {
   endpoint?: string;
   lastSync?: string;
 }
-
-const mockUnits: Unit[] = [
-  {
-    id: 1,
-    name: 'Hospital Central',
-    type: 'hospital',
-    address: 'Av. Principal, 1000 - Centro',
-    phone: '(11) 3000-0000',
-    email: 'contato@hospitalcentral.com.br',
-    status: 'active'
-  },
-  {
-    id: 2,
-    name: 'Clínica Norte',
-    type: 'clinic',
-    address: 'Rua das Flores, 250 - Zona Norte',
-    phone: '(11) 3100-0000',
-    email: 'contato@clinicanorte.com.br',
-    status: 'active'
-  },
-  {
-    id: 3,
-    name: 'Casa de Repouso Vida Plena',
-    type: 'nursing-home',
-    address: 'Alameda Tranquila, 88 - Jardins',
-    phone: '(11) 3200-0000',
-    email: 'contato@vidaplena.com.br',
-    status: 'inactive'
-  }
-];
 
 const mockStructure: Floor[] = [
   {
@@ -176,45 +128,6 @@ const mockStructure: Floor[] = [
   }
 ];
 
-const mockDevices: Device[] = [
-  {
-    id: 1,
-    name: 'Câmera UTI 301-A',
-    type: 'camera',
-    location: '3º Andar → UTI → Quarto 301 → Leito A',
-    status: 'online',
-    lastSync: 'há 2 min',
-    deviceId: 'CAM-UTI-301A'
-  },
-  {
-    id: 2,
-    name: 'Sensor Queda 301-B',
-    type: 'sensor',
-    location: '3º Andar → UTI → Quarto 301 → Leito B',
-    status: 'online',
-    lastSync: 'há 5 min',
-    deviceId: 'SEN-UTI-301B'
-  },
-  {
-    id: 3,
-    name: 'Tablet Enfermagem UTI',
-    type: 'tablet',
-    location: '3º Andar → UTI → Posto de Enfermagem',
-    status: 'offline',
-    lastSync: 'há 2 horas',
-    deviceId: 'TAB-UTI-01'
-  },
-  {
-    id: 4,
-    name: 'Câmera Geriatria 410-A',
-    type: 'camera',
-    location: '4º Andar → Geriatria → Quarto 410 → Leito A',
-    status: 'online',
-    lastSync: 'há 1 min',
-    deviceId: 'CAM-GER-410A'
-  }
-];
-
 const mockAlertTypes: AlertType[] = [
   {
     id: 1,
@@ -274,8 +187,6 @@ const mockIntegrations: Integration[] = [
 export function SettingsScreen() {
   const [currentTab, setCurrentTab] = useState<SettingsTab>('units');
   const [structure, setStructure] = useState(mockStructure);
-  const [showNewUnitModal, setShowNewUnitModal] = useState(false);
-  const [showNewDeviceModal, setShowNewDeviceModal] = useState(false);
 
   const tabs = [
     { id: 'units' as const, label: 'Unidades', icon: Building2 },
@@ -284,18 +195,6 @@ export function SettingsScreen() {
     { id: 'alerts' as const, label: 'Tipos de Alertas', icon: Bell },
     { id: 'integrations' as const, label: 'Integrações', icon: Plug }
   ];
-
-  const unitTypeLabels = {
-    'hospital': 'Hospital',
-    'clinic': 'Clínica',
-    'nursing-home': 'Casa de Repouso'
-  };
-
-  const deviceTypeConfig = {
-    'camera': { icon: <Camera className="w-5 h-5" />, color: 'bg-blue-100 text-blue-700', label: 'Câmera' },
-    'sensor': { icon: <Settings className="w-5 h-5" />, color: 'bg-purple-100 text-purple-700', label: 'Sensor' },
-    'tablet': { icon: <Phone className="w-5 h-5" />, color: 'bg-green-100 text-green-700', label: 'Tablet' }
-  };
 
   const alertCategoryConfig = {
     'fall': { color: 'bg-red-100 text-red-700', label: 'Queda' },
@@ -362,10 +261,17 @@ export function SettingsScreen() {
         <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="text-gray-800 mb-1">Configurações do Sistema</h1>
-            <p className="text-sm text-gray-500">Gestão de estrutura hospitalar, dispositivos e integrações</p>
+            <p className="text-sm text-gray-500">Cadastro da clínica, câmeras, tipos de alerta e integrações</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors">
+            {/* Cada aba salva no próprio formulário; não há "salvar tudo". Fica
+                visível e travado, com o motivo, em vez de sumir. */}
+            <button
+              type="button"
+              disabled
+              title="Cada formulário salva sozinho ao confirmar; não há alteração pendente para salvar aqui."
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm cursor-not-allowed"
+            >
               <Save className="w-4 h-4" />
               Salvar Alterações
             </button>
@@ -394,78 +300,8 @@ export function SettingsScreen() {
         </div>
       </div>
 
-      {/* Tab: Unidades */}
-      {currentTab === 'units' && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-600">Gerencie as unidades do sistema</p>
-            <button
-              onClick={() => setShowNewUnitModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Nova Unidade
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {mockUnits.map(unit => (
-              <div key={unit.id} className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className={`p-3 rounded-lg ${
-                      unit.type === 'hospital' ? 'bg-blue-100' :
-                      unit.type === 'clinic' ? 'bg-green-100' :
-                      'bg-purple-100'
-                    }`}>
-                      <Building2 className={`w-6 h-6 ${
-                        unit.type === 'hospital' ? 'text-blue-600' :
-                        unit.type === 'clinic' ? 'text-green-600' :
-                        'text-purple-600'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-gray-800">{unit.name}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          unit.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {unit.status === 'active' ? 'Ativo' : 'Inativo'}
-                        </span>
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-                          {unitTypeLabels[unit.type]}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          <span>{unit.address}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Phone className="w-4 h-4" />
-                          <span>{unit.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Mail className="w-4 h-4" />
-                          <span>{unit.email}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
-                      <Edit className="w-4 h-4 text-gray-600" />
-                    </button>
-                    <button className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Tab: Unidades — a clínica do tenant, de /api/clinica */}
+      {currentTab === 'units' && <AbaClinica />}
 
       {/* Tab: Estrutura Física */}
       {currentTab === 'structure' && (
@@ -567,84 +403,8 @@ export function SettingsScreen() {
         </div>
       )}
 
-      {/* Tab: Dispositivos */}
-      {currentTab === 'devices' && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-600">Gerencie câmeras, sensores e tablets</p>
-            <button
-              onClick={() => setShowNewDeviceModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Adicionar Dispositivo
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {mockDevices.map(device => {
-              const config = deviceTypeConfig[device.type];
-              return (
-                <div key={device.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-lg ${config.color}`}>
-                        {config.icon}
-                      </div>
-                      <div>
-                        <h3 className="text-gray-800 mb-1">{device.name}</h3>
-                        <p className="text-xs text-gray-500 mb-2">{device.location}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
-                            {config.label}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
-                            device.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                            {device.status === 'online' ? <Power className="w-3 h-3" /> : <PowerOff className="w-3 h-3" />}
-                            {device.status === 'online' ? 'Online' : 'Offline'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                      <Edit className="w-4 h-4 text-gray-600" />
-                    </button>
-                  </div>
-                  <div className="border-t border-gray-200 pt-3 flex items-center justify-between text-xs">
-                    <span className="text-gray-500">ID: {device.deviceId}</span>
-                    <span className="text-gray-500">Última sinc: {device.lastSync}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Stats */}
-          <div className="mt-6 grid grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-100 p-4">
-              <Camera className="w-8 h-8 text-blue-600 mb-2" />
-              <p className="text-2xl text-gray-800">2</p>
-              <p className="text-xs text-gray-600">Câmeras</p>
-            </div>
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100 p-4">
-              <Settings className="w-8 h-8 text-purple-600 mb-2" />
-              <p className="text-2xl text-gray-800">1</p>
-              <p className="text-xs text-gray-600">Sensores</p>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100 p-4">
-              <Phone className="w-8 h-8 text-green-600 mb-2" />
-              <p className="text-2xl text-gray-800">1</p>
-              <p className="text-xs text-gray-600">Tablets</p>
-            </div>
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-100 p-4">
-              <PowerOff className="w-8 h-8 text-orange-600 mb-2" />
-              <p className="text-2xl text-gray-800">1</p>
-              <p className="text-xs text-gray-600">Offline</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Tab: Dispositivos — câmeras reais, de /api/cameras */}
+      {currentTab === 'devices' && <AbaCameras />}
 
       {/* Tab: Tipos de Alertas */}
       {currentTab === 'alerts' && (
@@ -767,152 +527,6 @@ export function SettingsScreen() {
         </div>
       )}
 
-      {/* Modal: Nova Unidade */}
-      {showNewUnitModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
-            <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-6 py-4 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-white text-lg">Nova Unidade</h3>
-              <button
-                onClick={() => setShowNewUnitModal(false)}
-                className="text-white hover:bg-white/20 rounded-lg p-1 text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-2">Nome da Unidade *</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Hospital Central"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">Tipo *</label>
-                  <select className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]">
-                    <option>Hospital</option>
-                    <option>Clínica</option>
-                    <option>Casa de Repouso</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">Status</label>
-                  <select className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]">
-                    <option>Ativo</option>
-                    <option>Inativo</option>
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-2">Endereço *</label>
-                  <input
-                    type="text"
-                    placeholder="Rua, número - Bairro"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">Telefone</label>
-                  <input
-                    type="tel"
-                    placeholder="(11) 3000-0000"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">E-mail</label>
-                  <input
-                    type="email"
-                    placeholder="contato@hospital.com.br"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowNewUnitModal(false)}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors">
-                Criar Unidade
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Novo Dispositivo */}
-      {showNewDeviceModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
-            <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-6 py-4 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-white text-lg">Adicionar Dispositivo</h3>
-              <button
-                onClick={() => setShowNewDeviceModal(false)}
-                className="text-white hover:bg-white/20 rounded-lg p-1 text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-2">Nome do Dispositivo *</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Câmera UTI 301-A"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">Tipo *</label>
-                  <select className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]">
-                    <option>Câmera</option>
-                    <option>Sensor</option>
-                    <option>Tablet</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">ID do Dispositivo *</label>
-                  <input
-                    type="text"
-                    placeholder="CAM-UTI-301A"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-2">Localização *</label>
-                  <input
-                    type="text"
-                    placeholder="3º Andar → UTI → Quarto 301 → Leito A"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowNewDeviceModal(false)}
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors">
-                Adicionar Dispositivo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
