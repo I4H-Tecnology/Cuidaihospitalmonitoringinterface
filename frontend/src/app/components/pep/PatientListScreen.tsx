@@ -236,9 +236,10 @@ export function PatientListScreen({ onSelectPatient }: Props) {
       {modalNovo && (
         <ModalPaciente
           aoFechar={() => setModalNovo(false)}
-          aoSalvar={(novo) => {
+          aoSalvar={(novo, avisos) => {
             setModalNovo(false);
             setPacientes((atuais) => [novo, ...atuais]);
+            if (avisos.length) setErro(avisos.join(' '));
           }}
         />
       )}

@@ -1,4 +1,4 @@
-import { AlertTriangle, BedDouble, CalendarDays, CheckCircle, Clock, Info, User } from 'lucide-react';
+import { AlertTriangle, BedDouble, CalendarDays, CheckCircle, Clock, Info, Stethoscope, User } from 'lucide-react';
 import { descreverAmbiente } from '../../../data/api';
 import type { OcorrenciaResumo, PacienteResumo } from '../../../data/api';
 
@@ -91,7 +91,21 @@ export function OverviewTab({ paciente, ocorrencias }: Props) {
               rotulo="Situação cadastral"
               valor={paciente.status}
             />
+            <Linha
+              icone={<Stethoscope className="w-4 h-4" />}
+              rotulo="Médico responsável"
+              valor={paciente.medicoResponsavel || 'Não informado'}
+            />
           </dl>
+
+          <div className="mt-4">
+            <p className="mb-1 text-xs text-gray-500">Histórico médico</p>
+            {paciente.historicoMedico ? (
+              <p className="whitespace-pre-wrap rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">{paciente.historicoMedico}</p>
+            ) : (
+              <p className="text-sm text-gray-400">Não informado. Use "Editar paciente" para registrar.</p>
+            )}
+          </div>
 
           {/* Diz o que a tela NAO tem, em vez de preencher com valor fictício.
               Quem abre um prontuário precisa saber a diferença entre "normal"
@@ -99,8 +113,8 @@ export function OverviewTab({ paciente, ocorrencias }: Props) {
           <p className="mt-5 flex items-start gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 text-xs text-gray-600">
             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
             <span>
-              Sinais vitais, medicações e exames não fazem parte do MVP e
-              não existem no modelo de dados. Esta aba mostra apenas o que a clínica cadastrou.
+              Alergias, medicações, evoluções e acompanhantes estão nas abas ao lado.
+              Sinais vitais e exames não existem no sistema; nada aqui é estimado.
             </span>
           </p>
         </section>
