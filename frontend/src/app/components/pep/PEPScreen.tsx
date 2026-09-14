@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
-import { ArrowLeft, FileText, Download, UserCheck, AlertCircle, Activity, Clock, Users } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowLeft, FileText, Download, UserCheck, AlertCircle, Activity, Clock, Users, ShieldAlert, Plus, History, Pill, Pencil } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { descreverAmbiente, fetchOcorrenciasDoPaciente } from '../../data/api';
+import { descreverAmbiente, fetchEvolucoes, fetchOcorrenciasDoPaciente, fetchPrescricoes, fetchRiscos } from '../../data/api';
 import { baixarHistoricoCsv } from '../../data/exportarCsv';
 import { ModalAlta } from './ModalAlta';
-import { BotaoIndisponivel } from './ForaDoMVP';
-import type { OcorrenciaResumo, PacienteResumo } from '../../data/api';
+import { ModalPaciente } from './ModalPaciente';
+import type { EvolucaoResumo, OcorrenciaResumo, PacienteResumo, PrescricaoResumo, RiscoResumo } from '../../data/api';
 import { OverviewTab } from './tabs/OverviewTab';
+import { EvolutionsTab } from './tabs/EvolutionsTab';
+import { ClinicalTimelineTab } from './tabs/ClinicalTimelineTab';
+import { AllergiesTab } from './tabs/AllergiesTab';
+import { MedicationsTab } from './tabs/MedicationsTab';
 import { CompanionsTab } from './tabs/CompanionsTab';
 import { HistoryTab } from './tabs/HistoryTab';
 import { RoadmapTab } from './tabs/RoadmapTab';
@@ -16,9 +20,10 @@ interface PEPScreenProps {
   onBack: () => void;
 }
 
-// Quatro abas: três com dado real e uma que diz, uma vez só, o que ainda
-// não existe. Eram nove, seis delas repetindo o mesmo aviso de visão de produto.
-type TabType = 'overview' | 'companions' | 'history' | 'roadmap';
+// Sete abas: seis com dado real e uma que diz, uma vez só, o que ainda não
+// existe. Evoluções, linha do tempo e alergias entraram em 13/09/2026 por
+// decisão de produto, além do MVP avaliado na RFC (seção 2.6; errata pendente).
+type TabType = 'overview' | 'evolutions' | 'timeline' | 'allergies' | 'medications' | 'companions' | 'history' | 'roadmap';
 
 export function PEPScreen({ patient, onBack }: PEPScreenProps) {
   const { tenantId } = useAuth();
@@ -27,6 +32,42 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
   const [paciente, setPaciente] = useState(patient);
   const [modalAlta, setModalAlta] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [evolucoes, setEvolucoes] = useState<EvolucaoResumo[]>([]);
+  const [riscos, setRiscos] = useState<RiscoResumo[]>([]);
+  const [prescricoes, setPrescricoes] = useState<PrescricaoResumo[]>([]);
+  const [modalEditar, setModalEditar] = useState(false);
+  const [carregandoProntuario, setCarregandoProntuario] = useState(true);
+  const [focarEvolucao, setFocarEvolucao] = useState(false);
+
+  // Evoluções e riscos: buscados aqui e repassados, porque três abas os usam
+  // (evoluções, linha do tempo, alergias) e o cabeçalho mostra alergia grave.
+  const carregarProntuario = useCallback(async () => {
+    if (!tenantId) return;
+    try {
+      const [e, r, pr] = await Promise.all([
+        fetchEvolucoes(tenantId, paciente.id),
+        fetchRiscos(tenantId, paciente.id, true),
+        fetchPrescricoes(tenantId, paciente.id, true),
+      ]);
+      setEvolucoes(e);
+      setRiscos(r);
+      setPrescricoes(pr);
+    } catch {
+      // Perfil sem acesso ao prontuário clínico (ou API fora): as abas mostram
+      // vazio e o cabeçalho não acusa alergia que não pôde ler.
+      setEvolucoes([]);
+      setRiscos([]);
+      setPrescricoes([]);
+    } finally {
+      setCarregandoProntuario(false);
+    }
+  }, [tenantId, paciente.id]);
+
+  useEffect(() => {
+    carregarProntuario();
+  }, [carregarProntuario]);
+
+  const alergiasGraves = riscos.filter((r) => r.ativo && r.tipo === 'alergia' && r.gravidade === 'grave');
 
   // Buscadas uma vez, aqui, e repassadas as abas. Cada aba buscando por conta
   // faria a mesma consulta duas vezes ao alternar entre elas.
@@ -49,6 +90,10 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
 
   const tabs = [
     { id: 'overview' as const, label: 'Visão Geral', icon: Activity },
+    { id: 'evolutions' as const, label: 'Evoluções', icon: FileText },
+    { id: 'timeline' as const, label: 'Linha do Tempo', icon: History },
+    { id: 'allergies' as const, label: 'Alergias & Riscos', icon: ShieldAlert },
+    { id: 'medications' as const, label: 'Medicações', icon: Pill },
     { id: 'companions' as const, label: 'Acompanhantes', icon: Users },
     { id: 'history' as const, label: 'Histórico Completo', icon: FileText },
     { id: 'roadmap' as const, label: 'Em breve', icon: Clock }
@@ -110,11 +155,25 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2">
-              {/* Evolução clínica não existe no DER; o botão diz isso em vez
-                  de fingir que salva. */}
-              <BotaoIndisponivel motivo="Evoluções clínicas estão fora desta versão">
+              <button
+                type="button"
+                onClick={() => setModalEditar(true)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700
+                           hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <Pencil className="w-4 h-4" />
+                Editar paciente
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('evolutions'); setFocarEvolucao(true); }}
+                className="px-4 py-2 bg-[#0A7EA4] text-white rounded-lg text-sm hover:bg-[#0EA5E9]
+                           transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
                 Nova Evolução
-              </BotaoIndisponivel>
+              </button>
 
               <button
                 type="button"
@@ -179,10 +238,33 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
         </div>
       </div>
 
+      {/* Alergia grave ativa aparece onde ninguém deixa de ver, não só na aba. */}
+      {alergiasGraves.length > 0 && (
+        <div role="alert" className="mx-8 mt-4 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+          <p className="text-sm text-red-800">
+            <strong>Alergia grave:</strong> {alergiasGraves.map((r) => r.descricao).join(', ')}.
+          </p>
+        </div>
+      )}
+
       {aviso && (
         <div className="mx-8 mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
           <p className="text-sm text-green-800">{aviso}</p>
         </div>
+      )}
+
+      {modalEditar && (
+        <ModalPaciente
+          paciente={paciente}
+          aoFechar={() => setModalEditar(false)}
+          aoSalvar={(atualizado, avisos) => {
+            setPaciente(atualizado);
+            setModalEditar(false);
+            carregarProntuario();
+            setAviso(avisos.length ? avisos.join(' ') : 'Cadastro atualizado.');
+          }}
+        />
       )}
 
       {modalAlta && (
@@ -202,6 +284,24 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
       {/* Tab Content */}
       <div className="px-8 py-6">
         {activeTab === 'overview' && <OverviewTab paciente={paciente} ocorrencias={ocorrencias} />}
+        {activeTab === 'evolutions' && (
+          <EvolutionsTab
+            paciente={paciente}
+            evolucoes={evolucoes}
+            carregando={carregandoProntuario}
+            aoRegistrar={carregarProntuario}
+            focarFormulario={focarEvolucao}
+          />
+        )}
+        {activeTab === 'timeline' && (
+          <ClinicalTimelineTab paciente={paciente} ocorrencias={ocorrencias} evolucoes={evolucoes} carregando={carregandoProntuario} />
+        )}
+        {activeTab === 'allergies' && (
+          <AllergiesTab paciente={paciente} riscos={riscos} carregando={carregandoProntuario} aoMudar={carregarProntuario} />
+        )}
+        {activeTab === 'medications' && (
+          <MedicationsTab paciente={paciente} prescricoes={prescricoes} carregando={carregandoProntuario} aoMudar={carregarProntuario} />
+        )}
         {activeTab === 'companions' && <CompanionsTab paciente={paciente} />}
         {activeTab === 'history' && <HistoryTab paciente={paciente} ocorrencias={ocorrencias} />}
         {activeTab === 'roadmap' && <RoadmapTab />}

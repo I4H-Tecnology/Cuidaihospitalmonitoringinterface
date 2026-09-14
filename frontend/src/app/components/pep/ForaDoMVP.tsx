@@ -3,8 +3,10 @@ import { Info, Lock } from 'lucide-react';
 /**
  * Marcacao honesta do que ainda nao existe.
  *
- * O prontuario clinico esta fora do MVP (RFC, secao 2.6) e fora do DER, que
- * nao tem entidade para evolucao, prescricao nem exame. As telas ficaram no
+ * O prontuario clinico completo esta fora do MVP (RFC, secao 2.6). Evolucao,
+ * linha do tempo e alergias/riscos passaram a existir em 13/09/2026 por decisao
+ * de produto, alem do MVP avaliado (errata pendente na RFC); prescricao, exame,
+ * documento e sinal vital continuam sem entidade. As telas ficaram no
  * produto para mostrar a visao de produto. A referencia a RFC fica aqui, no
  * codigo: para quem usa o produto, "RFC, secao 2.6" nao diz nada.
  *

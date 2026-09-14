@@ -174,8 +174,9 @@ export function HistoryTab({ paciente, ocorrencias }: Props) {
       <p className="flex items-start gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 text-xs text-gray-600">
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
         <span>
-          O histórico cobre as ocorrências detectadas pelo serviço de visão. Evoluções,
-          prescrições e exames estão fora desta versão.
+          O histórico cobre as ocorrências detectadas pelo serviço de visão. Evoluções e
+          alergias e medicações têm abas próprias; a Linha do Tempo junta tudo. Exames
+          estão fora desta versão.
         </span>
       </p>
     </div>
