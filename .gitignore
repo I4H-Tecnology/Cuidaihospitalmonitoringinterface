@@ -12,6 +12,10 @@ frontend/coverage/
 .env.*
 !.env.example
 
+# Fora do controle de versao por decisao do usuario em 13/09/2026: RFC, Wiki,
+# planos de handoff e atribuicoes de licenca. Os arquivos continuam no disco.
+docs/
+
 # Editores e SO
 .vscode/*
 !.vscode/extensions.json
