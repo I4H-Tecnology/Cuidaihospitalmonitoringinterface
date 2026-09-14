@@ -37,13 +37,18 @@ from . import clipes, db, registro
 from .alertas import central
 from .comum import TABELA_EVENTOS, TABELA_POLITICA
 from .rotas import (
+    acompanhantes,
     auditoria,
     autenticacao,
     cameras,
+    clinica,
+    evolucoes,
     ocorrencias,
     pacientes,
     painel,
     permissoes,
+    prescricoes,
+    riscos,
     saude,
     usuarios,
 )
@@ -105,6 +110,11 @@ app.include_router(permissoes.router, tags=["permissões"])
 app.include_router(usuarios.router, tags=["usuários"])
 app.include_router(auditoria.router, tags=["auditoria"])
 app.include_router(cameras.router, tags=["câmeras"])
+app.include_router(clinica.router, tags=["clínica"])
 app.include_router(ocorrencias.router, tags=["ocorrências"])
 app.include_router(pacientes.router, tags=["pacientes"])
+app.include_router(acompanhantes.router, tags=["acompanhantes"])
+app.include_router(evolucoes.router, tags=["evoluções"])
+app.include_router(riscos.router, tags=["alergias e riscos"])
+app.include_router(prescricoes.router, tags=["prescrições"])
 app.include_router(saude.router, tags=["saúde"])
