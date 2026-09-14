@@ -6,16 +6,13 @@ export type Screen =
   | 'monitoring'
   | 'alerts'
   | 'pep'
+  | 'evolucoes'
+  | 'linha-do-tempo'
+  | 'riscos'
   | 'patients'
   | 'beds-rooms'
-  | 'scheduling'
-  | 'reports'
   | 'settings'
   | 'users'
-  | 'hospital-management'
-  | 'financial'
-  | 'inventory'
-  | 'hr'
   | 'saude';
 
 export const screenModuleMap: Record<Screen, string> = {
@@ -25,16 +22,14 @@ export const screenModuleMap: Record<Screen, string> = {
   monitoring: 'monitoring',
   alerts: 'alerts',
   pep: 'clinical_logs',
+  // Visões da clínica inteira do mesmo prontuário: mesma permissão do PEP.
+  evolucoes: 'clinical_logs',
+  'linha-do-tempo': 'clinical_logs',
+  riscos: 'clinical_logs',
   patients: 'patients',
   'beds-rooms': 'beds',
-  scheduling: 'appointments',
-  reports: 'reports',
   settings: 'settings',
   users: 'users',
-  'hospital-management': 'hospital_management',
-  financial: 'financial',
-  inventory: 'inventory',
-  hr: 'hr',
   // Observabilidade: quem acompanha o monitoramento precisa ver a saúde dele.
   saude: 'monitoring'
 };

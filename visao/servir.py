@@ -48,7 +48,9 @@ registro.configurar()
 def main() -> int:
     p = argparse.ArgumentParser(description="Serviço de visão do MedSignal")
     p.add_argument("--porta", type=int, default=int(os.environ.get("VISAO_PORTA", "8001")))
-    p.add_argument("--host", default="0.0.0.0")
+    # 0.0.0.0 de propósito: o frontend e o contêiner da API precisam alcançar
+    # o serviço; na rede local a exposição é a intenção, não um descuido.
+    p.add_argument("--host", default="0.0.0.0")  # nosec B104
     args = p.parse_args()
 
     try:

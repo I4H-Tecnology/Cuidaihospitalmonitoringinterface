@@ -58,10 +58,10 @@ export default defineConfig({
         // authStore e, com elas, caminhos ainda nao cobertos. O denominador
         // mudou, entao o piso antigo (51,87 em branches) deixou de ser
         // comparavel. A catraca volta a subir a partir daqui.
-        lines: 2.86,
-        functions: 35.24,
-        branches: 51.11,
-        statements: 2.86,
+        lines: 4,
+        functions: 43.03,
+        branches: 65.33,
+        statements: 4,
       },
     },
   },

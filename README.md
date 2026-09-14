@@ -70,18 +70,29 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 Depois:
 
 ```bash
-docker compose up -d
+docker compose run --rm dev
 ```
 
-Sobe três serviços:
+Sobe banco, API e frontend, na ordem certa, e mostra os endereços no terminal
+quando está tudo pronto. `Ctrl+C` só fecha esse aviso — os serviços continuam
+no ar; `docker compose down` desliga de verdade.
 
 | Serviço | Endereço | O que é |
 | --- | --- | --- |
 | `frontend-dev` | http://localhost:5173 | Vite com hot reload |
+| `backend` | http://localhost:8000/docs | API (FastAPI), documentação interativa |
 | `db` | localhost:5432 | PostgreSQL 16 |
-| `adminer` | http://localhost:8081 | cliente web do banco |
 
-No Adminer, entre com sistema `PostgreSQL`, servidor `db`, e o usuário/senha do `.env`.
+Para criar seu usuário administrador, veja `db/scripts/criar-admin.sql`.
+
+O Adminer (cliente web do banco) não sobe junto — é opcional, à parte:
+
+```bash
+docker compose up -d adminer
+```
+
+Sobe em http://localhost:8081. Entre com sistema `PostgreSQL`, servidor `db`,
+e o usuário/senha do `.env`.
 
 ### Testar a imagem de produção
 
@@ -93,26 +104,27 @@ docker compose --profile prod up -d --build frontend
 
 Sobe em http://localhost:8080.
 
-### Backend de autenticação (andaime)
+### Rebuildar só o backend
 
-Enquanto o FastAPI definitivo não chega, há um backend mínimo em
-[`backend/`](backend/README.md) que implementa só o necessário para o
-login funcionar, contra o mesmo Postgres:
-
-```bash
-docker compose --profile api up -d --build
-```
-
-Sobe em http://localhost:8000, com documentação interativa em `/docs`.
-Para criar seu usuário administrador, veja `db/scripts/criar-admin.sql`.
-
-### Quando o backend definitivo entrar
-
-Clone o repositório do FastAPI ao lado deste (ou ajuste `BACKEND_PATH` no `.env`) e:
+O backend em Docker é imagem, não bind mount: mudança em `backend/app` exige
+rebuild manual (veja [`backend/README.md`](backend/README.md)):
 
 ```bash
-docker compose --profile backend up -d --build
+docker compose up -d --build backend
 ```
+
+### Trocando para um backend FastAPI externo
+
+`backend/` é a API real do produto, não mais um andaime — mas se um dia ela
+for substituída por um repositório FastAPI separado, clone-o ao lado deste
+(ou ajuste `BACKEND_PATH` no `.env`) e:
+
+```bash
+docker compose stop backend
+docker compose --profile externo up -d --build backend-externo
+```
+
+Pare o `backend` padrão antes: os dois publicam a porta 8000.
 
 ### Recriar o banco do zero
 
@@ -140,7 +152,7 @@ same-origin e registra um erro no console.
 
 ## Sem Docker
 
-O frontend roda direto, desde que você tenha Node 20+:
+O frontend roda direto, desde que você tenha Node 22+ (o `jsdom` 30 dos testes exige):
 
 ```bash
 npm install
@@ -148,6 +160,21 @@ npm run dev
 ```
 
 ---
+
+## Documentação e qualidade
+
+A documentação de referência está na **[Wiki do repositório](https://github.com/lucasmm13/Cuidaihospitalmonitoringinterface/wiki)**:
+arquitetura, modelo de dados, serviço de visão, validação do modelo, segurança e
+LGPD, como rodar, observabilidade e as decisões técnicas com a seção da RFC que
+as motiva. As páginas ficam versionadas em [`docs/wiki/`](docs/wiki/README.md) e
+são publicadas de lá.
+
+A análise estática de código e segurança roda dentro do CI, no job `seguranca`,
+a cada push: **Semgrep** (regras de segurança para Python e TypeScript, mais
+detecção de segredos), **Bandit** (vulnerabilidades em Python), **pip-audit** e
+**npm audit** (dependências com CVE conhecida). Os relatórios ficam como artefato
+de cada execução. Sem serviço externo, sem conta e sem token: o repositório é
+privado por decisão aprovada com o orientador, e nada aqui depende de visibilidade.
 
 ## Qualidade
 
@@ -160,7 +187,13 @@ npm run build          # build de produção
 
 O pipeline em `.github/workflows/ci.yml` roda os quatro em cada push e pull request
 nas branches `main`, `dev` e `qa`, publica o relatório de cobertura como artifact e,
-em `main`, valida também o build da imagem Docker.
+em `main`, valida também o build da imagem Docker. O job `visao` roda os testes do
+serviço de visão (`unittest`) e compila backend e visão; o job `seguranca` roda a
+análise estática e de segurança.
+
+```bash
+visao/.venv/Scripts/python.exe -m unittest discover -s visao/testes -t .   # testes da visão
+```
 
 O limiar de cobertura usa catraca: sobe sozinho conforme a cobertura melhora e nunca
 regride. A linha de projeto (IA) não exige percentual mínimo — o que se avalia é a

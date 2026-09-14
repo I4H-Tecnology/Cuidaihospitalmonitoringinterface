@@ -29,6 +29,10 @@ CREATE TABLE clinica (
   nome        text NOT NULL,
   cnpj        char(14) UNIQUE CHECK (cnpj ~ '^[0-9]{14}$'),
   endereco    text,
+  -- Contato da clínica, editável em Configurações. Em banco já existente,
+  -- aplicar db/scripts/2026-09-13-clinica-contato.sql em vez de recriar.
+  telefone    text,
+  email       text CONSTRAINT clinica_email_valido CHECK (email IS NULL OR position('@' in email) > 1),
   ativa       boolean NOT NULL DEFAULT true,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
@@ -140,6 +144,10 @@ CREATE TABLE paciente (
                     CHECK (status IN ('internado', 'alta', 'transferido')),
   data_admissao   date NOT NULL DEFAULT CURRENT_DATE,
   data_alta       date,
+  -- Quadro clínico da admissão (13/09/2026, além do MVP da RFC; errata pendente).
+  -- Em banco existente: db/scripts/2026-09-13-prontuario-admissao.sql.
+  historico_medico    text,
+  medico_responsavel  text,
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
   -- Alta sem data, ou data de alta anterior à admissão, é dado inconsistente.
@@ -294,6 +302,80 @@ CREATE TABLE log_acesso (
   )
 );
 CREATE INDEX log_acesso_consulta ON log_acesso (clinica_id, data_hora DESC);
+
+
+-- -----------------------------------------------------------------------------
+-- 13. EVOLUCAO — nota de evolução clínica. FORA das 12 entidades do DER da
+--     RFC: entrou em 13/09/2026 por decisão de produto, depois da entrega
+--     avaliada (a RFC 2.6 ainda a lista como fora do MVP; errata pendente).
+--     Sem UPDATE nem DELETE: nota errada leva nota nova.
+-- -----------------------------------------------------------------------------
+CREATE TABLE evolucao (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  paciente_id uuid NOT NULL REFERENCES paciente(id) ON DELETE CASCADE,
+  -- RESTRICT: apagar o autor não pode apagar o que ele escreveu no prontuário.
+  usuario_id  uuid NOT NULL REFERENCES usuario(id) ON DELETE RESTRICT,
+  texto       text NOT NULL CHECK (length(btrim(texto)) >= 3),
+  data_hora   timestamptz NOT NULL DEFAULT now(),
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX evolucao_por_paciente ON evolucao (paciente_id, data_hora DESC);
+
+COMMENT ON TABLE evolucao IS
+  'Nota de evolução clínica. Sem UPDATE nem DELETE: registro corrigido leva nota nova, não edição da antiga.';
+
+
+-- -----------------------------------------------------------------------------
+-- 14. RISCO_PACIENTE — alergia ou risco. Também fora do DER original, mesma
+--     decisão de 13/09/2026. Inativa-se (ativo/inativado_em, como o
+--     acompanhante), não se edita nem se apaga.
+-- -----------------------------------------------------------------------------
+CREATE TABLE risco_paciente (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  paciente_id   uuid NOT NULL REFERENCES paciente(id) ON DELETE CASCADE,
+  tipo          text NOT NULL CHECK (tipo IN ('alergia', 'risco')),
+  descricao     text NOT NULL CHECK (length(btrim(descricao)) >= 3),
+  gravidade     text NOT NULL DEFAULT 'moderada'
+                  CHECK (gravidade IN ('leve', 'moderada', 'grave')),
+  ativo         boolean NOT NULL DEFAULT true,
+  usuario_id    uuid NOT NULL REFERENCES usuario(id) ON DELETE RESTRICT,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  inativado_em  timestamptz,
+  CONSTRAINT risco_inativacao_coerente CHECK (
+    (ativo = false AND inativado_em IS NOT NULL) OR (ativo = true AND inativado_em IS NULL)
+  )
+);
+CREATE INDEX risco_ativo_por_paciente ON risco_paciente (paciente_id) WHERE ativo;
+
+COMMENT ON TABLE risco_paciente IS
+  'Alergia ou risco do paciente. Inativa-se, não se edita nem se apaga.';
+
+
+-- -----------------------------------------------------------------------------
+-- 15. PRESCRICAO — medicamento receitado ao paciente, e por quem. Fora do
+--     DER original, mesma decisão de 13/09/2026. Suspende-se (ativo /
+--     inativado_em), não se edita nem se apaga.
+-- -----------------------------------------------------------------------------
+CREATE TABLE prescricao (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  paciente_id       uuid NOT NULL REFERENCES paciente(id) ON DELETE CASCADE,
+  medicamento       text NOT NULL CHECK (length(btrim(medicamento)) >= 2),
+  posologia         text,
+  -- Texto: o prescritor pode ser médico de fora da clínica, sem usuário aqui.
+  medico_prescritor text,
+  observacao        text,
+  ativo             boolean NOT NULL DEFAULT true,
+  usuario_id        uuid NOT NULL REFERENCES usuario(id) ON DELETE RESTRICT,
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  inativado_em      timestamptz,
+  CONSTRAINT prescricao_inativacao_coerente CHECK (
+    (ativo = false AND inativado_em IS NOT NULL) OR (ativo = true AND inativado_em IS NULL)
+  )
+);
+CREATE INDEX prescricao_ativa_por_paciente ON prescricao (paciente_id) WHERE ativo;
+
+COMMENT ON TABLE prescricao IS
+  'Medicamento prescrito ao paciente e por quem. Inativa-se (suspensa), não se edita nem se apaga.';
 
 
 -- =============================================================================

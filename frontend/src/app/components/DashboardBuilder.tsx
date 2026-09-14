@@ -186,17 +186,17 @@ const mockAreaData = [
   { day: 'Dom', value: 65 }
 ];
 
+// Pré-visualização de widget, não dado do produto: nomes claramente de exemplo,
+// para ninguém confundir a amostra com um paciente real.
 const mockPatients = [
-  { name: 'Maria Silva', room: '301-A', status: 'Normal', alerts: 0 },
-  { name: 'João Santos', room: '205-B', status: 'Atenção', alerts: 2 },
-  { name: 'Ana Costa', room: '412-C', status: 'Normal', alerts: 0 },
-  { name: 'Carlos Mendes', room: '302-A', status: 'Crítico', alerts: 5 }
+  { name: 'Paciente Exemplo 1', room: 'Quarto exemplo', status: 'Normal', alerts: 0 },
+  { name: 'Paciente Exemplo 2', room: 'Quarto exemplo', status: 'Atenção', alerts: 1 },
+  { name: 'Paciente Exemplo 3', room: 'Quarto exemplo', status: 'Crítico', alerts: 2 }
 ];
 
 const mockAlerts = [
-  { patient: 'João Santos', type: 'FC Elevada', severity: 'Atenção', time: '2 min' },
-  { patient: 'Carlos Mendes', type: 'Queda Detectada', severity: 'Crítico', time: '5 min' },
-  { patient: 'Maria Silva', type: 'Rotina', severity: 'Normal', time: '15 min' }
+  { patient: 'Paciente Exemplo 3', type: 'Queda detectada', severity: 'Crítico', time: 'exemplo' },
+  { patient: 'Paciente Exemplo 2', type: 'Permanência no chão', severity: 'Atenção', time: 'exemplo' }
 ];
 
 // Widget Component

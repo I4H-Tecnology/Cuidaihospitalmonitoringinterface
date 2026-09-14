@@ -1,6 +1,6 @@
 # Imagem só para desenvolvimento local — o Vite serve com hot reload.
 # A imagem de produção continua sendo o Dockerfile da raiz (build + nginx).
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 

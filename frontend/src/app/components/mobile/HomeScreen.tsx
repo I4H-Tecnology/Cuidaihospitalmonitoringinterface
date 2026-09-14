@@ -1,44 +1,46 @@
-import React from 'react';
-import { Info } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import type { PacienteResumo } from '../../data/api';
 import { PatientCard } from './PatientCard';
 
-import type { MobilePatient as Patient } from './types';
-
 interface HomeScreenProps {
-  patients: Patient[];
-  onPatientClick: (patient: Patient) => void;
+  pacientes: PacienteResumo[];
+  carregando: boolean;
+  erro: string | null;
+  onPatientClick: (paciente: PacienteResumo) => void;
 }
 
-export function HomeScreen({ patients, onPatientClick }: HomeScreenProps) {
+export function HomeScreen({ pacientes, carregando, erro, onPatientClick }: HomeScreenProps) {
+  const criticos = pacientes.filter((p) => p.situacao === 'critical').length;
+
   return (
     <div className="px-4 py-4 pb-24">
-      {/* Info Card */}
-      <div className="bg-[#E8F4F8] border border-[#7DD3FC] rounded-lg p-4 mb-4 flex items-start gap-3">
-        <Info className="w-5 h-5 text-[#0A7EA4] mt-0.5 flex-shrink-0" />
-        <div>
-          <h3 className="text-[#0A7EA4] mb-1">Mantenha os dados atualizados</h3>
-          <p className="text-sm text-gray-600">
-            Certifique-se de que as informações dos pacientes estejam sempre corretas e atualizadas.
-          </p>
-        </div>
-      </div>
-
-      {/* Patients List */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-gray-800">Pacientes</h2>
-          <span className="text-sm text-gray-500">{patients.length} total</span>
+          <span className="text-sm text-gray-500">
+            {carregando ? '…' : `${pacientes.length} internado${pacientes.length === 1 ? '' : 's'}${criticos > 0 ? ` · ${criticos} crítico${criticos > 1 ? 's' : ''}` : ''}`}
+          </span>
         </div>
 
-        <div className="space-y-3">
-          {patients.map(patient => (
-            <PatientCard
-              key={patient.id}
-              {...patient}
-              onClick={() => onPatientClick(patient)}
-            />
-          ))}
-        </div>
+        {erro && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <AlertCircle className="w-4 h-4" /> {erro}
+          </div>
+        )}
+
+        {carregando ? (
+          <div className="flex items-center gap-2 py-6 text-sm text-gray-500">
+            <Loader2 className="w-4 h-4 animate-spin" /> Carregando pacientes…
+          </div>
+        ) : pacientes.length === 0 ? (
+          <p className="py-6 text-center text-sm text-gray-500">Nenhum paciente internado.</p>
+        ) : (
+          <div className="space-y-3">
+            {pacientes.map((paciente) => (
+              <PatientCard key={paciente.id} paciente={paciente} onClick={() => onPatientClick(paciente)} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

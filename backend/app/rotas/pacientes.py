@@ -24,13 +24,15 @@ router = APIRouter()
 # Pacientes (RF05, RF21, RF22)
 #
 # A legenda da Figura 5 da RFC autoriza exatamente isto: "no MVP, aproveita-se
-# o cadastro e o status dos pacientes monitorados". O prontuário clínico
-# (evolução, prescrição, exame) segue fora do escopo pela seção 2.6 -- e fora
-# do DER, que não tem entidade para nada disso.
+# o cadastro e o status dos pacientes monitorados". Em 13/09/2026, por decisão
+# de produto, o cadastro ganhou histórico médico e médico responsável, e o
+# prontuário ganhou evolução, alergia/risco e prescrição (rotas próprias);
+# exame continua fora.
 # -----------------------------------------------------------------------------
 
 SELECT_PACIENTE = """
     SELECT p.id, p.nome, p.data_nascimento, p.status, p.data_admissao, p.data_alta,
+           p.historico_medico, p.medico_responsavel,
            amb.id AS ambiente_id, amb.nome AS ambiente_nome, amb.tipo AS ambiente_tipo,
            date_part('year', age(p.data_nascimento))::int AS idade,
            count(o.id) FILTER (
@@ -67,6 +69,8 @@ def montar_paciente(l: dict) -> PacienteResumo:
         ambienteId=str(l["ambiente_id"]) if l["ambiente_id"] else None,
         ambienteNome=l["ambiente_nome"],
         ambienteTipo=l["ambiente_tipo"],
+        historicoMedico=l.get("historico_medico"),
+        medicoResponsavel=l.get("medico_responsavel"),
         situacao=situacao,
         ocorrenciasAbertas=l["abertas"] or 0,
         quedasConfirmadas=l["confirmadas"] or 0,
@@ -229,12 +233,15 @@ def criar_paciente(
 
     novo = db.buscar_um(
         """
-        INSERT INTO paciente (clinica_id, ambiente_id, nome, data_nascimento, data_admissao)
-        VALUES (%s, %s, %s, %s, COALESCE(%s::date, CURRENT_DATE))
+        INSERT INTO paciente (clinica_id, ambiente_id, nome, data_nascimento, data_admissao,
+                              historico_medico, medico_responsavel)
+        VALUES (%s, %s, %s, %s, COALESCE(%s::date, CURRENT_DATE), %s, %s)
         RETURNING id
         """,
         (clinica["id"], ambiente_id, payload.nome.strip(),
-         payload.dataNascimento or None, payload.dataAdmissao or None),
+         payload.dataNascimento or None, payload.dataAdmissao or None,
+         (payload.historicoMedico or "").strip() or None,
+         (payload.medicoResponsavel or "").strip() or None),
     )
 
     logger.info("Paciente cadastrado: %s por %s", payload.nome, usuario.nome)
@@ -275,6 +282,12 @@ def editar_paciente(
                 raise HTTPException(404, "Ambiente não encontrado nesta clínica.")
         campos.append("ambiente_id = %s")
         valores.append(payload.ambienteId or None)
+    if payload.historicoMedico is not None:
+        campos.append("historico_medico = %s")
+        valores.append(payload.historicoMedico.strip() or None)
+    if payload.medicoResponsavel is not None:
+        campos.append("medico_responsavel = %s")
+        valores.append(payload.medicoResponsavel.strip() or None)
     if payload.status == "internado":
         # O CHECK paciente_alta_coerente exige data_alta nula quando internado,
         # então os dois têm de mudar juntos. A nova admissão vira hoje.
@@ -286,6 +299,7 @@ def editar_paciente(
         raise HTTPException(400, "Nada a alterar.")
 
     valores.append(paciente_id)
-    db.executar(f"UPDATE paciente SET {', '.join(campos)} WHERE id = %s", tuple(valores))
+    # `campos` só tem fragmentos fixos deste módulo; os valores vão por parâmetro.
+    db.executar(f"UPDATE paciente SET {', '.join(campos)} WHERE id = %s", tuple(valores))  # nosec B608
     logger.info("Paciente %s atualizado por %s", paciente_id, usuario.nome)
     return obter_paciente(paciente_id, payload.tenantId, usuario)

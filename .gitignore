@@ -12,6 +12,10 @@ frontend/coverage/
 .env.*
 !.env.example
 
+# Fora do controle de versao por decisao do usuario em 13/09/2026: RFC, Wiki,
+# planos de handoff e atribuicoes de licenca. Os arquivos continuam no disco.
+docs/
+
 # Editores e SO
 .vscode/*
 !.vscode/extensions.json
@@ -32,7 +36,7 @@ frontend/.vite/
 visao/dados/fila/
 
 # Dados de validacao da IA: videos e cache de features nao entram no Git.
-# Sao dados de imagem (LGPD) e o repositorio e publico. Anotacoes e
+# Sao dados de imagem (LGPD) e nao pertencem a um repositorio. Anotacoes e
 # resultados (metricas.md, erros.csv) sao rastreados.
 visao/dados/videos/
 visao/dados/clipes/

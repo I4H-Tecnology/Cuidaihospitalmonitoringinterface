@@ -9,8 +9,17 @@ desta pasta — o serviço `backend` do `docker-compose.yml` continua servindo.
 
 ## Como subir
 
+Sobe junto com o resto (sem profile, desde que virou a API que o produto usa
+de verdade):
+
 ```bash
-docker compose --profile api up -d --build
+docker compose run --rm dev
+```
+
+Só o backend, para rebuildar depois de mudar código:
+
+```bash
+docker compose up -d --build backend
 ```
 
 Sobe em http://localhost:8000. Documentação interativa em `/docs`.
@@ -58,11 +67,19 @@ banco. Sem dado, o número é zero — nada é gerado aleatoriamente.
 sujar `db/init/`, que espelha o diagrama, o andaime cria
 `stub_politica_seguranca` na subida. O backend definitivo decide onde isso mora.
 
+## O que já foi além do andaime
+
+- **Emite JWT no login e exige em toda rota protegida** (`seguranca.py`): a
+  permissão é conferida no servidor contra o perfil do banco, e o tenant sai do
+  token. O texto antigo desta seção dizia que o RBAC existia só no cliente;
+  isso deixou de ser verdade em `fix(seguranca)`.
+- Câmeras e ambientes, ingestão de ocorrências com deduplicação, alertas por
+  WebSocket, ciclo de atendimento, clipes de evidência e `/api/saude`. Cada
+  domínio em `app/rotas/`.
+
 ## O que falta, de propósito
 
-- **Não emite token.** O frontend hoje não manda `Authorization` em requisição
-  nenhuma — o RBAC existe só no cliente. É a falha de segurança já registrada em
-  `src/app/data/api.test.ts`, e resolvê-la é tarefa do backend definitivo.
-- Sem sessão, sem expiração, sem rate limit.
+- Sem refresh token, sem revogação (logout só descarta no cliente), sem rate
+  limit no login.
 - O código de recuperação de senha fica em memória e some ao reiniciar. Não há
   envio de e-mail: o código volta na resposta, em `devResetCode`.

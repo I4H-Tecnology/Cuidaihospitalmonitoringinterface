@@ -26,7 +26,7 @@ router = APIRouter()
 @router.get("/health")
 def health():
     db.buscar_um("SELECT 1 AS ok")
-    return {"status": "ok", "banco": "conectado", "aviso": "andaime, nao usar em producao"}
+    return {"status": "ok", "banco": "conectado"}
 
 
 @router.get("/api/tenants", response_model=list[TenantInfo])

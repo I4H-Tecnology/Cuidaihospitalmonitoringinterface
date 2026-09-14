@@ -9,6 +9,7 @@ import {
 } from '../data/api';
 import type { ClassificacaoOcorrencia, OcorrenciaResumo } from '../data/api';
 import { ModalEncerrarOcorrencia } from './ModalEncerrarOcorrencia';
+import { quandoFoi } from '../data/tempo';
 
 /**
  * Central de alertas.
@@ -52,14 +53,6 @@ const ESTILO: Record<string, { fundo: string; barra: string; chip: string; rotul
 };
 
 type Filtro = 'todos' | 'pendente' | 'em_atendimento' | 'encerrados';
-
-function quandoFoi(iso: string): string {
-  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (min < 1) return 'agora';
-  if (min < 60) return `${min} min atrás`;
-  const h = Math.floor(min / 60);
-  return h < 24 ? `${h}h atrás` : `${Math.floor(h / 24)}d atrás`;
-}
 
 export function AlertsScreen() {
   const { tenantId, can } = useAuth();

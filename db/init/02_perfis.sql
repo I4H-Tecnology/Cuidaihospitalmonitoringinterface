@@ -23,7 +23,7 @@
 --     A lista antiga ({"ocorrencias": ["ver"]}) não era lida por ninguém: todo
 --     perfil naquele formato falhava em qualquer rota protegida.
 --
---  Os 14 módulos aparecem em TODO perfil, inclusive os negados. Módulo ausente
+--  Os 10 módulos aparecem em TODO perfil, inclusive os negados. Módulo ausente
 --  do JSON some da tela de permissões (main.py:obter_permissoes itera as
 --  chaves presentes) — e permissão que não aparece não pode ser conferida nem
 --  corrigida por quem administra.
@@ -58,11 +58,13 @@ UPDATE perfil SET nome = 'NURSE'
 --    financial, inventory, hr): ninguém recebe nada. A tela existe no protótipo
 --    para mostrar visão de produto, e não faz parte da v1.
 -- ---------------------------------------------------------------------------
+-- Mesma lista de backend/app/comum.py:MODULOS. Os cinco módulos de gestão
+-- hospitalar ampla saíram com as telas (13/09/2026); `companions` é a aba de
+-- acompanhantes do prontuário (RN03: admin e gestor liberam o acesso).
 WITH modulos(nome) AS (
   VALUES ('dashboard'), ('monitoring'), ('alerts'), ('clinical_logs'),
-         ('patients'), ('beds'), ('appointments'), ('reports'),
-         ('settings'), ('users'), ('hospital_management'),
-         ('financial'), ('inventory'), ('hr')
+         ('patients'), ('beds'), ('reports'), ('settings'), ('users'),
+         ('companions')
 ),
 
 perfis(nome, descricao) AS (
@@ -78,12 +80,14 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('ADMIN', 'dashboard',      true,  false, false, false, true,  true),
     ('ADMIN', 'monitoring',     true,  true,  true,  true,  true,  true),
     ('ADMIN', 'alerts',         true,  true,  true,  true,  true,  true),
-    ('ADMIN', 'clinical_logs',  true,  false, false, false, true,  false),
+    -- Admite o paciente com alergias e medicações já na entrada (13/09/2026).
+    ('ADMIN', 'clinical_logs',  true,  true,  false, false, true,  false),
     ('ADMIN', 'patients',       true,  true,  true,  true,  true,  true),
     ('ADMIN', 'beds',           true,  true,  true,  true,  true,  false),
     ('ADMIN', 'reports',        true,  false, false, false, true,  false),
     ('ADMIN', 'settings',       true,  true,  true,  true,  true,  false),
     ('ADMIN', 'users',          true,  true,  true,  true,  true,  false),
+    ('ADMIN', 'companions',     true,  true,  true,  true,  true,  false),
 
     -- MANAGER — só leitura da operação, mais a geração de relatório.
     -- Não mexe em usuário nem em configuração: RN02 reserva isso ao admin.
@@ -94,6 +98,8 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('MANAGER', 'patients',      true, false, false, false, true, false),
     ('MANAGER', 'beds',          true, false, false, false, true, false),
     ('MANAGER', 'reports',       true, true,  false, false, true, false),
+    -- RN03: gestor também libera acesso de acompanhante.
+    ('MANAGER', 'companions',    true, true,  true,  false, true, false),
 
     -- NURSE — o perfil do app (§1.4: "uso intensivo do aplicativo mobile").
     -- Em alerts recebe 'edit', e não 'create': quem cria alerta é a IA. O que
@@ -103,7 +109,9 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('NURSE', 'alerts',        true, false, true,  false, true, true),
     ('NURSE', 'clinical_logs', true, true,  false, false, true, true),
     ('NURSE', 'patients',      true, false, false, false, true, true),
-    ('NURSE', 'beds',          true, false, false, false, false, true)
+    ('NURSE', 'beds',          true, false, false, false, false, true),
+    -- Enfermagem vê quem tem acesso; quem libera é admin ou gestor (RN03).
+    ('NURSE', 'companions',    true, false, false, false, true, true)
 ),
 
 montadas AS (

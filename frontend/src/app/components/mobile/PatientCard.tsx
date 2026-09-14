@@ -1,66 +1,34 @@
-import React from 'react';
-import { Activity, MapPin, Clock, ChevronRight } from 'lucide-react';
+import { Bell, ChevronRight, Clock, MapPin } from 'lucide-react';
+import type { PacienteResumo } from '../../data/api';
+import { quandoFoi } from '../../data/tempo';
 
-interface PatientCardProps {
-  name: string;
-  age: number;
-  room: string;
-  bed: string;
-  status: 'normal' | 'attention' | 'critical';
-  lastUpdate: string;
-  heartRate: number;
-  onClick?: () => void;
+const SITUACAO = {
+  stable: { bg: 'bg-green-50', border: 'border-l-green-500', badge: 'bg-green-100 text-green-700', label: 'Estável' },
+  attention: { bg: 'bg-yellow-50', border: 'border-l-yellow-500', badge: 'bg-yellow-100 text-yellow-700', label: 'Atenção' },
+  critical: { bg: 'bg-red-50', border: 'border-l-red-500', badge: 'bg-red-100 text-red-700', label: 'Crítico' },
+} as const;
+
+export function iniciais(nome: string): string {
+  return nome.split(' ').filter(Boolean).map((n) => n[0]).slice(0, 2).join('').toUpperCase();
 }
 
-export function PatientCard({ 
-  name, 
-  age, 
-  room, 
-  bed, 
-  status, 
-  lastUpdate, 
-  heartRate,
-  onClick 
-}: PatientCardProps) {
-  const statusConfig = {
-    normal: {
-      bg: 'bg-green-50',
-      border: 'border-l-green-500',
-      badge: 'bg-green-100 text-green-700',
-      dot: 'bg-green-500',
-      label: 'Normal'
-    },
-    attention: {
-      bg: 'bg-yellow-50',
-      border: 'border-l-yellow-500',
-      badge: 'bg-yellow-100 text-yellow-700',
-      dot: 'bg-yellow-500',
-      label: 'Atenção'
-    },
-    critical: {
-      bg: 'bg-red-50',
-      border: 'border-l-red-500',
-      badge: 'bg-red-100 text-red-700',
-      dot: 'bg-red-500',
-      label: 'Crítico'
-    }
-  };
-
-  const config = statusConfig[status];
+export function PatientCard({ paciente, onClick }: { paciente: PacienteResumo; onClick?: () => void }) {
+  const config = SITUACAO[paciente.situacao] ?? SITUACAO.stable;
+  const abertas = paciente.ocorrenciasAbertas;
 
   return (
-    <div 
+    <div
       onClick={onClick}
       className={`${config.bg} ${config.border} border-l-4 rounded-lg p-4 mb-3 active:scale-98 transition-transform cursor-pointer`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3">
           <div className="w-12 h-12 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-full flex items-center justify-center">
-            <span className="text-white">{name.split(' ').map(n => n[0]).slice(0, 2).join('')}</span>
+            <span className="text-white">{iniciais(paciente.nome)}</span>
           </div>
           <div>
-            <h3 className="text-gray-800">{name}</h3>
-            <p className="text-sm text-gray-500">{age} anos</p>
+            <h3 className="text-gray-800">{paciente.nome}</h3>
+            <p className="text-sm text-gray-500">{paciente.idade != null ? `${paciente.idade} anos` : 'Idade não informada'}</p>
           </div>
         </div>
         <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -69,21 +37,21 @@ export function PatientCard({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-[#0A7EA4]" />
-          <span className="text-sm text-gray-600">{room} • Leito {bed}</span>
+          <span className="text-sm text-gray-600">{paciente.ambienteNome ?? 'Sem ambiente'}</span>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs ${config.badge}`}>
-          {config.label}
-        </span>
+        <span className={`px-3 py-1 rounded-full text-xs ${config.badge}`}>{config.label}</span>
       </div>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-[#0A7EA4]" />
-          <span className="text-sm text-gray-700">{heartRate} bpm</span>
+          <Bell className="w-4 h-4 text-[#0A7EA4]" />
+          <span className="text-sm text-gray-700">
+            {abertas === 0 ? 'Sem ocorrência aberta' : `${abertas} ocorrência${abertas > 1 ? 's' : ''} aberta${abertas > 1 ? 's' : ''}`}
+          </span>
         </div>
         <div className="flex items-center gap-1 text-gray-400 text-xs">
           <Clock className="w-3 h-3" />
-          <span>{lastUpdate}</span>
+          <span>{paciente.ultimaOcorrencia ? quandoFoi(paciente.ultimaOcorrencia) : 'sem ocorrências'}</span>
         </div>
       </div>
     </div>

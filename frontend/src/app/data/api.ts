@@ -305,6 +305,42 @@ export const createCamera = (payload: {
     body: JSON.stringify(payload)
   });
 
+export const editarCamera = (
+  cameraId: string,
+  payload: { tenantId: string; identificador?: string; urlStream?: string; ambienteId?: string }
+) =>
+  request<CameraResumo>(`/api/cameras/${cameraId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+
+/* ---------------------------------------------------------------------------
+ * A clínica do tenant (Configurações → Unidades)
+ * -------------------------------------------------------------------------- */
+
+export interface ClinicaResumo {
+  slug: string;
+  nome: string;
+  cnpj: string | null;
+  endereco: string | null;
+  telefone: string | null;
+  email: string | null;
+  /** Só leitura: desativar tranca todos os usuários da clínica. */
+  ativa: boolean;
+}
+
+export const fetchClinica = (tenantId: string) =>
+  request<ClinicaResumo>(`/api/clinica?tenantId=${encodeURIComponent(tenantId)}`);
+
+export const editarClinica = (payload: {
+  tenantId: string;
+  nome?: string;
+  endereco?: string;
+  telefone?: string;
+  email?: string;
+}) =>
+  request<ClinicaResumo>('/api/clinica', { method: 'PATCH', body: JSON.stringify(payload) });
+
 export const fetchOcorrencias = (tenantId: string, limite = 20) =>
   request<OcorrenciaResumo[]>(
     `/api/ocorrencias?tenantId=${encodeURIComponent(tenantId)}&limite=${limite}`
@@ -363,6 +399,8 @@ export interface PacienteResumo {
   ambienteId?: string | null;
   ambienteNome?: string | null;
   ambienteTipo?: string | null;
+  historicoMedico?: string | null;
+  medicoResponsavel?: string | null;
   /** Derivada das ocorrencias abertas, nao de julgamento clinico (RN16). */
   situacao: 'stable' | 'attention' | 'critical';
   ocorrenciasAbertas: number;
@@ -434,6 +472,8 @@ export const criarPaciente = (payload: {
   dataNascimento?: string | null;
   ambienteId?: string | null;
   dataAdmissao?: string | null;
+  historicoMedico?: string;
+  medicoResponsavel?: string;
 }) =>
   request<PacienteResumo>('/api/pacientes', {
     method: 'POST',
@@ -448,6 +488,8 @@ export const editarPaciente = (
     dataNascimento?: string | null;
     ambienteId?: string | null;
     status?: 'internado';
+    historicoMedico?: string;
+    medicoResponsavel?: string;
   }
 ) =>
   request<PacienteResumo>(`/api/pacientes/${pacienteId}`, {
@@ -507,3 +549,149 @@ export interface SaudeApi {
 
 export const fetchSaude = (tenantId: string) =>
   request<SaudeApi>(`/api/saude?tenantId=${encodeURIComponent(tenantId)}`);
+
+/* ---------------------------------------------------------------------------
+ * Acompanhantes (RF25-RF28, RN03-RN07)
+ * -------------------------------------------------------------------------- */
+
+export interface AcompanhanteResumo {
+  id: string;
+  pacienteId: string;
+  nome: string;
+  documento: string;
+  ativo: boolean;
+  expiraEm: string;
+  revogadoEm: string | null;
+  criadoEm: string;
+}
+
+export interface AcompanhanteCriado extends AcompanhanteResumo {
+  /** Só existe nesta resposta. Depois disso não há como recuperar: o backend guarda só o hash. */
+  tokenQrcode: string;
+}
+
+export const fetchAcompanhantes = (tenantId: string, pacienteId: string) =>
+  request<AcompanhanteResumo[]>(
+    `/api/pacientes/${pacienteId}/acompanhantes?tenantId=${encodeURIComponent(tenantId)}`
+  );
+
+export const criarAcompanhante = (payload: {
+  tenantId: string;
+  pacienteId: string;
+  nome: string;
+  documento: string;
+  validadeHoras: number;
+}) =>
+  request<AcompanhanteCriado>('/api/acompanhantes', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const revogarAcompanhante = (tenantId: string, acompanhanteId: string) =>
+  request<{ ok: boolean }>(
+    `/api/acompanhantes/${acompanhanteId}/revogar?tenantId=${encodeURIComponent(tenantId)}`,
+    { method: 'POST' }
+  );
+
+/* ---------------------------------------------------------------------------
+ * Prontuário: evoluções e alergias/riscos (decisão de produto de 13/09/2026)
+ * -------------------------------------------------------------------------- */
+
+export interface EvolucaoResumo {
+  id: string;
+  pacienteId: string;
+  texto: string;
+  autorNome: string;
+  dataHora: string;
+  /** Presente nas listagens por clínica. */
+  pacienteNome?: string | null;
+}
+
+export const fetchEvolucoesDaClinica = (tenantId: string, limite = 200) =>
+  request<EvolucaoResumo[]>(`/api/evolucoes?tenantId=${encodeURIComponent(tenantId)}&limite=${limite}`);
+
+export const fetchEvolucoes = (tenantId: string, pacienteId: string) =>
+  request<EvolucaoResumo[]>(
+    `/api/pacientes/${pacienteId}/evolucoes?tenantId=${encodeURIComponent(tenantId)}`
+  );
+
+/** Sem editar nem apagar: evolução é registro. */
+export const criarEvolucao = (payload: { tenantId: string; pacienteId: string; texto: string }) =>
+  request<EvolucaoResumo>('/api/evolucoes', { method: 'POST', body: JSON.stringify(payload) });
+
+export interface RiscoResumo {
+  id: string;
+  pacienteId: string;
+  tipo: 'alergia' | 'risco';
+  descricao: string;
+  gravidade: 'leve' | 'moderada' | 'grave';
+  ativo: boolean;
+  autorNome: string;
+  criadoEm: string;
+  inativadoEm: string | null;
+  pacienteNome?: string | null;
+}
+
+export const fetchRiscosDaClinica = (tenantId: string, incluirInativos = false) =>
+  request<RiscoResumo[]>(
+    `/api/riscos?tenantId=${encodeURIComponent(tenantId)}` + (incluirInativos ? '&incluirInativos=true' : '')
+  );
+
+export const fetchRiscos = (tenantId: string, pacienteId: string, incluirInativos = false) =>
+  request<RiscoResumo[]>(
+    `/api/pacientes/${pacienteId}/riscos?tenantId=${encodeURIComponent(tenantId)}` +
+      (incluirInativos ? '&incluirInativos=true' : '')
+  );
+
+export const criarRisco = (payload: {
+  tenantId: string;
+  pacienteId: string;
+  tipo: RiscoResumo['tipo'];
+  descricao: string;
+  gravidade: RiscoResumo['gravidade'];
+}) => request<RiscoResumo>('/api/riscos', { method: 'POST', body: JSON.stringify(payload) });
+
+export const inativarRisco = (tenantId: string, riscoId: string) =>
+  request<{ ok: boolean }>(
+    `/api/riscos/${riscoId}/inativar?tenantId=${encodeURIComponent(tenantId)}`,
+    { method: 'POST' }
+  );
+
+/* ---------------------------------------------------------------------------
+ * Prescrições (o que o médico receitou)
+ * -------------------------------------------------------------------------- */
+
+export interface PrescricaoResumo {
+  id: string;
+  pacienteId: string;
+  medicamento: string;
+  posologia: string | null;
+  medicoPrescritor: string | null;
+  observacao: string | null;
+  ativo: boolean;
+  autorNome: string;
+  pacienteNome?: string | null;
+  criadoEm: string;
+  inativadoEm: string | null;
+}
+
+export const fetchPrescricoes = (tenantId: string, pacienteId: string, incluirInativas = false) =>
+  request<PrescricaoResumo[]>(
+    `/api/pacientes/${pacienteId}/prescricoes?tenantId=${encodeURIComponent(tenantId)}` +
+      (incluirInativas ? '&incluirInativas=true' : '')
+  );
+
+export const criarPrescricao = (payload: {
+  tenantId: string;
+  pacienteId: string;
+  medicamento: string;
+  posologia?: string;
+  medicoPrescritor?: string;
+  observacao?: string;
+}) => request<PrescricaoResumo>('/api/prescricoes', { method: 'POST', body: JSON.stringify(payload) });
+
+export const inativarPrescricao = (tenantId: string, prescricaoId: string) =>
+  request<{ ok: boolean }>(
+    `/api/prescricoes/${prescricaoId}/inativar?tenantId=${encodeURIComponent(tenantId)}`,
+    { method: 'POST' }
+  );

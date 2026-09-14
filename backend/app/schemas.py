@@ -233,6 +233,42 @@ class CameraPayload(BaseModel):
     urlStream: str = Field(min_length=4, max_length=500)
 
 
+class CameraEdicaoPayload(BaseModel):
+    """Edição parcial: só o que vier muda."""
+
+    tenantId: str
+    identificador: str | None = Field(default=None, min_length=2, max_length=60)
+    urlStream: str | None = Field(default=None, min_length=4, max_length=500)
+    ambienteId: str | None = None
+
+
+# -----------------------------------------------------------------------------
+# A clínica do tenant (cadastro editável em Configurações)
+# -----------------------------------------------------------------------------
+
+class ClinicaResumo(BaseModel):
+    slug: str
+    nome: str
+    cnpj: str | None = None
+    endereco: str | None = None
+    telefone: str | None = None
+    email: str | None = None
+    # Só leitura. Desativar tranca todos os usuários da clínica, login
+    # incluso; não é ação de autoatendimento.
+    ativa: bool
+
+
+class ClinicaEdicaoPayload(BaseModel):
+    # Sem `ativa` e sem `cnpj` de propósito: ver rotas/clinica.py. Campo
+    # desconhecido no corpo é ignorado pelo pydantic, então mandar `ativa`
+    # aqui não faz nada.
+    tenantId: str
+    nome: str | None = Field(default=None, min_length=3, max_length=120)
+    endereco: str | None = Field(default=None, max_length=300)
+    telefone: str | None = Field(default=None, max_length=30)
+    email: str | None = Field(default=None, max_length=120, pattern=r"^$|^[^@\s]+@[^@\s]+$")
+
+
 # -----------------------------------------------------------------------------
 # Ciclo de atendimento (RF17-RF20, RN11)
 # -----------------------------------------------------------------------------
@@ -275,6 +311,9 @@ class PacienteResumo(BaseModel):
     ambienteId: str | None = None
     ambienteNome: str | None = None
     ambienteTipo: str | None = None
+    # Quadro clínico da admissão (texto livre). None quando não informado.
+    historicoMedico: str | None = None
+    medicoResponsavel: str | None = None
     # Derivado das ocorrências, não de uma coluna de gravidade: o sistema não
     # emite diagnóstico (RN16), então "atenção" aqui significa evento aberto.
     situacao: str
@@ -312,6 +351,98 @@ class PacientePayload(BaseModel):
     # a câmera detecta e não tem a quem atribuir.
     ambienteId: str | None = None
     dataAdmissao: str | None = None
+    historicoMedico: str | None = Field(default=None, max_length=4000)
+    medicoResponsavel: str | None = Field(default=None, max_length=120)
+
+
+class AcompanhanteResumo(BaseModel):
+    """Acompanhante do paciente (RN03-RN07). O token nunca sai daqui."""
+
+    id: str
+    pacienteId: str
+    nome: str
+    documento: str
+    ativo: bool
+    expiraEm: str
+    revogadoEm: str | None = None
+    criadoEm: str
+
+
+class AcompanhanteCriado(AcompanhanteResumo):
+    # Só existe nesta resposta: no banco fica o hash, e não há rota que o
+    # devolva de novo. Quem perder, revoga e cria outro.
+    tokenQrcode: str
+
+
+class AcompanhantePayload(BaseModel):
+    tenantId: str
+    pacienteId: str
+    nome: str = Field(min_length=3, max_length=120)
+    documento: str = Field(min_length=5, max_length=20)
+    # RN05/RN07: temporário por definição. 30 dias é o teto.
+    validadeHoras: int = Field(default=72, ge=1, le=720)
+
+
+class EvolucaoResumo(BaseModel):
+    """Nota de evolução clínica: quem escreveu importa tanto quanto o texto."""
+
+    id: str
+    pacienteId: str
+    texto: str
+    autorNome: str
+    dataHora: str
+    # Preenchido nas listagens por clínica; na do paciente é redundante.
+    pacienteNome: str | None = None
+
+
+class EvolucaoPayload(BaseModel):
+    tenantId: str
+    pacienteId: str
+    texto: str = Field(min_length=3, max_length=4000)
+
+
+class RiscoResumo(BaseModel):
+    id: str
+    pacienteId: str
+    tipo: Literal["alergia", "risco"]
+    descricao: str
+    gravidade: Literal["leve", "moderada", "grave"]
+    ativo: bool
+    autorNome: str
+    criadoEm: str
+    inativadoEm: str | None = None
+    pacienteNome: str | None = None
+
+
+class RiscoPayload(BaseModel):
+    tenantId: str
+    pacienteId: str
+    tipo: Literal["alergia", "risco"]
+    descricao: str = Field(min_length=3, max_length=300)
+    gravidade: Literal["leve", "moderada", "grave"] = "moderada"
+
+
+class PrescricaoResumo(BaseModel):
+    id: str
+    pacienteId: str
+    medicamento: str
+    posologia: str | None = None
+    medicoPrescritor: str | None = None
+    observacao: str | None = None
+    ativo: bool
+    autorNome: str
+    pacienteNome: str | None = None
+    criadoEm: str
+    inativadoEm: str | None = None
+
+
+class PrescricaoPayload(BaseModel):
+    tenantId: str
+    pacienteId: str
+    medicamento: str = Field(min_length=2, max_length=120)
+    posologia: str | None = Field(default=None, max_length=200)
+    medicoPrescritor: str | None = Field(default=None, max_length=120)
+    observacao: str | None = Field(default=None, max_length=500)
 
 
 class PacienteEdicaoPayload(BaseModel):
@@ -321,3 +452,6 @@ class PacienteEdicaoPayload(BaseModel):
     ambienteId: str | None = None
     # Permite reinternar quem recebeu alta, sem apagar o histórico dele.
     status: Literal["internado"] | None = None
+    # String vazia limpa o campo; ausente mantém.
+    historicoMedico: str | None = Field(default=None, max_length=4000)
+    medicoResponsavel: str | None = Field(default=None, max_length=120)
