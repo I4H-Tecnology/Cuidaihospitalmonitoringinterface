@@ -6,6 +6,9 @@ export type Screen =
   | 'monitoring'
   | 'alerts'
   | 'pep'
+  | 'evolucoes'
+  | 'linha-do-tempo'
+  | 'riscos'
   | 'patients'
   | 'beds-rooms'
   | 'settings'
@@ -19,6 +22,10 @@ export const screenModuleMap: Record<Screen, string> = {
   monitoring: 'monitoring',
   alerts: 'alerts',
   pep: 'clinical_logs',
+  // Visões da clínica inteira do mesmo prontuário: mesma permissão do PEP.
+  evolucoes: 'clinical_logs',
+  'linha-do-tempo': 'clinical_logs',
+  riscos: 'clinical_logs',
   patients: 'patients',
   'beds-rooms': 'beds',
   settings: 'settings',

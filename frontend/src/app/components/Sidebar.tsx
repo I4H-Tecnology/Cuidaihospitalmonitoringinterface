@@ -129,9 +129,11 @@ export function Sidebar({
       items: [
         { icon: <ClipboardList className="w-5 h-5" />, label: 'Prontuário Eletrônico (PEP)', screen: 'pep' },
         { icon: <Users className="w-5 h-5" />, label: 'Pacientes', screen: 'patients' },
-        { icon: <FileText className="w-5 h-5" />, label: 'Evoluções Clínicas', disabled: true },
-        { icon: <Activity className="w-5 h-5" />, label: 'Linha do Tempo Clínica', disabled: true },
-        { icon: <Shield className="w-5 h-5" />, label: 'Alergias & Riscos', disabled: true },
+        // Visões da clínica inteira (todos os pacientes). O prontuário de cada
+        // paciente tem as mesmas três como abas.
+        { icon: <FileText className="w-5 h-5" />, label: 'Evoluções Clínicas', screen: 'evolucoes' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Linha do Tempo Clínica', screen: 'linha-do-tempo' },
+        { icon: <Shield className="w-5 h-5" />, label: 'Alergias & Riscos', screen: 'riscos' },
       ],
     },
     {

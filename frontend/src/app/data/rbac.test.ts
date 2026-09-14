@@ -9,6 +9,9 @@ const TELAS: Screen[] = [
   'monitoring',
   'alerts',
   'pep',
+  'evolucoes',
+  'linha-do-tempo',
+  'riscos',
   'patients',
   'beds-rooms',
   'settings',
@@ -45,9 +48,13 @@ describe('mapa de telas para módulos de permissão', () => {
       .filter(([, telas]) => telas.length > 1)
       .map(([modulo, telas]) => `${modulo}: ${telas.sort().join(', ')}`);
 
+    // 'clinical_logs' cobre o PEP e as três visões da clínica do mesmo
+    // prontuário (evoluções, linha do tempo, alergias e riscos): quem pode ler
+    // o prontuário de um paciente pode ler o de todos da clínica.
     expect(compartilhados).toEqual([
       'dashboard: dashboard, operational-overview',
       'monitoring: monitoring, saude',
+      'clinical_logs: evolucoes, linha-do-tempo, pep, riscos',
     ]);
   });
 

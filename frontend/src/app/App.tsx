@@ -19,6 +19,9 @@ import { PEPScreen } from './components/pep/PEPScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { UsersScreen } from './components/UsersScreen';
 import { SaudeScreen } from './components/SaudeScreen';
+import { EvolucoesScreen } from './components/clinica/EvolucoesScreen';
+import { LinhaDoTempoScreen } from './components/clinica/LinhaDoTempoScreen';
+import { RiscosScreen } from './components/clinica/RiscosScreen';
 import { getModuleForScreen, type Screen } from './data/rbac';
 import { SystemToastProvider, useSystemToast } from './components/ui/SystemToast';
 import { TarjaModoTeste } from './components/TarjaModoTeste';
@@ -112,6 +115,12 @@ function AppContent() {
     setSelectedPatient(patient);
   };
 
+  // Das telas da clínica direto para o prontuário do paciente clicado.
+  const abrirProntuario = (paciente: PacienteResumo) => {
+    setSelectedPatient(paciente);
+    handleNavigate('pep');
+  };
+
   const handleBackToPatientList = () => {
     setSelectedPatient(null);
   };
@@ -190,7 +199,10 @@ function AppContent() {
       'beds-rooms': { title: 'Ambientes Monitorados', subtitle: 'Quartos, câmeras e quem está em cada um' },
       settings: { title: 'Configurações', subtitle: 'Ajustes e preferências do sistema' },
       users: { title: 'Usuários', subtitle: 'Gerenciamento de usuários do sistema' },
-      saude: { title: 'Saúde do Sistema', subtitle: 'Observabilidade da solução em execução' }
+      saude: { title: 'Saúde do Sistema', subtitle: 'Observabilidade da solução em execução' },
+      evolucoes: { title: 'Evoluções Clínicas', subtitle: 'Registros da equipe, de todos os pacientes da clínica' },
+      'linha-do-tempo': { title: 'Linha do Tempo Clínica', subtitle: 'Ocorrências, evoluções, admissões e altas de toda a clínica' },
+      riscos: { title: 'Alergias e Riscos', subtitle: 'O que a equipe precisa saber, por paciente' }
     };
     
     return screenInfo[currentScreen as keyof typeof screenInfo];
@@ -270,6 +282,9 @@ function AppContent() {
           {isScreenAllowed(currentScreen) && currentScreen === 'settings' && <SettingsScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'users' && <UsersScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'saude' && <SaudeScreen />}
+          {isScreenAllowed(currentScreen) && currentScreen === 'evolucoes' && <EvolucoesScreen aoAbrirPaciente={abrirProntuario} />}
+          {isScreenAllowed(currentScreen) && currentScreen === 'linha-do-tempo' && <LinhaDoTempoScreen aoAbrirPaciente={abrirProntuario} />}
+          {isScreenAllowed(currentScreen) && currentScreen === 'riscos' && <RiscosScreen aoAbrirPaciente={abrirProntuario} />}
         </div>
       </div>
 
