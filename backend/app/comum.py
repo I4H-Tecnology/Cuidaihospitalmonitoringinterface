@@ -56,10 +56,12 @@ POLITICA_PADRAO = {
     "twoFactorEnabled": False,
 }
 
+# Um módulo por tela que existe. Os cinco de gestão hospitalar ampla
+# (agenda, gestão, financeiro, estoque, RH) saíram junto com as telas em
+# 13/09/2026; `companions` entrou com a aba de acompanhantes do prontuário.
 MODULOS = [
     "dashboard", "monitoring", "alerts", "clinical_logs", "patients",
-    "beds", "appointments", "reports", "settings", "users",
-    "hospital_management", "financial", "inventory", "hr",
+    "beds", "reports", "settings", "users", "companions",
 ]
 
 
