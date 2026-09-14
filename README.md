@@ -152,7 +152,7 @@ same-origin e registra um erro no console.
 
 ## Sem Docker
 
-O frontend roda direto, desde que você tenha Node 20+:
+O frontend roda direto, desde que você tenha Node 22+ (o `jsdom` 30 dos testes exige):
 
 ```bash
 npm install
