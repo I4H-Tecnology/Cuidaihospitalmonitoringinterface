@@ -129,6 +129,9 @@ services:
       # chave publicada, e qualquer um forjaria um token valido.
       SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
       TOKEN_HORAS: ${TOKEN_HORAS:-8}
+      # "dev" devolve o codigo de recuperacao de senha na resposta da API
+      # (nao ha envio de e-mail). Qualquer outro valor, inclusive vazio, nao devolve.
+      MEDSIGNAL_AMBIENTE: ${MEDSIGNAL_AMBIENTE:-producao}
       # Log estruturado (json|texto) e nivel, iguais aos do servico de visao.
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMATO: ${LOG_FORMATO:-json}
