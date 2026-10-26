@@ -21,3 +21,33 @@ export function horasDesde(iso: string, agora: number = Date.now()): number | nu
   if (Number.isNaN(instante)) return null;
   return Math.floor((agora - instante) / 3600000);
 }
+
+/** Quanto falta até `iso`, para prazos: "em 40 min", "em 5h", "em 3 dias". */
+export function quantoFalta(iso: string, agora: number = Date.now()): string {
+  const instante = new Date(iso).getTime();
+  if (Number.isNaN(instante)) return '—';
+  const min = Math.ceil((instante - agora) / 60000);
+  if (min <= 0) return 'vencido';
+  if (min < 60) return `em ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 48) return `em ${h}h`;
+  return `em ${Math.floor(h / 24)} dias`;
+}
+
+/**
+ * "25/10/2026" a partir de "2026-10-25". Data sem hora não passa por `Date`:
+ * `new Date('2026-10-25')` é meia-noite UTC, que em Brasília ainda é dia 24.
+ */
+export function formatarDia(dia: string | null | undefined): string {
+  if (!dia) return '—';
+  const [a, m, d] = dia.slice(0, 10).split('-');
+  return d && m && a ? `${d}/${m}/${a}` : '—';
+}
+
+/** Dias inteiros de hoje (relógio local) até a data "AAAA-MM-DD"; negativo se já passou. */
+export function diasAte(dia: string, agora: Date = new Date()): number {
+  const [a, m, d] = dia.slice(0, 10).split('-').map(Number);
+  const alvo = Date.UTC(a, m - 1, d);
+  const hoje = Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  return Math.round((alvo - hoje) / 86400000);
+}

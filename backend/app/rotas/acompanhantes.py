@@ -8,9 +8,8 @@ O token do QR Code segue a regra da senha: guardado como hash bcrypt pelo
 há rota que o mostre de novo — se o familiar perder, o profissional revoga e
 cria outro. É o mesmo tratamento que qualquer segredo de curta duração recebe.
 
-O que ainda não existe: a rota pública que o app do acompanhante chamaria
-para trocar o token pelo vídeo (RN06). Ela depende do app, que está fora
-desta versão; o que está aqui é o lado da clínica.
+O app do acompanhante (o lado público, que troca o token pelo vídeo, RN06)
+mora em `familia.py` desde 25/10/2026; o que está aqui é o lado da clínica.
 """
 
 import secrets
@@ -20,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from .. import db
 from ..comum import clinica_por_slug, iso, logger
-from ..schemas import AcompanhanteCriado, AcompanhantePayload, AcompanhanteResumo, Ok
+from ..schemas import AcompanhanteCriado, AcompanhanteDaClinica, AcompanhantePayload, AcompanhanteResumo, Ok
 from ..seguranca import UsuarioAutenticado, exigir_permissao, exigir_tenant
 
 router = APIRouter()
@@ -79,6 +78,45 @@ def listar_acompanhantes(
     return [montar(l) for l in linhas]
 
 
+@router.get("/api/acompanhantes", response_model=list[AcompanhanteDaClinica])
+def listar_acompanhantes_da_clinica(
+    tenantId: str,
+    usuario: UsuarioAutenticado = Depends(exigir_permissao("companions", "view")),
+):
+    """Todos os acessos de família da clínica (tela App Paciente).
+
+    Ativos primeiro, depois os encerrados mais recentes. Os encerrados ficam
+    pelo mesmo motivo da lista por paciente: é auditoria. Os últimos 300
+    bastam para a tela; a trilha completa está em log_acesso.
+    """
+    exigir_tenant(usuario, tenantId)
+    clinica = clinica_por_slug(tenantId)
+    linhas = db.buscar_todos(
+        """
+        SELECT a.id, a.paciente_id, a.nome, a.documento, a.ativo, a.expira_em, a.revogado_em,
+               a.created_at, a.ultimo_acesso_em, p.nome AS paciente_nome, amb.nome AS ambiente_nome,
+               (SELECT max(t.aceito_em) FROM termo_confidencialidade t WHERE t.acompanhante_id = a.id) AS termo_aceito_em
+          FROM acompanhante a
+          JOIN paciente p ON p.id = a.paciente_id
+          LEFT JOIN ambiente amb ON amb.id = p.ambiente_id
+         WHERE p.clinica_id = %s
+         ORDER BY (a.ativo AND a.expira_em > now()) DESC, a.created_at DESC
+         LIMIT 300
+        """,
+        (clinica["id"],),
+    )
+    return [
+        AcompanhanteDaClinica(
+            **montar(l).model_dump(),
+            pacienteNome=l["paciente_nome"],
+            ambienteNome=l["ambiente_nome"],
+            termoAceitoEm=iso(l["termo_aceito_em"]),
+            ultimoAcessoEm=iso(l["ultimo_acesso_em"]),
+        )
+        for l in linhas
+    ]
+
+
 @router.post("/api/acompanhantes", response_model=AcompanhanteCriado, status_code=201)
 def criar_acompanhante(
     payload: AcompanhantePayload,
@@ -127,7 +165,9 @@ def criar_acompanhante(
         "Acompanhante %s criado para %s por %s, válido por %dh",
         linha["nome"], paciente["nome"], usuario.nome, payload.validadeHoras,
     )
-    return AcompanhanteCriado(**montar(linha).model_dump(), tokenQrcode=token)
+    # O QR leva o id junto: o portal da família acha a linha pelo id e confere
+    # um hash só, em vez de testar o token contra todos os acessos ativos.
+    return AcompanhanteCriado(**montar(linha).model_dump(), tokenQrcode=f"{novo_id}.{token}")
 
 
 @router.post("/api/acompanhantes/{acompanhante_id}/revogar", response_model=Ok)

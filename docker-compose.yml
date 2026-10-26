@@ -147,6 +147,14 @@ services:
       CLIPES_DIR: /app/dados/clipes
       # Fuso do "hoje" do módulo financeiro (vencido, vence hoje).
       FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
+      # Portal da família: a API repassa o vídeo da câmera do paciente, então
+      # precisa enxergar o serviço de visão. Com webcam ele roda no host, fora
+      # do Docker; daqui o host é host.docker.internal, não localhost.
+      VISAO_URL_PADRAO: ${VISAO_URL_PADRAO:-http://host.docker.internal:8001}
+      VISAO_HOST_LOCAL: ${VISAO_HOST_LOCAL:-host.docker.internal}
+    extra_hosts:
+      # No Docker Desktop o nome já existe; no Linux, esta linha o cria.
+      - 'host.docker.internal:host-gateway'
     volumes:
       - ./visao/dados/clipes:/app/dados/clipes
     healthcheck:

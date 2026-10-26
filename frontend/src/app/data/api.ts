@@ -708,3 +708,18 @@ export const inativarPrescricao = (tenantId: string, prescricaoId: string) =>
     `/api/prescricoes/${prescricaoId}/inativar?tenantId=${encodeURIComponent(tenantId)}`,
     { method: 'POST' }
   );
+
+/* ---------------------------------------------------------------------------
+ * App Paciente: todos os acessos de família da clínica (25/10/2026)
+ * -------------------------------------------------------------------------- */
+
+export interface AcompanhanteDaClinica extends AcompanhanteResumo {
+  pacienteNome: string;
+  ambienteNome: string | null;
+  termoAceitoEm: string | null;
+  ultimoAcessoEm: string | null;
+}
+
+export const fetchAcompanhantesDaClinica = (tenantId: string) =>
+  request<AcompanhanteDaClinica[]>(`/api/acompanhantes?tenantId=${encodeURIComponent(tenantId)}`);
+
