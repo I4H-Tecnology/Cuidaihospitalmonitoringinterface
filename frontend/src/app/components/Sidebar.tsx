@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard,
+  Search,
   Activity,
   Bell,
   FileText,
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getModuleForScreen, type Screen } from '../data/rbac';
+import { AREAS_FINANCEIRO } from '../../modulos/financeiro/navegacao';
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -70,20 +72,20 @@ function SidebarModule({ title, icon, isCollapsed, isOpen, onToggle, children }:
     <div className="mb-4">
       <button
         onClick={onToggle}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+        className={`group w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-viva ${
           isOpen
-            ? 'bg-[#E8F4F8] text-[#0A7EA4] dark:bg-[#0A7EA4]/20 dark:text-[#7DD3FC]'
-            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-[#0A7EA4] dark:hover:text-[#7DD3FC]'
+            ? 'bg-marca-suave text-marca-texto dark:bg-marca/20 dark:text-marca-clara hover:bg-marca-suave-hover dark:hover:bg-marca/30'
+            : 'text-gray-500 dark:text-gray-400 hover:bg-marca-suave/70 dark:hover:bg-marca/15 hover:text-marca-texto dark:hover:text-marca-clara'
         }`}
       >
-        <span className={isOpen ? 'text-[#0A7EA4] dark:text-[#7DD3FC]' : 'text-gray-400 dark:text-gray-500'}>
+        <span className={`transition-transform duration-200 group-hover:scale-110 ${isOpen ? 'text-marca-texto dark:text-marca-clara' : 'text-gray-400 dark:text-gray-500 group-hover:text-marca-texto dark:group-hover:text-marca-clara'}`}>
           {icon}
         </span>
         {!isCollapsed && (
           <>
             <span className="flex-1 text-left text-xs font-semibold uppercase tracking-wider">{title}</span>
             <ChevronDown
-              className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`}
+              className={`w-4 h-4 text-gray-400 transition-transform group-hover:text-marca-texto dark:group-hover:text-marca-clara ${isOpen ? 'rotate-0' : '-rotate-90'}`}
             />
           </>
         )}
@@ -119,8 +121,8 @@ export function Sidebar({
       items: [
         { icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard', screen: 'dashboard' },
         { icon: <BarChart3 className="w-5 h-5" />, label: 'Visão Geral Operacional', screen: 'operational-overview' },
-        { icon: <Activity className="w-5 h-5" />, label: 'Indicadores-chave', disabled: true },
-        { icon: <Bell className="w-5 h-5" />, label: 'Alertas prioritários', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Indicadores-chave', screen: 'indicadores-chave' },
+        { icon: <Bell className="w-5 h-5" />, label: 'Alertas prioritários', screen: 'alertas-prioritarios' },
       ],
     },
     {
@@ -141,11 +143,11 @@ export function Sidebar({
       icon: <BedDouble className="w-4 h-4" />,
       items: [
         { icon: <BedDouble className="w-5 h-5" />, label: 'Ambientes Monitorados', screen: 'beds-rooms' },
-        { icon: <Building2 className="w-5 h-5" />, label: 'Internações', disabled: true },
-        { icon: <Activity className="w-5 h-5" />, label: 'Alta e Transferência', disabled: true },
-        { icon: <Users className="w-5 h-5" />, label: 'Fluxo do Paciente', disabled: true },
-        { icon: <Users2 className="w-5 h-5" />, label: 'Escalas Assistenciais', disabled: true },
-        { icon: <ClipboardList className="w-5 h-5" />, label: 'Checklists Operacionais', disabled: true },
+        { icon: <Building2 className="w-5 h-5" />, label: 'Internações', screen: 'internacoes' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Alta e Transferência', screen: 'alta-transferencia' },
+        { icon: <Users className="w-5 h-5" />, label: 'Fluxo do Paciente', screen: 'fluxo-paciente' },
+        { icon: <Users2 className="w-5 h-5" />, label: 'Escalas Assistenciais', screen: 'escalas' },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'Checklists Operacionais', screen: 'checklists' },
       ],
     },
     {
@@ -154,48 +156,62 @@ export function Sidebar({
       items: [
         { icon: <Activity className="w-5 h-5" />, label: 'Monitoramento em Tempo Real', badge: casosAbertos > 0 ? { value: casosAbertos, variant: 'critical' } : undefined, screen: 'monitoring' },
         { icon: <Bell className="w-5 h-5" />, label: 'Alertas Clínicos', badge: alertasCriticos > 0 ? { value: alertasCriticos, variant: 'warning' } : undefined, screen: 'alerts' },
-        { icon: <BedDouble className="w-5 h-5" />, label: 'Ausência no Quarto', disabled: true },
-        { icon: <Activity className="w-5 h-5" />, label: 'Agitação Noturna', disabled: true },
-        { icon: <Package className="w-5 h-5" />, label: 'Sensores IoT', disabled: true },
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Score de Risco', disabled: true },
-        { icon: <FileText className="w-5 h-5" />, label: 'Histórico de Incidentes', disabled: true },
-        { icon: <Activity className="w-5 h-5" />, label: 'Linha do Tempo de Eventos', disabled: true },
+        { icon: <BedDouble className="w-5 h-5" />, label: 'Ausência no Quarto', screen: 'ausencia-quarto' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Agitação Noturna', screen: 'agitacao-noturna' },
+        { icon: <Package className="w-5 h-5" />, label: 'Sensores IoT', screen: 'sensores' },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Score de Risco', screen: 'score-risco' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Histórico de Incidentes', screen: 'incidentes' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Linha do Tempo de Eventos', screen: 'linha-eventos' },
       ],
     },
     {
       title: 'RELACIONAMENTO COM PACIENTE (CRM SAÚDE)',
       icon: <Users className="w-4 h-4" />,
       items: [
-        { icon: <Calendar className="w-5 h-5" />, label: 'Agenda do Paciente', disabled: true },
-        { icon: <Bell className="w-5 h-5" />, label: 'Lembretes Automáticos', disabled: true },
-        { icon: <Users className="w-5 h-5" />, label: 'Mensagens', disabled: true },
-        { icon: <Smartphone className="w-5 h-5" />, label: 'Chatbot', disabled: true },
-        { icon: <FileText className="w-5 h-5" />, label: 'Comunicação de Exames', disabled: true },
-        { icon: <ClipboardList className="w-5 h-5" />, label: 'Histórico de Atendimento', disabled: true },
-        { icon: <Activity className="w-5 h-5" />, label: 'NPS / Satisfação', disabled: true },
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Campanhas de Saúde', disabled: true },
+        { icon: <Calendar className="w-5 h-5" />, label: 'Agenda do Paciente', screen: 'agenda' },
+        { icon: <Bell className="w-5 h-5" />, label: 'Lembretes', screen: 'lembretes' },
+        { icon: <Users className="w-5 h-5" />, label: 'Mensagens', screen: 'mensagens' },
+        { icon: <Smartphone className="w-5 h-5" />, label: 'Respostas Automáticas', screen: 'chatbot' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Comunicação de Exames', screen: 'exames' },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'Histórico de Atendimento', screen: 'historico-atendimento' },
+        { icon: <Activity className="w-5 h-5" />, label: 'NPS / Satisfação', screen: 'nps' },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Campanhas de Saúde', screen: 'campanhas' },
       ],
     },
     {
       title: 'INTELIGÊNCIA & ANALYTICS',
       icon: <BarChart3 className="w-4 h-4" />,
       items: [
-        { icon: <Activity className="w-5 h-5" />, label: 'Indicadores Clínicos', disabled: true },
-        { icon: <ClipboardList className="w-5 h-5" />, label: 'KPIs Assistenciais', disabled: true },
-        { icon: <FileText className="w-5 h-5" />, label: 'Relatórios Regulatórios', disabled: true },
-        { icon: <Activity className="w-5 h-5" />, label: 'Análise Preditiva (IA)', disabled: true },
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Heatmaps de Risco', disabled: true },
-        { icon: <Calendar className="w-5 h-5" />, label: 'Comparativos por Período', disabled: true },
-        { icon: <FileText className="w-5 h-5" />, label: 'Insights Automatizados', disabled: true },
+        { icon: <Activity className="w-5 h-5" />, label: 'Indicadores Clínicos', screen: 'indicadores-clinicos' },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'KPIs Assistenciais', screen: 'kpis' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Relatórios Regulatórios', screen: 'relatorios' },
+        { icon: <Activity className="w-5 h-5" />, label: 'Análise Preditiva', screen: 'previsao' },
+        { icon: <BarChart3 className="w-5 h-5" />, label: 'Mapa de Calor de Risco', screen: 'heatmaps' },
+        { icon: <Calendar className="w-5 h-5" />, label: 'Comparativos por Período', screen: 'comparativos' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Insights Automatizados', screen: 'insights' },
       ],
     },
     {
       title: 'ADMINISTRAÇÃO',
       icon: <Building2 className="w-4 h-4" />,
       items: [
-        { icon: <ClipboardList className="w-5 h-5" />, label: 'Compras', disabled: true },
-        { icon: <FileText className="w-5 h-5" />, label: 'Contratos', disabled: true },
-        { icon: <BarChart3 className="w-5 h-5" />, label: 'Centros de Custo', disabled: true },
+        {
+          // Módulo financeiro (src/modulos/financeiro): uma entrada por área,
+          // na ordem que o próprio módulo define. Cada área tem o seu módulo
+          // de permissão (finance, payroll ou finance_admin), então o submenu
+          // mostra a cada perfil só o que ele pode abrir, e some para quem
+          // não pode abrir nada.
+          icon: <DollarSign className="w-5 h-5" />,
+          label: 'Financeiro',
+          children: AREAS_FINANCEIRO.map((area) => {
+            const Icone = area.icone;
+            return { icon: <Icone className="w-4 h-4" />, label: area.rotulo, screen: `financeiro:${area.chave}` as Screen };
+          }),
+        },
+        { icon: <ClipboardList className="w-5 h-5" />, label: 'Compras', screen: 'compras' },
+        { icon: <FileText className="w-5 h-5" />, label: 'Contratos', screen: 'contratos' },
+        // Centros de custo saíram daqui: agora existem de verdade, em
+        // Financeiro > Cadastros.
       ],
     },
     {
@@ -206,24 +222,24 @@ export function Sidebar({
           icon: <Users2 className="w-5 h-5" />, 
           label: 'Cadastros',
           children: [
-            { icon: <Users className="w-5 h-5" />, label: 'Usuários', module: 'users', screen: 'users' },
+            { icon: <Users className="w-4 h-4" />, label: 'Usuários', module: 'users', screen: 'users' },
           ],
         },
         { icon: <Settings className="w-5 h-5" />, label: 'Configurações', module: 'settings', screen: 'settings' },
         { icon: <Activity className="w-5 h-5" />, label: 'Saúde do Sistema', module: 'monitoring', screen: 'saude' },
-        // App do paciente/família não existe ainda (é outro app, não o da
-        // equipe): esmaecido como os demais itens futuros. "Segurança" saiu:
-        // a política de senha já mora em Usuários, e um item de menu que não
-        // navega para lugar nenhum é botão morto.
-        { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente', disabled: true },
+        // Acessos da família ao portal /familia (o app do acompanhante).
+        // "Segurança" saiu: a política de senha já mora em Usuários, e um item
+        // de menu que não navega para lugar nenhum é botão morto.
+        { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente', screen: 'app-paciente' },
       ],
     },
   ];
 
   const badgeStyles = {
     critical: 'bg-red-500 text-white',
-    warning: 'bg-yellow-500 text-white',
-    info: 'bg-[#0EA5E9] text-white',
+    // Branco sobre amarelo não passa de 2:1; amarelo pede texto escuro.
+    warning: 'bg-yellow-400 text-yellow-950',
+    info: 'bg-marca text-white',
   };
 
   const getActiveSectionInfo = () => {
@@ -241,14 +257,10 @@ export function Sidebar({
   };
 
   const { sectionTitle: activeSectionTitle, menuLabel: activeMenuLabel } = getActiveSectionInfo();
-  const hasInitializedRef = useRef(false);
 
+  // Abre a seção da tela atual, inclusive ao carregar: recarregar a página e
+  // achar o menu todo fechado fazia perder de vista onde se estava.
   useEffect(() => {
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      return;
-    }
-
     setOpenSection(activeSectionTitle);
     if (activeMenuLabel) {
       setExpandedMenus((prev) => ({ ...prev, [activeMenuLabel]: true }));
@@ -277,6 +289,31 @@ export function Sidebar({
     return true;
   };
 
+  const [busca, setBusca] = useState('');
+
+  // Com uns 60 itens, achar "Escalas" abrindo seção por seção é lento. A busca
+  // achata o menu: qualquer item (ou subitem) cujo nome ou seção contenha o
+  // texto, sem acento e sem caixa. Enter abre o primeiro.
+  const normalizar = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const resultados = (() => {
+    const termo = normalizar(busca.trim());
+    if (!termo) return [];
+    const achados: { item: MenuItem; secao: string }[] = [];
+    for (const section of menuSections) {
+      for (const item of section.items.filter(isItemAllowed)) {
+        const filhos = item.children?.filter(isItemAllowed) ?? [];
+        if (filhos.length) {
+          for (const filho of filhos) {
+            if (normalizar(`${filho.label} ${item.label} ${section.title}`).includes(termo)) achados.push({ item: filho, secao: item.label });
+          }
+        } else if (normalizar(`${item.label} ${section.title}`).includes(termo)) {
+          achados.push({ item, secao: section.title });
+        }
+      }
+    }
+    return achados;
+  })();
+
   return (
     <aside className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-screen sticky top-0 flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       {/* Header */}
@@ -284,18 +321,18 @@ export function Sidebar({
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-marca to-marca-hover rounded-lg flex items-center justify-center">
                 <HeartPulse className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-[#0A7EA4] dark:text-[#7DD3FC]">MedSignal</h2>
+                <h2 className="text-marca-texto dark:text-marca-clara">MedSignal</h2>
                 <p className="text-xs text-gray-400 dark:text-gray-500">ERP HOSPITALAR</p>
               </div>
             </div>
           )}
           {isCollapsed && (
             <div className="w-full flex flex-col items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-marca to-marca-hover rounded-lg flex items-center justify-center">
                 <HeartPulse className="w-6 h-6 text-white" />
               </div>
               <button
@@ -319,10 +356,57 @@ export function Sidebar({
         </div>
       </div>
 
+      {!isCollapsed && (
+        <div className="px-3 pt-3">
+          <label className="relative block">
+            <span className="sr-only">Buscar no menu</span>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden="true" />
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && resultados[0]) { handleItemClick(resultados[0].item); setBusca(''); }
+                if (e.key === 'Escape') setBusca('');
+              }}
+              placeholder="Buscar no menu"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-marca-viva"
+            />
+          </label>
+        </div>
+      )}
+
       {/* Menu */}
-      <nav className="sidebar-scrollbar flex-1 overflow-y-auto px-3 py-4">
-        {menuSections.map((section, sectionIndex) => {
+      <nav aria-label="Menu principal" className="sidebar-scrollbar flex-1 overflow-y-auto px-3 py-4">
+        {busca.trim() && (
+          resultados.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-gray-600">Nada no menu com “{busca}”.</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {resultados.map(({ item, secao }) => (
+                <li key={`${secao}-${item.label}`}>
+                  <button
+                    type="button"
+                    onClick={() => { handleItemClick(item); setBusca(''); }}
+                    aria-current={item.screen === currentScreen ? 'page' : undefined}
+                    className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-viva ${item.screen === currentScreen ? 'bg-marca-suave text-marca-texto hover:bg-marca-suave-hover' : 'text-gray-700 hover:bg-marca-suave dark:hover:bg-marca/20 hover:text-marca-texto'}`}
+                  >
+                    <span className="shrink-0 text-gray-500 group-hover:text-marca-texto">{item.icon}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate">{item.label}</span>
+                      <span className="block truncate text-xs text-gray-600">{secao}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        )}
+        {!busca.trim() && menuSections.map((section, sectionIndex) => {
           const visibleItems = section.items.filter(isItemAllowed);
+          // Seção sem nenhum item liberado não aparece: um título que abre
+          // para o vazio parece defeito.
+          if (visibleItems.length === 0) return null;
           const isOpen = openSection === section.title;
 
           return (
@@ -337,7 +421,12 @@ export function Sidebar({
               <div className="space-y-1">
                 {visibleItems.map((item, itemIndex) => {
                   const visibleChildren = item.children?.filter(isItemAllowed);
-                  const isActive = item.screen === currentScreen || !!visibleChildren?.some((child) => child.screen === currentScreen);
+                  const hasActiveChild = !!visibleChildren?.some((child) => child.screen === currentScreen);
+                  // Com o submenu à vista, o destaque forte fica no item filho e
+                  // o pai só indica o caminho; recolhido, o pai é tudo o que se vê.
+                  const isActive = item.screen === currentScreen || (isCollapsed && hasActiveChild);
+                  const isOnPath = !isActive && hasActiveChild;
+                  const isExpanded = !!expandedMenus[item.label];
                   const isDisabled = item.disabled;
 
                   return (
@@ -347,33 +436,54 @@ export function Sidebar({
                           if (isDisabled) {
                             return;
                           }
-                          if (item.children) {
-                            toggleMenu(item.label);
+                          if (visibleChildren) {
+                            // Recolhido não há onde abrir o submenu: vai direto
+                            // para o primeiro item liberado dele.
+                            if (isCollapsed) {
+                              if (visibleChildren[0]) handleItemClick(visibleChildren[0]);
+                            } else {
+                              toggleMenu(item.label);
+                            }
                           } else {
                             handleItemClick(item);
                           }
                         }}
                         disabled={isDisabled}
                         aria-disabled={isDisabled ? true : undefined}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group ${
+                        aria-expanded={visibleChildren && !isCollapsed ? isExpanded : undefined}
+                        title={isCollapsed ? item.label : undefined}
+                        className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-viva focus-visible:ring-offset-1 ${
                           isActive
-                            ? 'bg-gradient-to-r from-[#BAE6FD] to-[#7DD3FC] dark:from-[#0A7EA4] dark:to-[#0EA5E9] text-[#0A7EA4] dark:text-white shadow-sm'
-                            : isDisabled
-                              ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60 pointer-events-none'
-                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-[#0A7EA4] dark:hover:text-[#7DD3FC]'
+                            ? 'bg-gradient-to-r from-marca to-marca-hover text-white shadow-sm hover:shadow-md hover:brightness-110'
+                            : isOnPath
+                              ? 'bg-marca-suave dark:bg-marca/10 text-marca-texto dark:text-marca-clara font-medium hover:bg-marca-suave-hover dark:hover:bg-marca/20'
+                              : isDisabled
+                                ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed pointer-events-none'
+                                : 'text-gray-600 dark:text-gray-300 hover:bg-marca-suave dark:hover:bg-marca/20 hover:text-marca-texto dark:hover:text-marca-clara hover:shadow-sm'
                         }`}
                       >
-                        <span className={isActive ? 'text-[#0A7EA4] dark:text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-[#0A7EA4] dark:group-hover:text-[#7DD3FC]'}>
+                        {/* Barra de marca que entra no hover: diz qual item o clique vai abrir. */}
+                        {!isActive && !isDisabled && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 scale-y-50 rounded-r-full bg-marca-viva opacity-0 transition-all duration-200 group-hover:scale-y-100 group-hover:opacity-100"
+                          />
+                        )}
+                        <span className={`transition-transform duration-200 group-hover:scale-110 ${
+                          isActive
+                            ? 'text-white'
+                            : isOnPath
+                              ? 'text-marca-texto dark:text-marca-clara'
+                              : 'text-gray-500 dark:text-gray-400 group-hover:text-marca-texto dark:group-hover:text-marca-clara'
+                        }`}>
                           {item.icon}
                         </span>
                         {!isCollapsed && (
                           <>
-                            <span className="flex-1 text-left text-sm">{item.label}</span>
-                            {item.children && (
+                            <span className="flex-1 text-left text-sm transition-transform duration-200 group-hover:translate-x-0.5">{item.label}</span>
+                            {visibleChildren && (
                               <ChevronDown
-                                className={`w-4 h-4 text-gray-400 transition-transform ${
-                                  expandedMenus[item.label] ? 'rotate-180' : ''
-                                }`}
+                                className={`w-4 h-4 transition-transform duration-200 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-marca-texto dark:group-hover:text-marca-clara'} ${isExpanded ? 'rotate-180' : ''}`}
                               />
                             )}
                             {item.badge && (
@@ -387,8 +497,10 @@ export function Sidebar({
                           <span className="absolute right-1 top-1 w-2 h-2 bg-red-500 rounded-full"></span>
                         )}
                       </button>
-                      {!isCollapsed && visibleChildren && expandedMenus[item.label] && (
-                        <div className="pl-6 space-y-1">
+                      {!isCollapsed && visibleChildren && isExpanded && (
+                        // A linha-guia desce do centro do ícone do pai (px-3 + metade
+                        // de w-5 = 22px) e amarra o submenu a ele.
+                        <div className="ml-[22px] pl-3 border-l border-gray-200 dark:border-gray-700 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                           {visibleChildren.map((child, childIndex) => {
                             const isChildActive = child.screen === currentScreen;
                             const isChildDisabled = child.disabled;
@@ -403,18 +515,25 @@ export function Sidebar({
                                 }}
                                 disabled={isChildDisabled}
                                 aria-disabled={isChildDisabled ? true : undefined}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                                aria-current={isChildActive ? 'page' : undefined}
+                                className={`group relative w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-viva ${
                                   isChildActive
-                                    ? 'bg-[#E8F4F8] text-[#0A7EA4]'
+                                    ? 'bg-marca-suave dark:bg-marca/25 text-marca-texto dark:text-marca-clara font-medium hover:bg-marca-suave-hover'
                                     : isChildDisabled
-                                      ? 'text-gray-400 cursor-not-allowed opacity-60 pointer-events-none'
-                                      : 'text-gray-600 hover:bg-gray-50 hover:text-[#0A7EA4]'
+                                      ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed pointer-events-none'
+                                      : 'text-gray-600 dark:text-gray-400 hover:bg-marca-suave/70 dark:hover:bg-marca/15 hover:text-marca-texto dark:hover:text-marca-clara'
                                 }`}
                               >
-                                <span className={isChildActive ? 'text-[#0A7EA4]' : 'text-gray-400'}>
+                                {/* Marca sobre a linha-guia: cheia onde se está, clara sob o mouse. */}
+                                {isChildActive ? (
+                                  <span aria-hidden="true" className="absolute -left-[14px] top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-marca" />
+                                ) : !isChildDisabled && (
+                                  <span aria-hidden="true" className="absolute -left-[14px] top-1/2 h-5 w-[3px] -translate-y-1/2 scale-y-50 rounded-full bg-marca-viva opacity-0 transition-all duration-200 group-hover:scale-y-100 group-hover:opacity-100" />
+                                )}
+                                <span className={`transition-transform duration-200 group-hover:scale-110 ${isChildActive ? 'text-marca-texto dark:text-marca-clara' : 'text-gray-400 dark:text-gray-500 group-hover:text-marca-texto dark:group-hover:text-marca-clara'}`}>
                                   {child.icon}
                                 </span>
-                                <span className="flex-1 text-left">{child.label}</span>
+                                <span className="flex-1 text-left transition-transform duration-200 group-hover:translate-x-0.5">{child.label}</span>
                               </button>
                             );
                           })}
@@ -431,9 +550,9 @@ export function Sidebar({
 
       {/* Footer */}
       {!isCollapsed && (
-        <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-[#F8FBFC] dark:bg-gray-800">
+        <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-fundo-app dark:bg-gray-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-marca to-marca-hover rounded-lg flex items-center justify-center">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">

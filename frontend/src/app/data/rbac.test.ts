@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { defaultPlatform, getModuleForScreen, screenModuleMap, type Screen } from './rbac';
+import { AREAS_FINANCEIRO } from '../../modulos/financeiro/navegacao';
+import {
+  MODULO_DO_RECURSO_FINANCEIRO,
+  TELAS_DE_TODOS,
+  defaultPlatform,
+  ehTelaFinanceira,
+  getModuleForScreen,
+  screenModuleMap,
+  type Screen,
+} from './rbac';
 
 // Toda tela que o App consegue renderizar precisa de um módulo correspondente,
 // senão o RBAC deixa passar (ou barra) por omissão em vez de por regra.
@@ -17,6 +26,14 @@ const TELAS: Screen[] = [
   'settings',
   'users',
   'saude',
+  'app-paciente',
+  'compras',
+  'contratos',
+  'indicadores-chave', 'alertas-prioritarios',
+  'internacoes', 'alta-transferencia', 'fluxo-paciente', 'escalas', 'checklists',
+  'ausencia-quarto', 'agitacao-noturna', 'sensores', 'incidentes', 'linha-eventos', 'score-risco',
+  'agenda', 'lembretes', 'mensagens', 'chatbot', 'exames', 'historico-atendimento', 'nps', 'campanhas',
+  'indicadores-clinicos', 'kpis', 'relatorios', 'previsao', 'heatmaps', 'comparativos', 'insights',
 ];
 
 describe('mapa de telas para módulos de permissão', () => {
@@ -30,7 +47,7 @@ describe('mapa de telas para módulos de permissão', () => {
     expect(typeof modulo).toBe('string');
   });
 
-  it('só permite um módulo compartilhado: o apelido documentado da visão operacional', () => {
+  it('só compartilha módulo onde é intencional (visão operacional, saúde, grupos do menu)', () => {
     // 'operational-overview' aponta para 'dashboard' de propósito, porque o
     // backend ainda não expõe permissão própria para esse módulo — há um TODO
     // no rbac.ts registrando isso. 'saude' (observabilidade) aponta para
@@ -51,10 +68,18 @@ describe('mapa de telas para módulos de permissão', () => {
     // 'clinical_logs' cobre o PEP e as três visões da clínica do mesmo
     // prontuário (evoluções, linha do tempo, alergias e riscos): quem pode ler
     // o prontuário de um paciente pode ler o de todos da clínica.
-    expect(compartilhados).toEqual([
-      'dashboard: dashboard, operational-overview',
-      'monitoring: monitoring, saude',
-      'clinical_logs: evolucoes, linha-do-tempo, pep, riscos',
+    // Desde 26/10/2026 os grupos do menu dividem módulo de propósito: as sete
+    // telas de Analytics são leituras de 'reports', as oito de CRM são 'crm',
+    // e assim por diante. A permissão é por área, não por tela.
+    expect(compartilhados.sort()).toEqual([
+      'alerts: alertas-prioritarios, alerts',
+      'clinical_logs: evolucoes, linha-do-tempo, pep, riscos, score-risco',
+      'crm: agenda, campanhas, chatbot, exames, historico-atendimento, lembretes, mensagens, nps',
+      'dashboard: dashboard, indicadores-chave, operational-overview',
+      'monitoring: agitacao-noturna, ausencia-quarto, incidentes, linha-eventos, monitoring, saude, sensores',
+      'operations: checklists, escalas',
+      'patients: alta-transferencia, fluxo-paciente, internacoes, patients',
+      'reports: comparativos, heatmaps, indicadores-clinicos, insights, kpis, previsao, relatorios',
     ]);
   });
 
@@ -65,7 +90,41 @@ describe('mapa de telas para módulos de permissão', () => {
     expect(getModuleForScreen('beds-rooms')).toBe('beds');
   });
 
+  it('compras e contratos têm módulo próprio; App Paciente usa o dos acompanhantes', () => {
+    expect(getModuleForScreen('compras')).toBe('purchases');
+    expect(getModuleForScreen('contratos')).toBe('contracts');
+    expect(getModuleForScreen('app-paciente')).toBe('companions');
+  });
+
+  it('só Configurações abre para qualquer perfil (pelas seções pessoais)', () => {
+    expect([...TELAS_DE_TODOS]).toEqual(['settings']);
+  });
+
   it('assume a plataforma web por padrão', () => {
     expect(defaultPlatform).toBe('web');
+  });
+});
+
+describe('telas do módulo financeiro', () => {
+  it('toda área do financeiro tem tela e módulo de permissão', () => {
+    for (const area of AREAS_FINANCEIRO) {
+      const tela = `financeiro:${area.chave}` as Screen;
+      expect(ehTelaFinanceira(tela)).toBe(true);
+      expect(['finance', 'payroll', 'finance_admin']).toContain(getModuleForScreen(tela));
+    }
+  });
+
+  it('separa salário e capital do financeiro do dia a dia', () => {
+    // Folha é dado pessoal (LGPD): quem lança conta a pagar não vê salário.
+    expect(getModuleForScreen('financeiro:pessoal')).toBe('payroll');
+    expect(getModuleForScreen('financeiro:capital')).toBe('finance_admin');
+    expect(getModuleForScreen('financeiro:configuracoes')).toBe('finance_admin');
+    expect(getModuleForScreen('financeiro:pagar')).toBe('finance');
+    expect(getModuleForScreen('financeiro:relatorios')).toBe('finance');
+  });
+
+  it('cobre todos os recursos do módulo', () => {
+    const recursos = new Set(AREAS_FINANCEIRO.map((a) => a.recurso));
+    expect(Object.keys(MODULO_DO_RECURSO_FINANCEIRO).sort()).toEqual([...recursos].sort());
   });
 });
