@@ -168,6 +168,23 @@ def exigir_tenant(usuario: UsuarioAutenticado, tenant_pedido: str) -> None:
         raise HTTPException(404, "Recurso não encontrado.")
 
 
+def permissoes_do_perfil(usuario: UsuarioAutenticado) -> dict:
+    """{"módulo": {"view": bool, ...}} do perfil do usuário, lido do banco.
+
+    A linha da clínica prevalece sobre o perfil global de mesmo nome.
+    """
+    linha = db.buscar_um(
+        """
+        SELECT permissoes FROM perfil
+        WHERE upper(nome) = upper(%s) AND (clinica_id = %s OR clinica_id IS NULL)
+        ORDER BY clinica_id NULLS LAST
+        LIMIT 1
+        """,
+        (usuario.papel, usuario.clinica_id),
+    )
+    return (linha or {}).get("permissoes") or {}
+
+
 def exigir_permissao(modulo: str, acao: str = "view"):
     """Fábrica de dependência que confere permissão no servidor.
 
@@ -176,17 +193,7 @@ def exigir_permissao(modulo: str, acao: str = "view"):
     """
 
     def verificador(usuario: UsuarioAutenticado = Depends(usuario_atual)) -> UsuarioAutenticado:
-        linha = db.buscar_um(
-            """
-            SELECT permissoes FROM perfil
-            WHERE upper(nome) = upper(%s) AND (clinica_id = %s OR clinica_id IS NULL)
-            ORDER BY clinica_id NULLS LAST
-            LIMIT 1
-            """,
-            (usuario.papel, usuario.clinica_id),
-        )
-        permissoes = (linha or {}).get("permissoes") or {}
-        do_modulo = permissoes.get(modulo) or {}
+        do_modulo = permissoes_do_perfil(usuario).get(modulo) or {}
         if not do_modulo.get(acao):
             raise HTTPException(
                 403, f"Seu perfil não permite {acao} em {modulo}."

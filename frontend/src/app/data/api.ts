@@ -6,7 +6,7 @@ const rawApiBaseUrl =
 if (!rawApiBaseUrl) {
   console.error('[api] VITE_API_URL is not set. Falling back to same-origin requests.');
 }
-const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
+export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 
 /* ---------------------------------------------------------------------------
  * Token de sessão
@@ -40,6 +40,16 @@ export const registrarPerdaDeSessao = (callback: () => void): void => {
   aoPerderSessao = callback;
 };
 
+/**
+ * A sessão morreu (a API respondeu 401): descarta o token e avisa quem
+ * registrou. Exportada para clientes que não passam por `request`, como o do
+ * módulo financeiro, que tem cliente HTTP próprio.
+ */
+export const perderSessao = (): void => {
+  descartarToken();
+  aoPerderSessao?.();
+};
+
 export class ApiError extends Error {
   status: number;
   payload: Record<string, unknown>;
@@ -53,7 +63,7 @@ export class ApiError extends Error {
 
 type FetchOptions = RequestInit & { json?: boolean };
 
-const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> => {
+export const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const requestUrl = `${API_BASE_URL}${normalizedPath}`;
   if (import.meta.env.DEV) {
@@ -76,8 +86,7 @@ const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> 
     const payload = await response.json().catch(() => ({}));
     if (response.status === 401) {
       // Token expirado ou inválido. Insistir com ele só gera mais 401.
-      descartarToken();
-      aoPerderSessao?.();
+      perderSessao();
     }
     throw new ApiError(payload.error || 'Erro inesperado.', response.status, payload);
   }

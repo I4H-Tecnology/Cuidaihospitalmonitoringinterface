@@ -145,6 +145,8 @@ services:
       # Clipes de evidencia gravados pelo servico de visao. A API so serve e
       # expurga (24 h); a pasta e a mesma do host, montada abaixo.
       CLIPES_DIR: /app/dados/clipes
+      # Fuso do "hoje" do módulo financeiro (vencido, vence hoje).
+      FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
     volumes:
       - ./visao/dados/clipes:/app/dados/clipes
     healthcheck:
@@ -188,10 +190,39 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # Atalho do dia a dia: `docker compose run --rm dev` sobe db + backend +
-  # frontend-dev (na ordem certa, esperando o banco ficar saudável) e mostra
-  # os endereços no terminal. Ctrl+C só fecha este aviso — os três serviços
-  # continuam no ar; `docker compose down` para desligar de verdade.
+  # Módulo financeiro como SERVIÇO PRÓPRIO — opcional. O MedSignal usa o módulo
+  # embutido na API acima; este serviço existe para o outro jeito de reusar o
+  # módulo: um sistema que não é Python (Laravel, Node) falando com ele por
+  # HTTP, com um JWT assinado pelo segredo compartilhado.
+  #   docker compose --profile financeiro-servico up -d --build financeiro
+  # Divide o banco com a API sem conflito: o schema é o mesmo (`financeiro`) e
+  # cada sistema enxerga só as empresas dele.
+  # ---------------------------------------------------------------------------
+  financeiro:
+    profiles: ['financeiro-servico']
+    build:
+      context: ./backend/financeiro
+      dockerfile: Dockerfile
+    container_name: medsignal-financeiro
+    restart: unless-stopped
+    ports:
+      - '${FINANCEIRO_PORT:-8100}:8100'
+    environment:
+      FINANCEIRO_DATABASE_URL: postgresql://${POSTGRES_USER:-medsignal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-medsignal}
+      # Sem padrão de propósito: vazio, o serviço recusa subir (servidor.py).
+      FINANCEIRO_JWT_SEGREDO: ${FINANCEIRO_JWT_SEGREDO:-}
+      FINANCEIRO_CORS: http://localhost:${FRONTEND_DEV_PORT:-5173}
+      FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Atalho do dia a dia: `docker compose run --rm dev` sobe db + backend (na
+  # ordem certa, esperando o banco ficar saudável) e mostra os endereços no
+  # terminal. O frontend roda fora daqui, com `npm run dev` em frontend/.
+  # Ctrl+C só fecha este aviso — os serviços continuam no ar;
+  # `docker compose down` para desligar de verdade.
   # Não é um serviço de verdade: é o alpine parado, só para dar nome ao grupo.
   # ---------------------------------------------------------------------------
   dev:

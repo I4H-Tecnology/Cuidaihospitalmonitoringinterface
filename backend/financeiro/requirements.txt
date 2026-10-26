@@ -1,0 +1,9 @@
+# Dependências do módulo financeiro. As mesmas versões do backend do MedSignal:
+# embutido, ele usa as do hospedeiro; como serviço, instala estas.
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+psycopg[binary,pool]==3.2.3
+pydantic==2.13.5
+PyJWT==2.13.0
+# Base de fusos para o "hoje" da empresa (relogio.py). Sem ela, UTC−3.
+tzdata==2025.2
