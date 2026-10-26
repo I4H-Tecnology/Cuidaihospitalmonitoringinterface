@@ -92,8 +92,8 @@ export function PatientListScreen({ onSelectPatient }: Props) {
           <button
             type="button"
             onClick={() => setModalNovo(true)}
-            className="px-5 py-2.5 bg-[#0A7EA4] text-white rounded-lg text-sm
-                       hover:bg-[#0EA5E9] transition-colors flex items-center gap-2 shadow-sm"
+            className="px-5 py-2.5 bg-marca text-white rounded-lg text-sm
+                       hover:bg-marca-hover transition-colors flex items-center gap-2 shadow-sm"
           >
             <UserPlus className="w-4 h-4" />
             Admitir paciente
@@ -116,7 +116,7 @@ export function PatientListScreen({ onSelectPatient }: Props) {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg
-                       focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent"
+                       focus:outline-none focus:ring-2 focus:ring-marca-viva focus:border-transparent"
           />
         </div>
       </div>
@@ -169,7 +169,7 @@ export function PatientListScreen({ onSelectPatient }: Props) {
                   onClick={() => onSelectPatient(p)}
                   className="w-full px-6 py-4 hover:bg-gray-50 transition-colors flex items-center gap-4 group text-left"
                 >
-                  <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-full flex items-center justify-center text-white">
+                  <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-marca to-marca-hover rounded-full flex items-center justify-center text-white">
                     <User className="w-6 h-6" />
                   </div>
 
@@ -226,7 +226,7 @@ export function PatientListScreen({ onSelectPatient }: Props) {
                       Reinternar
                     </span>
                   )}
-                  <ChevronRight className="w-5 h-5 shrink-0 text-gray-400 group-hover:text-[#0A7EA4] transition-colors" />
+                  <ChevronRight className="w-5 h-5 shrink-0 text-gray-400 group-hover:text-marca-texto transition-colors" />
                 </button>
               );
             })}

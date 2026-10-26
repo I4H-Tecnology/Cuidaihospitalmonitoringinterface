@@ -35,10 +35,17 @@ import { StatCard } from './StatCard';
 const INTERVALO_MS = 30000;
 
 const COLORS = {
-  primary: '#0EA5E9',
+  primary: 'var(--marca-viva)',
   success: '#10B981',
   warning: '#F59E0B',
   danger: '#EF4444',
+};
+
+// Cores do tema (ver styles/theme.css): o mesmo gráfico serve aos temas claros e escuros.
+const ESTILO_DICA = {
+  backgroundColor: 'var(--grafico-dica)',
+  border: '1px solid var(--grafico-grade)',
+  borderRadius: '8px',
 };
 
 type Filtro = 'all' | PacienteResumo['situacao'];
@@ -126,7 +133,7 @@ export function DashboardScreen({ onNavigate }: Props) {
           <button
             type="button"
             onClick={() => setMostrarBuilder(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7]"
+            className="flex items-center gap-2 px-3 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover"
           >
             <Plus className="w-4 h-4" />
             Novo dashboard
@@ -186,7 +193,13 @@ export function DashboardScreen({ onNavigate }: Props) {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    // Rótulo na cor do eixo, não na da fatia: o verde de "Estáveis"
+                    // como texto sobre o cartão ficava em 2,5:1.
+                    label={({ name, percent, x, y, textAnchor }) => (
+                      <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fill="var(--grafico-eixo)" fontSize={12}>
+                        {`${name} ${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    )}
                     outerRadius={70}
                     dataKey="value"
                   >
@@ -194,7 +207,7 @@ export function DashboardScreen({ onNavigate }: Props) {
                       <Cell key={d.name} fill={d.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={ESTILO_DICA} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -206,10 +219,10 @@ export function DashboardScreen({ onNavigate }: Props) {
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={porHora}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="hora" stroke="#6B7280" style={{ fontSize: '11px' }} interval={3} />
-                  <YAxis stroke="#6B7280" style={{ fontSize: '12px' }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--grafico-grade)" />
+                  <XAxis dataKey="hora" stroke="var(--grafico-eixo)" style={{ fontSize: '11px' }} interval={3} />
+                  <YAxis stroke="var(--grafico-eixo)" style={{ fontSize: '12px' }} allowDecimals={false} />
+                  <Tooltip contentStyle={ESTILO_DICA} />
                   <Line type="monotone" dataKey="total" name="ocorrências" stroke={COLORS.danger} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -222,10 +235,10 @@ export function DashboardScreen({ onNavigate }: Props) {
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={tipos}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="tipo" stroke="#6B7280" style={{ fontSize: '11px' }} />
-                  <YAxis stroke="#6B7280" style={{ fontSize: '12px' }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--grafico-grade)" />
+                  <XAxis dataKey="tipo" stroke="var(--grafico-eixo)" style={{ fontSize: '11px' }} />
+                  <YAxis stroke="var(--grafico-eixo)" style={{ fontSize: '12px' }} allowDecimals={false} />
+                  <Tooltip contentStyle={ESTILO_DICA} />
                   <Bar dataKey="total" name="ocorrências" fill={COLORS.primary} radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -242,7 +255,7 @@ export function DashboardScreen({ onNavigate }: Props) {
                 <button
                   type="button"
                   onClick={() => onNavigate('alerts')}
-                  className="flex items-center gap-1 text-xs text-[#0A7EA4] hover:underline"
+                  className="flex items-center gap-1 text-xs text-marca-texto hover:underline"
                 >
                   Central de alertas <ChevronRight className="w-3 h-3" />
                 </button>
@@ -278,7 +291,7 @@ export function DashboardScreen({ onNavigate }: Props) {
                 <button
                   type="button"
                   onClick={() => onNavigate('monitoring')}
-                  className="flex items-center gap-1 text-xs text-[#0A7EA4] hover:underline"
+                  className="flex items-center gap-1 text-xs text-marca-texto hover:underline"
                 >
                   Monitoramento <ChevronRight className="w-3 h-3" />
                 </button>
@@ -309,18 +322,18 @@ export function DashboardScreen({ onNavigate }: Props) {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-gray-800">Pacientes em monitoramento</h2>
               <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Activity className="w-5 h-5 text-[#0A7EA4]" />
+                <Activity className="w-5 h-5 text-marca-texto" />
                 situação derivada das ocorrências abertas
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <FiltroBotao ativo={filtro === 'all'} cor="bg-[#0EA5E9] text-white" inativo="bg-gray-100 text-gray-600 hover:bg-gray-200" onClick={() => setFiltro('all')}>
+              <FiltroBotao ativo={filtro === 'all'} cor="bg-marca text-white" inativo="bg-gray-100 text-gray-600 hover:bg-gray-200" onClick={() => setFiltro('all')}>
                 Todos ({pacientes.length})
               </FiltroBotao>
               <FiltroBotao ativo={filtro === 'critical'} cor="bg-red-500 text-white" inativo="bg-red-50 text-red-600 hover:bg-red-100" onClick={() => setFiltro('critical')}>
                 Críticos ({criticos})
               </FiltroBotao>
-              <FiltroBotao ativo={filtro === 'attention'} cor="bg-yellow-500 text-white" inativo="bg-yellow-50 text-yellow-600 hover:bg-yellow-100" onClick={() => setFiltro('attention')}>
+              <FiltroBotao ativo={filtro === 'attention'} cor="bg-yellow-400 text-yellow-950" inativo="bg-yellow-50 text-yellow-600 hover:bg-yellow-100" onClick={() => setFiltro('attention')}>
                 Atenção ({atencao})
               </FiltroBotao>
               <FiltroBotao ativo={filtro === 'stable'} cor="bg-green-500 text-white" inativo="bg-green-50 text-green-600 hover:bg-green-100" onClick={() => setFiltro('stable')}>

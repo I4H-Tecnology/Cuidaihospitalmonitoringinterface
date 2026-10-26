@@ -60,7 +60,7 @@ export function ListView({ pacientes, aoAbrir }: Props) {
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome ou ambiente…"
             className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm
-                       focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                       focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
           />
         </div>
         <div className="flex gap-1">
@@ -76,7 +76,7 @@ export function ListView({ pacientes, aoAbrir }: Props) {
               onClick={() => setFiltro(valor)}
               className={`rounded-lg px-3 py-2 text-sm transition-colors ${
                 filtro === valor
-                  ? 'bg-[#0A7EA4] text-white'
+                  ? 'bg-marca text-white'
                   : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -146,7 +146,7 @@ export function ListView({ pacientes, aoAbrir }: Props) {
                           type="button"
                           onClick={() => aoAbrir(p)}
                           title="Abrir prontuário"
-                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#0A7EA4]"
+                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-marca-texto"
                         >
                           <Eye className="h-4 w-4" />
                         </button>

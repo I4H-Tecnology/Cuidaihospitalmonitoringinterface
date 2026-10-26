@@ -112,7 +112,7 @@ export function ModalEncerrarOcorrencia({ ocorrencia, aoFechar, aoConfirmar }: P
                   key={valor}
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
                     escolha === valor
-                      ? 'border-[#0A7EA4] bg-[#E8F4F8]'
+                      ? 'border-marca bg-marca-suave'
                       : 'border-gray-200 hover:bg-gray-50'
                   }`}
                 >
@@ -146,7 +146,7 @@ export function ModalEncerrarOcorrencia({ ocorrencia, aoFechar, aoConfirmar }: P
               maxLength={2000}
               placeholder="O que foi verificado no local"
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
-                         focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                         focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
             />
           </div>
 
@@ -162,8 +162,8 @@ export function ModalEncerrarOcorrencia({ ocorrencia, aoFechar, aoConfirmar }: P
             <button
               type="submit"
               disabled={!escolha || salvando}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-5 py-2.5 text-sm
-                         text-white hover:bg-[#0EA5E9] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 rounded-lg bg-marca px-5 py-2.5 text-sm
+                         text-white hover:bg-marca-hover disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
               {salvando ? 'Encerrando…' : 'Encerrar'}

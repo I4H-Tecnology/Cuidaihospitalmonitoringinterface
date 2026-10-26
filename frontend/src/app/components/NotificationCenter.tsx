@@ -91,11 +91,11 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
     <>
       <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className={`fixed right-0 top-0 h-full w-[450px] shadow-2xl z-50 ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <div className={`fixed right-0 top-0 h-full w-full max-w-[450px] shadow-2xl z-50 ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         <div className={`px-6 py-4 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Bell className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-[#0EA5E9]'}`} />
+              <Bell className={`w-5 h-5 ${isDarkMode ? 'text-cyan-400' : 'text-marca-texto'}`} />
               <h2 className={isDarkMode ? 'text-white' : 'text-gray-800'}>Notificações</h2>
               {naoLidas > 0 && (
                 <span className="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs">{naoLidas}</span>
@@ -118,7 +118,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                 onClick={() => setFilter(f)}
                 className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
                   filter === f
-                    ? isDarkMode ? 'bg-cyan-600 text-white' : 'bg-[#0EA5E9] text-white'
+                    ? isDarkMode ? 'bg-cyan-600 text-white' : 'bg-marca text-white'
                     : isDarkMode ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >

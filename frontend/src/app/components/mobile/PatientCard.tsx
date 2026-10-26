@@ -23,7 +23,7 @@ export function PatientCard({ paciente, onClick }: { paciente: PacienteResumo; o
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-marca to-marca-hover rounded-full flex items-center justify-center">
             <span className="text-white">{iniciais(paciente.nome)}</span>
           </div>
           <div>
@@ -36,7 +36,7 @@ export function PatientCard({ paciente, onClick }: { paciente: PacienteResumo; o
 
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-[#0A7EA4]" />
+          <MapPin className="w-4 h-4 text-marca-texto" />
           <span className="text-sm text-gray-600">{paciente.ambienteNome ?? 'Sem ambiente'}</span>
         </div>
         <span className={`px-3 py-1 rounded-full text-xs ${config.badge}`}>{config.label}</span>
@@ -44,7 +44,7 @@ export function PatientCard({ paciente, onClick }: { paciente: PacienteResumo; o
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Bell className="w-4 h-4 text-[#0A7EA4]" />
+          <Bell className="w-4 h-4 text-marca-texto" />
           <span className="text-sm text-gray-700">
             {abertas === 0 ? 'Sem ocorrência aberta' : `${abertas} ocorrência${abertas > 1 ? 's' : ''} aberta${abertas > 1 ? 's' : ''}`}
           </span>

@@ -98,7 +98,7 @@ export function EvolucoesScreen({ aoAbrirPaciente }: Props) {
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Paciente, autor ou texto" className="rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]" />
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Paciente, autor ou texto" className="rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-marca-viva" />
           </div>
           <button type="button" onClick={carregar} className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
             <RotateCcw className="w-4 h-4" /> Atualizar
@@ -115,7 +115,7 @@ export function EvolucoesScreen({ aoAbrirPaciente }: Props) {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs text-gray-600">Paciente</label>
-              <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]">
+              <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca">
                 <option value="">Escolha o paciente</option>
                 {internados.map((p) => (
                   <option key={p.id} value={p.id}>{p.nome}{p.ambienteNome ? ` · ${p.ambienteNome}` : ''}</option>
@@ -124,11 +124,11 @@ export function EvolucoesScreen({ aoAbrirPaciente }: Props) {
             </div>
             <div className="md:col-span-3">
               <label className="mb-1 block text-xs text-gray-600">Nova evolução</label>
-              <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2} maxLength={4000} placeholder="O que foi observado, feito ou orientado." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]" />
+              <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2} maxLength={4000} placeholder="O que foi observado, feito ou orientado." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca" />
             </div>
           </div>
           <div className="mt-2 flex justify-end">
-            <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm text-white hover:bg-[#0EA5E9] disabled:opacity-60">
+            <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 rounded-lg bg-marca px-4 py-2 text-sm text-white hover:bg-marca-hover disabled:opacity-60">
               {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Adicionar evolução
             </button>
           </div>
@@ -144,12 +144,12 @@ export function EvolucoesScreen({ aoAbrirPaciente }: Props) {
       ) : (
         <ol className="space-y-3">
           {visiveis.map((e) => (
-            <li key={e.id} className="rounded-lg border border-gray-200 border-l-4 border-l-[#0EA5E9] bg-white p-4 shadow-sm">
+            <li key={e.id} className="rounded-lg border border-gray-200 border-l-4 border-l-marca-viva bg-white p-4 shadow-sm">
               <div className="flex items-start gap-3">
-                <FileText className="mt-0.5 h-5 w-5 shrink-0 text-[#0A7EA4]" />
+                <FileText className="mt-0.5 h-5 w-5 shrink-0 text-marca-texto" />
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <button type="button" onClick={() => abrir(e)} className="text-sm text-[#0A7EA4] hover:underline">
+                    <button type="button" onClick={() => abrir(e)} className="text-sm text-marca-texto hover:underline">
                       {e.pacienteNome ?? 'Paciente'}
                     </button>
                     <span className="text-xs text-gray-400">→ abre o prontuário</span>

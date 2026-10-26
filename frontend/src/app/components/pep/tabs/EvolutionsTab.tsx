@@ -70,14 +70,14 @@ export function EvolutionsTab({ paciente, evolucoes, carregando, aoRegistrar, fo
             maxLength={4000}
             rows={4}
             placeholder="O que foi observado, feito ou orientado."
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
           />
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-gray-400">{texto.length}/4000</span>
             <button
               type="submit"
               disabled={salvando}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm text-white hover:bg-[#0EA5E9] disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-marca px-4 py-2 text-sm text-white hover:bg-marca-hover disabled:opacity-60"
             >
               {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Adicionar evolução
@@ -102,9 +102,9 @@ export function EvolutionsTab({ paciente, evolucoes, carregando, aoRegistrar, fo
       ) : (
         <ol className="space-y-3">
           {evolucoes.map((e) => (
-            <li key={e.id} className="rounded-lg border border-gray-200 border-l-4 border-l-[#0EA5E9] bg-white p-4 shadow-sm">
+            <li key={e.id} className="rounded-lg border border-gray-200 border-l-4 border-l-marca-viva bg-white p-4 shadow-sm">
               <div className="flex items-start gap-3">
-                <FileText className="mt-0.5 h-5 w-5 shrink-0 text-[#0A7EA4]" />
+                <FileText className="mt-0.5 h-5 w-5 shrink-0 text-marca-texto" />
                 <div className="min-w-0 flex-1">
                   <p className="whitespace-pre-wrap text-sm text-gray-800">{e.texto}</p>
                   <p className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">

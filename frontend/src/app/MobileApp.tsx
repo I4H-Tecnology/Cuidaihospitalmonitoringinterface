@@ -74,7 +74,7 @@ export function MobileApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FBFC]">
+    <div className="min-h-screen bg-fundo-app">
       <MobileHeader userName={user?.name ?? '—'} notificationCount={pendentes} />
 
       {activeTab === 'home' && (

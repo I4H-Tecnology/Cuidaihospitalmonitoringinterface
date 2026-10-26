@@ -53,7 +53,7 @@ function Cartao({
     <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
       <header className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-[#0A7EA4]">{icone}</span>
+          <span className="text-marca-texto">{icone}</span>
           <h3 className="text-gray-800">{titulo}</h3>
         </div>
         <Chip tom={tom}>
@@ -189,7 +189,7 @@ export function SaudeScreen() {
 
         <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm text-sm text-gray-600">
           <div className="mb-2 flex items-center gap-2 text-gray-800">
-            <Activity className="h-5 w-5 text-[#0A7EA4]" />
+            <Activity className="h-5 w-5 text-marca-texto" />
             <h3>Como ler esta tela</h3>
           </div>
           <ul className="list-disc space-y-1 pl-5">

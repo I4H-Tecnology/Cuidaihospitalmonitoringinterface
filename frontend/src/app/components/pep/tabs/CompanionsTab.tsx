@@ -101,7 +101,7 @@ export function CompanionsTab({ paciente }: Props) {
             onClick={() => setModal(true)}
             disabled={!internado}
             title={internado ? undefined : 'Paciente sem internação ativa: o acesso seria cancelado na hora (RN07)'}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm text-white hover:bg-[#0EA5E9] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-marca px-4 py-2 text-sm text-white hover:bg-marca-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             <UserPlus className="h-4 w-4" />
             Novo acompanhante

@@ -41,9 +41,9 @@ export function AlertsScreen({ ocorrencias, carregando, erro, podeAtender, ocupa
           : emAtendimento;
 
   const botoes: { id: Filtro; rotulo: string; ativo: string }[] = [
-    { id: 'abertas', rotulo: `Abertas (${abertas.length})`, ativo: 'bg-[#0A7EA4] text-white shadow-sm' },
+    { id: 'abertas', rotulo: `Abertas (${abertas.length})`, ativo: 'bg-marca text-white shadow-sm' },
     { id: 'pendente', rotulo: `Sem ciência (${pendentes.length})`, ativo: 'bg-red-500 text-white shadow-sm' },
-    { id: 'em_atendimento', rotulo: `Em atendimento (${emAtendimento.length})`, ativo: 'bg-yellow-500 text-white shadow-sm' },
+    { id: 'em_atendimento', rotulo: `Em atendimento (${emAtendimento.length})`, ativo: 'bg-yellow-400 text-yellow-950 shadow-sm' },
     { id: 'todas', rotulo: `Todas (${ocorrencias.length})`, ativo: 'bg-gray-700 text-white shadow-sm' },
   ];
 

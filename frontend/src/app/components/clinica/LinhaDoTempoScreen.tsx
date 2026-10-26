@@ -85,14 +85,14 @@ export function LinhaDoTempoScreen({ aoAbrirPaciente }: Props) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]">
+          <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marca-viva">
             <option value="">Todos os pacientes</option>
             {pacientes.map((p) => (
               <option key={p.id} value={p.id}>{p.nome}{p.status !== 'internado' ? ` (${p.status})` : ''}</option>
             ))}
           </select>
           {botoes.map((b) => (
-            <button key={b.id} type="button" onClick={() => setFiltro(b.id)} className={`px-3 py-2 rounded-lg text-sm transition-colors ${filtro === b.id ? 'bg-[#0A7EA4] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
+            <button key={b.id} type="button" onClick={() => setFiltro(b.id)} className={`px-3 py-2 rounded-lg text-sm transition-colors ${filtro === b.id ? 'bg-marca text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
               {b.rotulo}
             </button>
           ))}

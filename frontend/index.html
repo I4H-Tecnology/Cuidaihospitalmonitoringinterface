@@ -5,6 +5,20 @@
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>MedSignal — Monitoramento Inteligente de Quedas</title>
+      <script>
+        // Aplica o tema salvo antes do React montar; sem isto a tela pisca
+        // clara antes de virar escura. A fonte da verdade é src/app/data/temas.ts.
+        try {
+          var tema = localStorage.getItem('cuidai-tema') ||
+            (localStorage.getItem('cuidai-dark-mode') === 'true' ? 'escuro' : 'claro');
+          document.documentElement.dataset.tema = tema;
+          if (tema === 'escuro' || tema === 'cafe') document.documentElement.classList.add('dark');
+          // Mesma ideia para o tamanho do texto (src/app/data/preferencias.ts).
+          var prefs = JSON.parse(localStorage.getItem('cuidai-preferencias') || '{}');
+          var fonte = { grande: '17.5px', maior: '19px' }[prefs.tamanhoTexto];
+          if (fonte) document.documentElement.style.setProperty('--font-size', fonte);
+        } catch (e) {}
+      </script>
     </head>
 
     <body>

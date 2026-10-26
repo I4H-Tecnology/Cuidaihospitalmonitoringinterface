@@ -74,7 +74,7 @@ export function AllergiesTab({ paciente, riscos, carregando, aoMudar }: Props) {
     }
   };
 
-  const campo = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]';
+  const campo = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca';
 
   return (
     <div className="space-y-4">
@@ -92,7 +92,7 @@ export function AllergiesTab({ paciente, riscos, carregando, aoMudar }: Props) {
             </button>
           )}
           {podeRegistrar && (
-            <button type="button" onClick={() => setFormulario((v) => !v)} className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm text-white hover:bg-[#0EA5E9]">
+            <button type="button" onClick={() => setFormulario((v) => !v)} className="inline-flex items-center gap-2 rounded-lg bg-marca px-4 py-2 text-sm text-white hover:bg-marca-hover">
               <Plus className="h-4 w-4" /> Registrar
             </button>
           )}
@@ -122,7 +122,7 @@ export function AllergiesTab({ paciente, riscos, carregando, aoMudar }: Props) {
           </div>
           <div className="flex items-center justify-end gap-2 md:col-span-4">
             <button type="button" onClick={() => setFormulario(false)} disabled={salvando} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancelar</button>
-            <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm text-white hover:bg-[#0EA5E9] disabled:opacity-60">
+            <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 rounded-lg bg-marca px-4 py-2 text-sm text-white hover:bg-marca-hover disabled:opacity-60">
               {salvando && <Loader2 className="h-4 w-4 animate-spin" />} Salvar
             </button>
           </div>

@@ -103,7 +103,7 @@ export function HistoryTab({ paciente, ocorrencias }: Props) {
               onClick={() => setFiltro(valor)}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 filtro === valor
-                  ? 'bg-[#0A7EA4] text-white'
+                  ? 'bg-marca text-white'
                   : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
             >

@@ -107,7 +107,7 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
         <div className="px-8 py-3 border-b border-gray-100">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-[#0A7EA4] transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-marca-texto transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Voltar para lista de pacientes</span>
@@ -119,7 +119,7 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               {/* Avatar */}
-              <div className="w-16 h-16 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-full flex items-center justify-center text-white text-xl">
+              <div className="w-16 h-16 bg-gradient-to-br from-marca to-marca-hover rounded-full flex items-center justify-center text-white text-xl">
                 {paciente.nome.split(' ').map(n => n[0]).slice(0, 2).join('')}
               </div>
 
@@ -168,7 +168,7 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
               <button
                 type="button"
                 onClick={() => { setActiveTab('evolutions'); setFocarEvolucao(true); }}
-                className="px-4 py-2 bg-[#0A7EA4] text-white rounded-lg text-sm hover:bg-[#0EA5E9]
+                className="px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover
                            transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
@@ -225,7 +225,7 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-4 py-3 text-sm whitespace-nowrap flex items-center gap-2 border-b-2 transition-colors ${
                     isActive
-                      ? 'border-[#0EA5E9] text-[#0A7EA4] bg-[#F0F9FF]'
+                      ? 'border-marca-viva text-marca-texto bg-marca-suave'
                       : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                   }`}
                 >

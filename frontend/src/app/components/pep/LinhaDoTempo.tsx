@@ -101,12 +101,12 @@ export function LinhaDoTempoLista({
         if (ev.tipo === 'evolucao') {
           return (
             <li key={ev.dado.id} className="relative">
-              <span className="absolute -left-[31px] top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#E8F4F8]">
-                <FileText className="h-3 w-3 text-[#0A7EA4]" />
+              <span className="absolute -left-[31px] top-2 flex h-5 w-5 items-center justify-center rounded-full bg-marca-suave">
+                <FileText className="h-3 w-3 text-marca-texto" />
               </span>
               <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
                 <p className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                  <span className="rounded bg-[#E8F4F8] px-2 py-0.5 text-[#0A7EA4]">Evolução</span>
+                  <span className="rounded bg-marca-suave px-2 py-0.5 text-marca-texto">Evolução</span>
                   <Nome nome={ev.pacienteNome} />
                   <span>{ev.dado.autorNome}</span>
                   <span title={dataBR(ev.quando)}>{quandoFoi(ev.quando)}</span>

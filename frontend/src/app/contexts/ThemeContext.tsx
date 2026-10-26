@@ -1,41 +1,46 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { CHAVE_TEMA, TEMAS, lerTemaSalvo, temaPorId, type Tema, type TemaId } from '../data/temas';
+import { FONTE_RAIZ, usePreferencias } from '../data/preferencias';
 
 interface ThemeContextType {
+  tema: TemaId;
+  setTema: (tema: TemaId) => void;
+  temas: readonly Tema[];
   isDarkMode: boolean;
+  /** Alterna para o par claro/escuro do tema atual (Areia ↔ Café, Claro ↔ Escuro). */
   toggleDarkMode: () => void;
-  accentColor: string;
-  setAccentColor: (color: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('cuidai-dark-mode');
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  const [accentColor, setAccentColor] = useState(() => {
-    return localStorage.getItem('cuidai-accent-color') || '#0EA5E9';
-  });
+  const [tema, setTema] = useState<TemaId>(() => lerTemaSalvo(localStorage));
 
   useEffect(() => {
-    localStorage.setItem('cuidai-dark-mode', JSON.stringify(isDarkMode));
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    try {
+      localStorage.setItem(CHAVE_TEMA, tema);
+    } catch {
+      // sem storage o tema vale só até recarregar
     }
-  }, [isDarkMode]);
+    const raiz = document.documentElement;
+    raiz.dataset.tema = tema;
+    raiz.classList.toggle('dark', temaPorId(tema).escuro);
+  }, [tema]);
 
+  // Tamanho do texto e movimento vêm das preferências (Configurações →
+  // Aparência), mas mexem no mesmo <html> que o tema, então moram aqui.
+  const [{ tamanhoTexto, reduzirMovimento }] = usePreferencias();
   useEffect(() => {
-    localStorage.setItem('cuidai-accent-color', accentColor);
-  }, [accentColor]);
+    const raiz = document.documentElement;
+    raiz.style.setProperty('--font-size', FONTE_RAIZ[tamanhoTexto]);
+    raiz.classList.toggle('reduzir-movimento', reduzirMovimento);
+  }, [tamanhoTexto, reduzirMovimento]);
 
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+  const isDarkMode = temaPorId(tema).escuro;
+  const toggleDarkMode = () => setTema((atual) => temaPorId(atual).par);
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, accentColor, setAccentColor }}>
+    <ThemeContext.Provider value={{ tema, setTema, temas: TEMAS, isDarkMode, toggleDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );

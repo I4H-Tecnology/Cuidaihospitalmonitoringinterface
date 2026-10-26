@@ -29,9 +29,9 @@ export function MobileBottomNav({ activeTab, onTabChange, alertasPendentes = 0 }
             key={tab.id}
             type="button"
             onClick={() => onTabChange(tab.id)}
-            className={`relative flex flex-col items-center gap-1 px-6 py-2 rounded-lg transition-colors min-w-[80px] ${isActive ? 'text-[#0A7EA4]' : 'text-gray-500'}`}
+            className={`relative flex flex-col items-center gap-1 px-6 py-2 rounded-lg transition-colors min-w-[80px] ${isActive ? 'text-marca-texto' : 'text-gray-500'}`}
           >
-            <Icon className={`w-5 h-5 ${isActive ? 'text-[#0EA5E9]' : ''}`} />
+            <Icon className={`w-5 h-5 ${isActive ? 'text-marca-texto' : ''}`} />
             <span className="text-xs">{tab.label}</span>
             {tab.id === 'alerts' && alertasPendentes > 0 && (
               <span className="absolute top-1 right-3 min-w-[18px] rounded-full bg-red-500 px-1 text-center text-[10px] text-white">
