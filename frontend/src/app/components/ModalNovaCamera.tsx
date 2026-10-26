@@ -31,6 +31,7 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
   const [ambienteId, setAmbienteId] = useState('');
   const [identificador, setIdentificador] = useState('');
   const [urlStream, setUrlStream] = useState('');
+  const [visaoUrl, setVisaoUrl] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [carregandoAmbientes, setCarregandoAmbientes] = useState(true);
@@ -68,6 +69,9 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
     if (!ambienteId) return setErro('Escolha o ambiente que esta câmera observa.');
     if (identificador.trim().length < 2) return setErro('Dê um identificador à câmera.');
     if (urlStream.trim().length < 4) return setErro('Informe o endereço do stream.');
+    if (visaoUrl.trim() && !/^https?:\/\/\S+$/.test(visaoUrl.trim())) {
+      return setErro('O endereço do vídeo ao vivo começa com http:// ou https://.');
+    }
 
     setSalvando(true);
     try {
@@ -76,6 +80,7 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
         ambienteId,
         identificador: identificador.trim(),
         urlStream: urlStream.trim(),
+        ...(visaoUrl.trim() ? { visaoUrl: visaoUrl.trim() } : {}),
       });
       aoCriar(nova);
     } catch (e) {
@@ -104,8 +109,8 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
       <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl overflow-hidden">
         <header className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#E8F4F8] flex items-center justify-center">
-              <Camera className="w-5 h-5 text-[#0A7EA4]" />
+            <div className="w-10 h-10 rounded-lg bg-marca-suave flex items-center justify-center">
+              <Camera className="w-5 h-5 text-marca-texto" />
             </div>
             <div>
               <h2 id="titulo-nova-camera" className="text-gray-800">
@@ -136,7 +141,7 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
               onChange={(e) => setAmbienteId(e.target.value)}
               disabled={carregandoAmbientes}
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
-                         focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]
+                         focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca
                          disabled:bg-gray-50 disabled:text-gray-400"
             >
               <option value="">
@@ -169,7 +174,7 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
               placeholder="CAM-QUARTO103"
               maxLength={60}
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
-                         focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                         focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
             />
             <p className="mt-1.5 text-xs text-gray-500">
               É o nome que aparece nos alertas. Precisa ser único dentro do ambiente.
@@ -188,7 +193,7 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
               placeholder="rtsp://usuario:senha@192.168.0.10:554/stream1"
               maxLength={500}
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-mono
-                         focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                         focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
             />
             <p className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-500">
               <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -196,6 +201,26 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
                 A senha embutida na URL é mascarada antes de voltar para a tela — mas fica
                 legível no banco. Prefira uma conta só de leitura na câmera.
               </span>
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="visao-url" className="block text-sm text-gray-700 mb-1.5">
+              Vídeo ao vivo (serviço de visão)
+            </label>
+            <input
+              id="visao-url"
+              type="text"
+              value={visaoUrl}
+              onChange={(e) => setVisaoUrl(e.target.value)}
+              placeholder="http://localhost:8002"
+              maxLength={300}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-mono
+                         focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
+            />
+            <p className="mt-1.5 text-xs text-gray-500">
+              Endereço do processo do serviço de visão que analisa esta câmera. Em branco, o
+              monitoramento usa o serviço padrão quando ele estiver apontado para ela.
             </p>
           </div>
 
@@ -215,9 +240,9 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
           <div className="flex items-start gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5">
             <Info className="w-4 h-4 shrink-0 text-gray-400 mt-0.5" />
             <p className="text-xs text-gray-600">
-              A câmera entra como <strong>desconectada</strong>. Ela só aparece no monitoramento
-              ao vivo depois que o serviço de visão for apontado para ela e enviar o primeiro
-              sinal de vida.
+              A câmera entra como <strong>desconectada</strong>. O quarto já aparece no
+              monitoramento, mas o vídeo ao vivo só chega depois que o serviço de visão for
+              apontado para ela e enviar o primeiro sinal de vida.
             </p>
           </div>
 
@@ -232,8 +257,8 @@ export function ModalNovaCamera({ tenantId, aoFechar, aoCriar }: ModalNovaCamera
             <button
               type="submit"
               disabled={salvando}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-5 py-2.5
-                         text-sm text-white hover:bg-[#0EA5E9] transition-colors
+              className="inline-flex items-center gap-2 rounded-lg bg-marca px-5 py-2.5
+                         text-sm text-white hover:bg-marca-hover transition-colors
                          disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {salvando && <Loader2 className="w-4 h-4 animate-spin" />}

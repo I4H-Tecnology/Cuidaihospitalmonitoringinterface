@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diagnosticarCaptura, formatarBytes, formatarDuracao } from './visao';
+import { VISAO_URL, diagnosticarCaptura, formatarBytes, formatarDuracao, urlDoVideoAoVivo } from './visao';
 import type { Captura } from './visao';
 
 const captura = (parcial: Partial<Captura>): Captura => ({
@@ -58,5 +58,23 @@ describe('formatação para a tela de saúde', () => {
     expect(formatarBytes(512)).toBe('512 B');
     expect(formatarBytes(20 * 1024)).toBe('20 KB');
     expect(formatarBytes(2.5 * 1024 * 1024)).toBe('2.5 MB');
+  });
+});
+
+describe('urlDoVideoAoVivo: um processo de visão por câmera', () => {
+  it('o endereço cadastrado na câmera vence', () => {
+    expect(urlDoVideoAoVivo({ id: 'c1', visaoUrl: 'http://localhost:8002' }, 'c1')).toBe('http://localhost:8002');
+  });
+
+  it('sem cadastro, usa o serviço padrão se for esta a câmera que ele observa', () => {
+    expect(urlDoVideoAoVivo({ id: 'c1', visaoUrl: null }, 'c1')).toBe(VISAO_URL);
+  });
+
+  it('sem cadastro e o padrão observando outra câmera, não há vídeo: nunca o de outro quarto', () => {
+    expect(urlDoVideoAoVivo({ id: 'c2' }, 'c1')).toBeNull();
+  });
+
+  it('sem cadastro e o padrão fora do ar, não há vídeo', () => {
+    expect(urlDoVideoAoVivo({ id: 'c1' }, null)).toBeNull();
   });
 });

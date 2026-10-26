@@ -55,14 +55,13 @@ export function AbaCameras() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-600">Câmeras cadastradas, com o estado de conexão real</p>
+      <div className="flex items-center justify-end mb-4">
         <button
           type="button"
           onClick={() => setModal('novo')}
           disabled={!podeEditar}
           title={podeEditar ? undefined : 'Seu perfil não permite cadastrar dispositivos'}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="w-4 h-4" />
           Adicionar Dispositivo
@@ -183,6 +182,8 @@ function ModalCamera({
   // Em edição a URL vem mascarada pela API (sem credencial); só é enviada se
   // o usuário digitar outra. Vazio = manter a atual.
   const [urlStream, setUrlStream] = useState(editando ? '' : '');
+  // Sem credencial, então vem inteira e pode ser editada no lugar.
+  const [visaoUrl, setVisaoUrl] = useState(camera?.visaoUrl ?? '');
   const [ambienteId, setAmbienteId] = useState(camera?.ambienteId ?? ambientes[0]?.id ?? '');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -194,6 +195,9 @@ function ModalCamera({
     if (identificador.trim().length < 2) return setErro('Informe o ID da câmera.');
     if (!ambienteId) return setErro('Escolha o ambiente onde a câmera está.');
     if (!editando && urlStream.trim().length < 4) return setErro('Informe a URL do stream (RTSP ou HTTP).');
+    if (visaoUrl.trim() && !/^https?:\/\/\S+$/.test(visaoUrl.trim())) {
+      return setErro('O endereço do vídeo ao vivo começa com http:// ou https://.');
+    }
 
     setSalvando(true);
     try {
@@ -203,10 +207,18 @@ function ModalCamera({
           identificador: identificador.trim(),
           ambienteId,
           ...(urlStream.trim() ? { urlStream: urlStream.trim() } : {}),
+          // Vazio também vai: é o jeito de voltar ao serviço padrão.
+          visaoUrl: visaoUrl.trim(),
         });
         aoSalvar(salva, false);
       } else {
-        const salva = await createCamera({ tenantId: tenantId!, ambienteId, identificador: identificador.trim(), urlStream: urlStream.trim() });
+        const salva = await createCamera({
+          tenantId: tenantId!,
+          ambienteId,
+          identificador: identificador.trim(),
+          urlStream: urlStream.trim(),
+          ...(visaoUrl.trim() ? { visaoUrl: visaoUrl.trim() } : {}),
+        });
         aoSalvar(salva, true);
       }
     } catch (err) {
@@ -215,13 +227,13 @@ function ModalCamera({
     }
   };
 
-  const campo = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]';
+  const campo = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva';
   const travado = 'w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" role="dialog" aria-modal="true">
       <form onSubmit={enviar} className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
-        <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        <div className="bg-gradient-to-r from-marca to-marca-hover px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-white text-lg">{editando ? `Editar ${camera.identificador}` : 'Adicionar Dispositivo'}</h3>
           <button type="button" onClick={aoFechar} disabled={salvando} className="text-white hover:bg-white/20 rounded-lg p-1 text-2xl leading-none" aria-label="Fechar">×</button>
         </div>
@@ -268,6 +280,21 @@ function ModalCamera({
                 className={campo}
               />
             </div>
+            <div className="col-span-2">
+              <label className="block text-sm text-gray-700 mb-2">Vídeo ao vivo (serviço de visão)</label>
+              <input
+                type="text"
+                value={visaoUrl}
+                onChange={(e) => setVisaoUrl(e.target.value)}
+                maxLength={300}
+                placeholder="http://localhost:8002"
+                className={campo}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Processo do serviço de visão que analisa esta câmera. Em branco, o monitoramento usa o
+                serviço padrão quando ele estiver apontado para ela.
+              </p>
+            </div>
           </div>
           {erro && (
             <p role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -280,7 +307,7 @@ function ModalCamera({
           <button type="button" onClick={aoFechar} disabled={salvando} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
             Cancelar
           </button>
-          <button type="submit" disabled={salvando || tipo !== 'camera'} title={tipo !== 'camera' ? 'Só câmeras podem ser cadastradas' : undefined} className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors disabled:opacity-60">
+          <button type="submit" disabled={salvando || tipo !== 'camera'} title={tipo !== 'camera' ? 'Só câmeras podem ser cadastradas' : undefined} className="inline-flex items-center gap-2 px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover transition-colors disabled:opacity-60">
             {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
             {editando ? 'Salvar' : 'Adicionar Dispositivo'}
           </button>

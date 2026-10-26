@@ -40,6 +40,9 @@ export interface ClipesVisao {
 export interface PublicacaoVisao {
   ativo: boolean;
   motivo?: string;
+  /** Id da câmera no cadastro: é o que liga este vídeo a um quarto. */
+  camera_id?: string | null;
+  /** Descrição legível ("CAM-QUARTO101 em Quarto 101, paciente …"), não um id. */
   camera?: string | null;
   registradas?: number;
   duplicadas?: number;
@@ -127,6 +130,38 @@ export function formatarBytes(bytes: number | null | undefined): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Câmera que o serviço padrão (VISAO_URL) está observando, lida de `/estado`.
+ * `noAr` separa "não respondeu" de "respondeu, mas não publica para câmera
+ * nenhuma": a tela orienta cada caso de um jeito.
+ */
+export async function fetchServicoPadrao(): Promise<{ noAr: boolean; camera: string | null }> {
+  try {
+    const resposta = await fetch(`${VISAO_URL}/estado`, { cache: 'no-store' });
+    if (!resposta.ok) return { noAr: false, camera: null };
+    const dados = (await resposta.json()) as { publicacao?: PublicacaoVisao };
+    return { noAr: true, camera: dados.publicacao?.camera_id ?? null };
+  } catch {
+    return { noAr: false, camera: null };
+  }
+}
+
+/**
+ * De onde vem o vídeo ao vivo de uma câmera. Cada processo do serviço de
+ * visão observa uma câmera só, então o endereço é por câmera: o cadastrado
+ * nela ou, sem cadastro, o serviço padrão quando é ela que ele observa.
+ * null = não há vídeo para esta câmera, e a tela precisa dizer isso em vez de
+ * mostrar o vídeo de outro quarto.
+ */
+export function urlDoVideoAoVivo(
+  camera: { id: string; visaoUrl?: string | null },
+  cameraDoServicoPadrao: string | null,
+): string | null {
+  if (camera.visaoUrl) return camera.visaoUrl;
+  if (cameraDoServicoPadrao && cameraDoServicoPadrao === camera.id) return VISAO_URL;
+  return null;
 }
 
 /** `/health` do serviço de visão; null quando a porta não responde. */

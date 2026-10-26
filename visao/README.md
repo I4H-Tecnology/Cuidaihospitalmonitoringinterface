@@ -76,6 +76,26 @@ configuração.
 O `/estado` e o `/health` passam a mostrar um bloco `publicacao` com quantas
 ocorrências foram registradas e quantas estão esperando em disco.
 
+## Mais de uma câmera
+
+Cada processo observa **uma** câmera. Para outro quarto, suba outro processo
+numa porta própria; o que vier no ambiente vale mais que o `.env`:
+
+```bash
+VISAO_CAMERA_ID=<id da câmera do outro quarto> VISAO_FONTE=rtsp \
+VISAO_RTSP_URL=rtsp://usuario:senha@192.168.0.11:554/stream \
+  visao/.venv/Scripts/python.exe visao/servir.py --porta 8002
+```
+
+Depois, em **Configurações → Dispositivos**, edite a câmera e preencha
+**Vídeo ao vivo** com `http://localhost:8002`. O monitoramento passa a mostrar
+o vídeo desse quarto quando ele for escolhido na lista.
+
+A câmera sem esse campo usa o serviço padrão (`VITE_VISAO_URL`, porta 8001),
+mas só se for ela que ele está observando: um quarto nunca mostra o vídeo de
+outro. Bancos criados antes desta coluna precisam de
+`db/scripts/2026-10-25-camera-visao-url.sql`.
+
 ## Antes de qualquer coisa: teste a câmera
 
 ```bash

@@ -263,6 +263,8 @@ export interface CameraResumo {
   pacienteNome?: string | null;
   ocorrencias24h: number;
   ultimaOcorrencia?: string | null;
+  /** Processo do serviço de visão desta câmera. Nulo = serviço padrão do painel. */
+  visaoUrl?: string | null;
 }
 
 export interface OcorrenciaResumo {
@@ -299,6 +301,7 @@ export const createCamera = (payload: {
   ambienteId: string;
   identificador: string;
   urlStream: string;
+  visaoUrl?: string;
 }) =>
   request<CameraResumo>('/api/cameras', {
     method: 'POST',
@@ -307,7 +310,8 @@ export const createCamera = (payload: {
 
 export const editarCamera = (
   cameraId: string,
-  payload: { tenantId: string; identificador?: string; urlStream?: string; ambienteId?: string }
+  // visaoUrl vazio limpa o campo e a câmera volta ao serviço padrão.
+  payload: { tenantId: string; identificador?: string; urlStream?: string; ambienteId?: string; visaoUrl?: string }
 ) =>
   request<CameraResumo>(`/api/cameras/${cameraId}`, {
     method: 'PATCH',
