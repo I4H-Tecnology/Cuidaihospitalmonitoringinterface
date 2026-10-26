@@ -723,3 +723,127 @@ export interface AcompanhanteDaClinica extends AcompanhanteResumo {
 export const fetchAcompanhantesDaClinica = (tenantId: string) =>
   request<AcompanhanteDaClinica[]>(`/api/acompanhantes?tenantId=${encodeURIComponent(tenantId)}`);
 
+/* ---------------------------------------------------------------------------
+ * Contratos (Administração → Contratos, 25/10/2026)
+ * -------------------------------------------------------------------------- */
+
+export type CategoriaContrato = 'servico' | 'manutencao' | 'locacao' | 'fornecimento' | 'software' | 'outro';
+export type SituacaoContrato = 'agendado' | 'vigente' | 'vencendo' | 'vencido' | 'encerrado';
+
+export interface ContratoResumo {
+  id: string;
+  numero: string | null;
+  objeto: string;
+  fornecedor: string;
+  fornecedorDocumento: string | null;
+  categoria: CategoriaContrato;
+  valorMensal: number | null;
+  inicio: string;
+  fim: string | null;
+  renovacaoAutomatica: boolean;
+  avisoPrevioDias: number;
+  responsavel: string | null;
+  observacoes: string | null;
+  /** Calculada pelo servidor a partir das datas, no fuso da clínica. */
+  situacao: SituacaoContrato;
+  /** Até quando decidir renovar ou não (fim − aviso prévio). */
+  decidirAte: string | null;
+  encerradoEm: string | null;
+  motivoEncerramento: string | null;
+  criadoPorNome: string | null;
+  criadoEm: string;
+  pedidosVinculados: number;
+}
+
+export interface ContratoPayload {
+  numero?: string;
+  objeto: string;
+  fornecedor: string;
+  fornecedorDocumento?: string;
+  categoria: CategoriaContrato;
+  valorMensal?: number | null;
+  inicio: string;
+  fim?: string;
+  renovacaoAutomatica: boolean;
+  avisoPrevioDias: number;
+  responsavel?: string;
+  observacoes?: string;
+}
+
+export const fetchContratos = (tenantId: string) =>
+  request<ContratoResumo[]>(`/api/contratos?tenantId=${encodeURIComponent(tenantId)}`);
+
+export const criarContrato = (tenantId: string, contrato: ContratoPayload) =>
+  request<ContratoResumo>('/api/contratos', { method: 'POST', body: JSON.stringify({ tenantId, ...contrato }) });
+
+export const editarContrato = (tenantId: string, contratoId: string, contrato: ContratoPayload) =>
+  request<ContratoResumo>(`/api/contratos/${contratoId}`, { method: 'PATCH', body: JSON.stringify({ tenantId, ...contrato }) });
+
+export const encerrarContrato = (tenantId: string, contratoId: string, motivo: string) =>
+  request<{ ok: boolean }>(`/api/contratos/${contratoId}/encerrar`, { method: 'POST', body: JSON.stringify({ tenantId, motivo }) });
+
+/* ---------------------------------------------------------------------------
+ * Compras (Administração → Compras, 25/10/2026)
+ * -------------------------------------------------------------------------- */
+
+export type StatusPedido = 'solicitado' | 'aprovado' | 'recusado' | 'comprado' | 'recebido' | 'cancelado';
+
+export interface ItemPedido {
+  descricao: string;
+  quantidade: number;
+  unidade: string;
+  valorUnitario: number | null;
+}
+
+export interface EtapaPedido {
+  etapa: 'solicitado' | 'decidido' | 'comprado' | 'recebido' | 'cancelado';
+  quem: string | null;
+  quando: string;
+}
+
+export interface PedidoResumo {
+  id: string;
+  numero: number;
+  titulo: string;
+  justificativa: string | null;
+  urgente: boolean;
+  status: StatusPedido;
+  fornecedor: string | null;
+  contratoId: string | null;
+  contratoObjeto: string | null;
+  itens: ItemPedido[];
+  valorEstimado: number | null;
+  valorFinal: number | null;
+  solicitanteId: string;
+  solicitanteNome: string;
+  motivoRecusa: string | null;
+  motivoCancelamento: string | null;
+  trilha: EtapaPedido[];
+  criadoEm: string;
+}
+
+const q = (tenantId: string) => `?tenantId=${encodeURIComponent(tenantId)}`;
+
+export const fetchPedidos = (tenantId: string) => request<PedidoResumo[]>(`/api/compras${q(tenantId)}`);
+
+export const criarPedido = (tenantId: string, pedido: { titulo: string; justificativa?: string; urgente: boolean; itens: ItemPedido[] }) =>
+  request<PedidoResumo>('/api/compras', { method: 'POST', body: JSON.stringify({ tenantId, ...pedido }) });
+
+export const aprovarPedido = (tenantId: string, id: string) =>
+  request<PedidoResumo>(`/api/compras/${id}/aprovar${q(tenantId)}`, { method: 'POST' });
+
+export const recusarPedido = (tenantId: string, id: string, motivo: string) =>
+  request<PedidoResumo>(`/api/compras/${id}/recusar`, { method: 'POST', body: JSON.stringify({ tenantId, motivo }) });
+
+export const registrarCompra = (tenantId: string, id: string, dados: { fornecedor: string; valorFinal: number; contratoId?: string | null }) =>
+  request<PedidoResumo>(`/api/compras/${id}/comprar`, { method: 'POST', body: JSON.stringify({ tenantId, ...dados }) });
+
+export const confirmarRecebimento = (tenantId: string, id: string) =>
+  request<PedidoResumo>(`/api/compras/${id}/receber${q(tenantId)}`, { method: 'POST' });
+
+export const cancelarPedido = (tenantId: string, id: string, motivo: string) =>
+  request<{ ok: boolean }>(`/api/compras/${id}/cancelar`, { method: 'POST', body: JSON.stringify({ tenantId, motivo }) });
+
+/** "R$ 1.234,56". Valor ausente vira traço, não zero: zero é um valor. */
+export const formatarReais = (valor: number | null | undefined): string =>
+  valor == null ? '—' : valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
