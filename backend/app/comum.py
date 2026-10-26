@@ -59,9 +59,15 @@ POLITICA_PADRAO = {
 # Um módulo por tela que existe. Os cinco de gestão hospitalar ampla
 # (agenda, gestão, financeiro, estoque, RH) saíram junto com as telas em
 # 13/09/2026; `companions` entrou com a aba de acompanhantes do prontuário.
+# Em 26/09/2026 o financeiro voltou, agora com dado real (backend/financeiro),
+# em três módulos: ver app/integracao_financeiro.py. Em 25/10/2026 entraram
+# `purchases` e `contracts` (Administração → Compras e Contratos). Em
+# 26/10/2026, `crm` e `operations` (as telas de CRM e Operacional).
 MODULOS = [
     "dashboard", "monitoring", "alerts", "clinical_logs", "patients",
     "beds", "reports", "settings", "users", "companions",
+    "finance", "payroll", "finance_admin", "purchases", "contracts",
+    "crm", "operations",
 ]
 
 
