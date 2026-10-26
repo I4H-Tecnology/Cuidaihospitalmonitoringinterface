@@ -50,8 +50,7 @@ export function AbaClinica() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-600">Cadastro da clínica desta conta</p>
+      <div className="flex items-center justify-end mb-4">
         <button
           type="button"
           disabled
@@ -187,13 +186,13 @@ function ModalClinica({
     }
   };
 
-  const campo = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]';
+  const campo = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva';
   const travado = 'w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" role="dialog" aria-modal="true">
       <form onSubmit={enviar} className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
-        <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        <div className="bg-gradient-to-r from-marca to-marca-hover px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <h3 className="text-white text-lg">Editar clínica</h3>
           <button type="button" onClick={aoFechar} disabled={salvando} className="text-white hover:bg-white/20 rounded-lg p-1 text-2xl leading-none" aria-label="Fechar">×</button>
         </div>
@@ -243,7 +242,7 @@ function ModalClinica({
           <button type="button" onClick={aoFechar} disabled={salvando} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
             Cancelar
           </button>
-          <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors disabled:opacity-60">
+          <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover transition-colors disabled:opacity-60">
             {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
             Salvar
           </button>
