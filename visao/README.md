@@ -176,9 +176,20 @@ O código é idêntico nos dois casos. Muda apenas como o processo sobe.
 
 ```bash
 python -m venv visao/.venv
+# Torch antes do resto: o ultralytics puxaria do PyPI o build só de CPU.
+# Com GPU NVIDIA:
+visao\.venv\Scripts\python.exe -m pip install --index-url https://download.pytorch.org/whl/cu124 torch==2.5.1+cu124 torchvision==0.20.1+cu124
+# Sem GPU NVIDIA, no lugar da linha acima:
+#   visao\.venv\Scripts\python.exe -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchvision==0.20.1
 visao\.venv\Scripts\python.exe -m pip install -r visao/requirements.txt
 visao\.venv\Scripts\python.exe visao/verificar_camera.py
 ```
+
+Confira onde o YOLO está rodando no `/health`, campo `dispositivo`:
+`cuda:0 (…, FP16)` é a GPU; `cpu` quer dizer que o torch instalado não tem
+CUDA. Medido numa RTX 4050 de notebook, YOLOv8n com rastreamento num quadro de
+640 px: 73 ms na CPU isolada (504 ms em média dentro do serviço, disputando a
+máquina) e 15–22 ms na GPU em FP16.
 
 ## Se a câmera não abrir
 

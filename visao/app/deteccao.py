@@ -73,9 +73,14 @@ class Pessoa:
 class DetectorPessoas:
     """YOLOv8n com rastreamento por ByteTrack.
 
-    O modelo `n` (nano) é proposital: roda em CPU a taxa útil e o problema aqui
-    é achar uma pessoa inteira em cena, não distinguir raças de cachorro. Modelo
-    maior custaria latência sem ganhar recall no que importa.
+    O modelo `n` (nano) é proposital: o problema aqui é achar uma pessoa
+    inteira em cena, não distinguir raças de cachorro. Modelo maior custaria
+    latência sem ganhar recall no que importa.
+
+    Roda na GPU NVIDIA quando o torch instalado tem CUDA, em meia precisão
+    (FP16), e cai para a CPU sozinho quando não tem. Na CPU o YOLO era quase
+    toda a latência do quadro — centenas de ms, com picos acima de 1 s —, e é
+    isso que punha em risco os 5 s do RNF07.
     """
 
     def __init__(
@@ -88,6 +93,11 @@ class DetectorPessoas:
         self._peso = peso
         self._pasta_pesos = pasta_pesos
         self._modelo = None
+        # Definidos em carregar(). "cpu" ou "cuda:0"; o /health mostra a
+        # descrição, para ninguém achar que está na GPU quando não está.
+        self.dispositivo = "cpu"
+        self.descricao_dispositivo = "cpu"
+        self._meia_precisao = False
 
     def carregar(self) -> None:
         """Carrega sob demanda: importar ultralytics custa segundos, e quem só
@@ -95,7 +105,19 @@ class DetectorPessoas:
         if self._modelo is not None:
             return
 
+        import torch
         from ultralytics import YOLO
+
+        if torch.cuda.is_available():
+            self.dispositivo = "cuda:0"
+            self._meia_precisao = True
+            self.descricao_dispositivo = f"cuda:0 ({torch.cuda.get_device_name(0)}, FP16)"
+        else:
+            # Torch sem CUDA (o build +cpu) ou máquina sem GPU NVIDIA. Funciona,
+            # só que várias vezes mais devagar: o README explica como instalar.
+            self.dispositivo = "cpu"
+            self._meia_precisao = False
+            self.descricao_dispositivo = "cpu"
 
         caminho = self._peso
         if self._pasta_pesos is not None:
@@ -104,7 +126,7 @@ class DetectorPessoas:
             # Na primeira execução o peso é baixado; nas seguintes vem do disco.
             caminho = str(local) if local.exists() else self._peso
 
-        logger.info("Carregando YOLOv8 (%s)", caminho)
+        logger.info("Carregando YOLOv8 (%s) em %s", caminho, self.descricao_dispositivo)
         self._modelo = YOLO(caminho)
 
         if self._pasta_pesos is not None:
@@ -115,6 +137,18 @@ class DetectorPessoas:
 
                 shutil.copy2(origem, destino)
                 logger.info("Peso guardado em %s", destino)
+
+        if self.dispositivo != "cpu":
+            # Na GPU, contexto CUDA, kernels e conversão para FP16 só acontecem
+            # na primeira inferência — medido: 24 s no primeiro quadro. Pagar
+            # aqui, com um quadro vazio, tira esse custo do vídeo e da métrica
+            # de latência. predict, e não track, para não semear o rastreador.
+            self._modelo.predict(
+                np.zeros((384, 640, 3), dtype=np.uint8),
+                device=self.dispositivo,
+                half=self._meia_precisao,
+                verbose=False,
+            )
 
     def detectar(self, imagem: np.ndarray) -> list[Pessoa]:
         """Detecta e rastreia pessoas, mantendo o id entre quadros.
@@ -132,6 +166,8 @@ class DetectorPessoas:
             classes=[CLASSE_PESSOA],
             conf=self.confianca_minima,
             tracker="bytetrack.yaml",
+            device=self.dispositivo,
+            half=self._meia_precisao,
             verbose=False,
         )
         if not resultados:
