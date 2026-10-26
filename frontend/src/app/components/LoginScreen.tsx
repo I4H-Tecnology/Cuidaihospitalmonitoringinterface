@@ -1,10 +1,9 @@
 ﻿import React, { useState } from 'react';
-import { Loader2, Mail } from 'lucide-react';
+import { HeartPulse, Loader2, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSystemToast } from './ui/SystemToast';
 import { forceChangePasswordRequest, requestForgotPassword } from '../data/api';
-import logoImage from '@/assets/logo.png';
-import sideImage from '@/assets/login1.png';
+import { PainelDaMarca } from './PainelDaMarca';
 import backgroundPattern from '@/assets/login2.png';
 
 export function LoginScreen() {
@@ -33,7 +32,7 @@ export function LoginScreen() {
     };
     setFieldErrors(nextErrors);
     if (nextErrors.username || nextErrors.password) {
-      showToast({ message: 'Informe usuario e senha.' });
+      showToast({ message: 'Informe usuário e senha.' });
       return;
     }
 
@@ -46,7 +45,7 @@ export function LoginScreen() {
         setFirstAccessUsername(trimmedUsername);
         setShowFirstAccessModal(true);
       } else {
-        const fallbackMessage = 'Usuario ou senha invalidos.';
+        const fallbackMessage = 'Usuário ou senha inválidos.';
         const errorMessage = result.error || fallbackMessage;
         const shouldMarkFields = errorMessage === fallbackMessage;
         setFieldErrors({
@@ -129,7 +128,7 @@ export function LoginScreen() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-8 bg-gray-100"
+      className="min-h-screen flex items-center justify-center p-4 sm:p-8 bg-gray-100"
       style={{
         backgroundImage: `url(${backgroundPattern})`,
         backgroundSize: 'cover',
@@ -137,18 +136,14 @@ export function LoginScreen() {
       }}
     >
       <div className="w-full max-w-6xl flex rounded-3xl overflow-hidden shadow-2xl">
-        <div className="hidden lg:flex lg:w-[60%] bg-[#E8F4F8] items-center justify-center">
-          <img
-            src={sideImage}
-            alt="MedSignal - Monitore Inteligentemente o seu Hospital"
-            className="w-full h-auto object-contain"
-          />
-        </div>
+        <PainelDaMarca />
 
-        <div className="w-full lg:w-[40%] bg-white flex items-center justify-center p-12">
+        <div className="w-full lg:w-[45%] bg-white flex items-center justify-center p-8 sm:p-12">
           <div className="w-full max-w-md">
             <div className="flex flex-col items-center mb-8">
-              <img src={logoImage} alt="MedSignal" className="h-16 w-auto mb-3" />
+              <span className="mb-3"><span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-marca to-marca-hover shadow-md" aria-hidden="true">
+                  <HeartPulse className="h-9 w-9 text-white" />
+                </span></span>
               <div className="text-center">
                 <h2 className="text-xl font-bold text-gray-900">MedSignal</h2>
                 <p className="text-xs text-gray-500">Sistema Hospitalar Inteligente</p>
@@ -159,15 +154,23 @@ export function LoginScreen() {
               <>
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 bg-[#0EA5E9] rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-marca rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-sm">2</span>
                     </div>
                     <h1 className="text-xl font-bold text-gray-900">Login e senha</h1>
                   </div>
-                  <p className="text-sm text-gray-600 ml-11">Insira seu login e senha abaixo</p>
+                  <p className="text-sm text-gray-600 ml-11">Use o login e a senha que o administrador da clínica criou para você.</p>
                   {tenant && (
-                    <p className="text-xs text-gray-500 ml-11 mt-2">
-                      Tenant ativo: <span className="font-semibold text-gray-700">{tenant}</span>
+                    <p className="text-xs text-gray-600 ml-11 mt-2">
+                      Clínica: <span className="font-semibold text-gray-800">{tenant}</span>
+                      {' · '}
+                      <button
+                        type="button"
+                        onClick={() => { localStorage.removeItem('tenant'); window.location.assign('/empresa'); }}
+                        className="font-medium text-marca-texto hover:underline"
+                      >
+                        Trocar
+                      </button>
                     </p>
                   )}
                 </div>
@@ -175,17 +178,19 @@ export function LoginScreen() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
                     <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                      Nome do usuario
+                      Login
                     </label>
                     <input
                       id="username"
                       type="text"
+                      autoComplete="username"
+                      autoFocus
                       value={username}
                       onChange={(e) => {
                         setUsername(e.target.value);
                         if (fieldErrors.username) setFieldErrors((prev) => ({ ...prev, username: false }));
                       }}
-                      className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
+                      className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-marca-viva focus:border-transparent transition-all outline-none text-gray-900 ${
                         fieldErrors.username ? 'border-[#EF4444]' : 'border-gray-300'
                       }`}
                       disabled={isLoading}
@@ -199,12 +204,13 @@ export function LoginScreen() {
                     <input
                       id="password"
                       type="password"
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
                         if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: false }));
                       }}
-                      className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
+                      className={`block w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-marca-viva focus:border-transparent transition-all outline-none text-gray-900 ${
                         fieldErrors.password ? 'border-[#EF4444]' : 'border-gray-300'
                       }`}
                       disabled={isLoading}
@@ -214,12 +220,12 @@ export function LoginScreen() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#0EA5E9] hover:bg-[#0284C7] text-white py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                    className="w-full bg-marca hover:bg-marca-hover text-white py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-marca-viva focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Entrando...</span>
+                        <span>Entrando…</span>
                       </>
                     ) : (
                       <span>Entrar</span>
@@ -230,7 +236,7 @@ export function LoginScreen() {
                     <button
                       type="button"
                       onClick={() => setMode('forgot')}
-                      className="text-sm text-[#0EA5E9] hover:text-[#0284C7] font-medium transition-colors"
+                      className="text-sm text-marca-texto hover:text-marca-texto font-medium transition-colors"
                     >
                       Esqueceu a sua senha?
                     </button>
@@ -250,7 +256,7 @@ export function LoginScreen() {
                       E-mail
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
                       <input
                         id="forgot"
                         type="email"
@@ -259,7 +265,7 @@ export function LoginScreen() {
                           setForgotEmail(e.target.value);
                           if (forgotEmailError) setForgotEmailError(false);
                         }}
-                        className={`block w-full pl-11 pr-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-gray-900 ${
+                        className={`block w-full pl-11 pr-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-marca-viva focus:border-transparent transition-all outline-none text-gray-900 ${
                           forgotEmailError ? 'border-[#EF4444]' : 'border-gray-300'
                         }`}
                         placeholder="seu@email.com"
@@ -271,12 +277,12 @@ export function LoginScreen() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-[#0EA5E9] hover:bg-[#0284C7] text-white py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                    className="w-full bg-marca hover:bg-marca-hover text-white py-3.5 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-marca-viva focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Enviando...</span>
+                        <span>Enviando…</span>
                       </>
                     ) : (
                       <span>Enviar</span>
@@ -287,7 +293,7 @@ export function LoginScreen() {
                     <button
                       type="button"
                       onClick={() => setMode('login')}
-                      className="text-sm text-[#0EA5E9] hover:text-[#0284C7] font-medium transition-colors"
+                      className="text-sm text-marca-texto hover:text-marca-texto font-medium transition-colors"
                     >
                       Voltar para o login
                     </button>
@@ -307,7 +313,7 @@ export function LoginScreen() {
                 <h3 className="text-lg font-semibold text-gray-900">Troca obrigatória de senha</h3>
                 <p className="text-xs text-gray-500 mt-1">Defina uma nova senha para concluir o primeiro acesso.</p>
               </div>
-              <button type="button" onClick={() => setShowFirstAccessModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setShowFirstAccessModal(false)} aria-label="Fechar" className="text-2xl leading-none text-gray-500 hover:text-gray-800">
                 ×
               </button>
             </div>
@@ -320,7 +326,7 @@ export function LoginScreen() {
                   value={firstAccessUsername}
                   onChange={(e) => setFirstAccessUsername(e.target.value)}
                   disabled={isFirstAccessLoading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-marca-viva focus:outline-none"
                 />
               </div>
               <div>
@@ -330,7 +336,7 @@ export function LoginScreen() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={isFirstAccessLoading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-marca-viva focus:outline-none"
                 />
               </div>
               <div>
@@ -340,7 +346,7 @@ export function LoginScreen() {
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   disabled={isFirstAccessLoading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-marca-viva focus:outline-none"
                 />
               </div>
             </div>
@@ -357,7 +363,7 @@ export function LoginScreen() {
                 type="button"
                 onClick={handleFirstAccessChange}
                 disabled={isFirstAccessLoading}
-                className="px-4 py-2 text-sm bg-[#0EA5E9] text-white rounded-lg hover:bg-[#0284C7] disabled:opacity-60"
+                className="px-4 py-2 text-sm bg-marca text-white rounded-lg hover:bg-marca-hover disabled:opacity-60"
               >
                 {isFirstAccessLoading ? 'Salvando...' : 'Alterar senha'}
               </button>
