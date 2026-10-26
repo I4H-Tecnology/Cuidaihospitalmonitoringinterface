@@ -23,7 +23,7 @@
 --     A lista antiga ({"ocorrencias": ["ver"]}) não era lida por ninguém: todo
 --     perfil naquele formato falhava em qualquer rota protegida.
 --
---  Os 10 módulos aparecem em TODO perfil, inclusive os negados. Módulo ausente
+--  Os 13 módulos aparecem em TODO perfil, inclusive os negados. Módulo ausente
 --  do JSON some da tela de permissões (main.py:obter_permissoes itera as
 --  chaves presentes) — e permissão que não aparece não pode ser conferida nem
 --  corrigida por quem administra.
@@ -52,7 +52,7 @@ UPDATE perfil SET nome = 'NURSE'
 -- 2. A matriz de permissão.
 --
 --    Uma linha por módulo CONCEDIDO. O que não estiver listado entra como
---    negado — a expansão para os 14 módulos é feita logo abaixo.
+--    negado — a expansão para os 13 módulos é feita logo abaixo.
 --
 --    Fora do MVP pela seção 2.6 da RFC (appointments, hospital_management,
 --    financial, inventory, hr): ninguém recebe nada. A tela existe no protótipo
@@ -61,10 +61,19 @@ UPDATE perfil SET nome = 'NURSE'
 -- Mesma lista de backend/app/comum.py:MODULOS. Os cinco módulos de gestão
 -- hospitalar ampla saíram com as telas (13/09/2026); `companions` é a aba de
 -- acompanhantes do prontuário (RN03: admin e gestor liberam o acesso).
+-- `finance`, `payroll` e `finance_admin` são o módulo financeiro (26/09/2026;
+-- ver backend/app/integracao_financeiro.py). Em banco que já existe:
+-- db/scripts/2026-09-26-financeiro-permissoes.sql. `purchases` e `contracts`
+-- são Administração → Compras e Contratos (25/10/2026); em banco que já
+-- existe: db/scripts/2026-10-25-app-paciente-compras-contratos.sql. `crm`
+-- (agenda, lembretes, mensagens, exames, satisfação, campanhas) e `operations`
+-- (checklists e escalas) entraram em 26/10/2026; em banco que já existe:
+-- db/scripts/2026-10-26-telas-do-menu.sql.
 WITH modulos(nome) AS (
   VALUES ('dashboard'), ('monitoring'), ('alerts'), ('clinical_logs'),
          ('patients'), ('beds'), ('reports'), ('settings'), ('users'),
-         ('companions')
+         ('companions'), ('finance'), ('payroll'), ('finance_admin'),
+         ('purchases'), ('contracts'), ('crm'), ('operations')
 ),
 
 perfis(nome, descricao) AS (
@@ -88,6 +97,15 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('ADMIN', 'settings',       true,  true,  true,  true,  true,  false),
     ('ADMIN', 'users',          true,  true,  true,  true,  true,  false),
     ('ADMIN', 'companions',     true,  true,  true,  true,  true,  false),
+    -- Financeiro: o administrador da clínica cuida de tudo, inclusive folha e
+    -- capital. Separar quem vê salário é criar um perfil próprio com `payroll`.
+    ('ADMIN', 'finance',        true,  true,  true,  true,  true,  false),
+    ('ADMIN', 'payroll',        true,  true,  true,  true,  true,  false),
+    ('ADMIN', 'finance_admin',  true,  true,  true,  true,  true,  false),
+    ('ADMIN', 'purchases',      true,  true,  true,  true,  true,  false),
+    ('ADMIN', 'contracts',      true,  true,  true,  true,  true,  false),
+    ('ADMIN', 'crm',            true,  true,  true,  true,  true,  false),
+    ('ADMIN', 'operations',     true,  true,  true,  true,  true,  false),
 
     -- MANAGER — só leitura da operação, mais a geração de relatório.
     -- Não mexe em usuário nem em configuração: RN02 reserva isso ao admin.
@@ -100,6 +118,15 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('MANAGER', 'reports',       true, true,  false, false, true, false),
     -- RN03: gestor também libera acesso de acompanhante.
     ('MANAGER', 'companions',    true, true,  true,  false, true, false),
+    -- Gestor acompanha o financeiro (relatórios, contas), sem lançar e sem
+    -- ver salário nem capital.
+    ('MANAGER', 'finance',       true, false, false, false, true, false),
+    -- Gestor aprova pedido de compra (edit) e consulta os contratos.
+    ('MANAGER', 'purchases',     true, true,  true,  false, true, false),
+    ('MANAGER', 'contracts',     true, false, false, false, true, false),
+    -- Gestor conduz o relacionamento com a família e organiza escalas.
+    ('MANAGER', 'crm',           true, true,  true,  false, true, false),
+    ('MANAGER', 'operations',    true, true,  true,  false, true, false),
 
     -- NURSE — o perfil do app (§1.4: "uso intensivo do aplicativo mobile").
     -- Em alerts recebe 'edit', e não 'create': quem cria alerta é a IA. O que
@@ -111,7 +138,13 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('NURSE', 'patients',      true, false, false, false, true, true),
     ('NURSE', 'beds',          true, false, false, false, false, true),
     -- Enfermagem vê quem tem acesso; quem libera é admin ou gestor (RN03).
-    ('NURSE', 'companions',    true, false, false, false, true, true)
+    ('NURSE', 'companions',    true, false, false, false, true, true),
+    -- Enfermagem pede material e confirma o recebimento; não aprova.
+    ('NURSE', 'purchases',     true, true,  false, false, true, true),
+    -- Enfermagem agenda, responde a família e conclui lembretes; executa
+    -- checklists e vê a escala, sem editá-la.
+    ('NURSE', 'crm',           true, true,  true,  false, true, true),
+    ('NURSE', 'operations',    true, true,  false, false, true, true)
 ),
 
 montadas AS (
