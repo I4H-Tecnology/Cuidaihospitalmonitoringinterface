@@ -80,7 +80,7 @@ const profileOrder: Role[] = [
 const profileMeta: Record<Role, { title: string; description: string; color: string; icon: React.ReactNode }> = {
   SYSTEM: {
     title: 'Sistema',
-    description: 'Acesso total e governanca global',
+    description: 'Acesso total e governança global',
     color: 'bg-slate-50 border-slate-200 text-slate-700',
     icon: <Shield className="w-5 h-5" />
   },
@@ -92,13 +92,13 @@ const profileMeta: Record<Role, { title: string; description: string; color: str
   },
   MANAGER: {
     title: 'Gestor',
-    description: 'Gestao de unidade e relatorios',
+    description: 'Gestão de unidade e relatórios',
     color: 'bg-blue-50 border-blue-200 text-blue-700',
     icon: <Users className="w-5 h-5" />
   },
   DOCTOR: {
-    title: 'Medico',
-    description: 'Acesso clinico completo',
+    title: 'Médico',
+    description: 'Acesso clínico completo',
     color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
     icon: <Users className="w-5 h-5" />
   },
@@ -110,7 +110,7 @@ const profileMeta: Record<Role, { title: string; description: string; color: str
   },
   ADMINISTRATIVE: {
     title: 'Administrativo',
-    description: 'Operacoes administrativas',
+    description: 'Operações administrativas',
     color: 'bg-purple-50 border-purple-200 text-purple-700',
     icon: <Users className="w-5 h-5" />
   },
@@ -177,6 +177,9 @@ export function UsersScreen() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
+  // O seletor de período e o botão "Filtrar" existiam sem efeito nenhum.
+  const [periodoLogs, setPeriodoLogs] = useState<'24h' | '7d' | '30d' | 'todos'>('7d');
+  const [statusLogs, setStatusLogs] = useState<'todos' | AccessLog['status']>('todos');
   const [policy, setPolicy] = useState<SecurityPolicy | null>(null);
   const [formState, setFormState] = useState(() => emptyForm(tenantId));
   const [isEditing, setIsEditing] = useState(false);
@@ -499,10 +502,10 @@ export function UsersScreen() {
   };
 
   const tabs = [
-    { id: 'users' as const, label: 'Usuarios', icon: Users },
-    { id: 'permissions' as const, label: 'Perfis e Permissoes', icon: Shield },
-    { id: 'access-history' as const, label: 'Historico de Acessos', icon: Clock },
-    { id: 'security' as const, label: 'Seguranca', icon: Lock }
+    { id: 'users' as const, label: 'Usuários', icon: Users },
+    { id: 'permissions' as const, label: 'Perfis e Permissões', icon: Shield },
+    { id: 'access-history' as const, label: 'Histórico de Acessos', icon: Clock },
+    { id: 'security' as const, label: 'Segurança', icon: Lock }
   ];
 
   const filteredUsers = users.filter((user) =>
@@ -513,6 +516,10 @@ export function UsersScreen() {
   const selectedUsers = users.filter((user) => user.role === selectedRole);
   const selectedProfile = profileMeta[selectedRole];
   const policyForUi = policy ? sanitizeSecurityPolicy(policy) : null;
+  const limiteLogs = { '24h': 1, '7d': 7, '30d': 30, todos: null }[periodoLogs];
+  const logsVisiveis = accessLogs
+    .filter((log) => limiteLogs == null || Date.now() - new Date(log.created_at).getTime() <= limiteLogs * 86400000)
+    .filter((log) => statusLogs === 'todos' || log.status === statusLogs);
   const passwordGuide = evaluatePasswordPolicy(
     formState.password,
     {
@@ -532,15 +539,15 @@ export function UsersScreen() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-gray-800 mb-1">Usuarios</h1>
+            <h1 className="text-gray-800 mb-1">Usuários</h1>
           </div>
           {currentTab === 'users' && (
             <button
               onClick={openNewUserModal}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Novo Usuario
+              Novo Usuário
             </button>
           )}
         </div>
@@ -554,7 +561,7 @@ export function UsersScreen() {
                 onClick={() => setCurrentTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 whitespace-nowrap transition-colors border-b-2 -mb-px ${
                   currentTab === tab.id
-                    ? 'border-[#0EA5E9] text-[#0A7EA4]'
+                    ? 'border-marca-viva text-marca-texto'
                     : 'border-transparent text-gray-600 hover:text-gray-800'
                 }`}
               >
@@ -577,10 +584,10 @@ export function UsersScreen() {
                   placeholder="Buscar por nome ou e-mail..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                 />
               </div>
-              <select className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]">
+              <select className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva">
                 <option>Todos os perfis</option>
                 {roleOptions.map((role) => (
                   <option key={role.value} value={role.value}>
@@ -588,7 +595,7 @@ export function UsersScreen() {
                   </option>
                 ))}
               </select>
-              <select className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]">
+              <select className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva">
                 <option>Todos os status</option>
                 <option>Ativo</option>
                 <option>Inativo</option>
@@ -601,13 +608,13 @@ export function UsersScreen() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Usuario</th>
+                  <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Usuário</th>
                   <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Perfil</th>
                   <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Unidade/Setor</th>
                   <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Plataforma</th>
                   <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Ultimo Acesso</th>
-                  <th className="px-6 py-3 text-right text-xs text-gray-500 uppercase tracking-wider">Acoes</th>
+                  <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wider">Último Acesso</th>
+                  <th className="px-6 py-3 text-right text-xs text-gray-500 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -668,7 +675,7 @@ export function UsersScreen() {
                 ))}
                 {!filteredUsers.length && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-6 text-sm text-gray-500">Nenhum usuario encontrado.</td>
+                    <td colSpan={7} className="px-6 py-6 text-sm text-gray-500">Nenhum usuário encontrado.</td>
                   </tr>
                 )}
               </tbody>
@@ -679,12 +686,12 @@ export function UsersScreen() {
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-100 p-4">
               <Users className="w-8 h-8 text-blue-600 mb-2" />
               <p className="text-2xl text-gray-800">{users.length}</p>
-              <p className="text-xs text-gray-600">Total de Usuarios</p>
+              <p className="text-xs text-gray-600">Total de Usuários</p>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100 p-4">
               <Check className="w-8 h-8 text-green-600 mb-2" />
               <p className="text-2xl text-gray-800">{users.filter((u) => u.status === 'active').length}</p>
-              <p className="text-xs text-gray-600">Usuarios Ativos</p>
+              <p className="text-xs text-gray-600">Usuários Ativos</p>
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-100 p-4">
               <Monitor className="w-8 h-8 text-purple-600 mb-2" />
@@ -712,7 +719,7 @@ export function UsersScreen() {
                   key={role}
                   onClick={() => setSelectedRole(role)}
                   className={`text-left p-4 rounded-xl border-2 transition-all ${
-                    isSelected ? 'border-[#0EA5E9] shadow-lg bg-white' : `${meta.color} hover:border-gray-300`
+                    isSelected ? 'border-marca-viva shadow-lg bg-white' : `${meta.color} hover:border-gray-300`
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-2">
@@ -733,11 +740,11 @@ export function UsersScreen() {
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-gray-800">Usuarios vinculados</h3>
+                <h3 className="text-gray-800">Usuários vinculados</h3>
                 <p className="text-xs text-gray-500">Este perfil possui {selectedUsers.length} usuarios vinculados</p>
               </div>
               {!canEditPermissions && (
-                <span className="text-xs text-amber-600">Visualizacao somente leitura</span>
+                <span className="text-xs text-amber-600">Visualização somente leitura</span>
               )}
             </div>
             <div className="mt-4 overflow-x-auto">
@@ -748,7 +755,7 @@ export function UsersScreen() {
                     <th className="text-left py-2">Login</th>
                     <th className="text-left py-2">Unidade/Setor</th>
                     <th className="text-left py-2">Status</th>
-                    <th className="text-left py-2">Ultimo acesso</th>
+                    <th className="text-left py-2">Último acesso</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -773,7 +780,7 @@ export function UsersScreen() {
                   {!selectedUsers.length && (
                     <tr>
                       <td className="py-6 text-sm text-gray-500" colSpan={5}>
-                        Nenhum usuario vinculado a este perfil.
+                        Nenhum usuário vinculado a este perfil.
                       </td>
                     </tr>
                   )}
@@ -786,13 +793,13 @@ export function UsersScreen() {
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-800">
                 <Shield className="w-5 h-5 text-gray-600" />
-                Matriz de Permissoes - {selectedProfile?.title}
+                Matriz de Permissões — {selectedProfile?.title}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSavePermissions}
                   disabled={!canEditPermissions}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] disabled:opacity-40"
+                  className="flex items-center gap-2 px-3 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover disabled:opacity-40"
                 >
                   <Save className="w-4 h-4" />
                   Salvar
@@ -861,19 +868,19 @@ export function UsersScreen() {
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-3 rounded-full bg-sky-300"></span>
-                Permissao ativa
+                Permissão ativa
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-6 h-3 rounded-full bg-gray-300"></span>
-                Permissao inativa
+                Permissão inativa
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-6 h-3 rounded-full bg-sky-300"></span>
-                Disponivel na versao Web
+                Disponível na versão web
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-6 h-3 rounded-full bg-sky-300"></span>
-                Disponivel no App Mobile
+                Disponível no app mobile
               </div>
             </div>
           </div>
@@ -885,23 +892,27 @@ export function UsersScreen() {
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
-                <h3 className="text-gray-800">Ultimas Atividades</h3>
+                <h3 className="text-gray-800">Últimas atividades</h3>
                 <div className="flex items-center gap-2">
-                  <select className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]">
-                    <option>Ultimas 24 horas</option>
-                    <option>Ultimos 7 dias</option>
-                    <option>Ultimos 30 dias</option>
+                  <Filter className="w-4 h-4 text-gray-500" aria-hidden="true" />
+                  <select aria-label="Período" value={periodoLogs} onChange={(e) => setPeriodoLogs(e.target.value as typeof periodoLogs)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-marca-viva">
+                    <option value="24h">Últimas 24 horas</option>
+                    <option value="7d">Últimos 7 dias</option>
+                    <option value="30d">Últimos 30 dias</option>
+                    <option value="todos">Tudo</option>
                   </select>
-                  <button className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
-                    <Filter className="w-4 h-4" />
-                    Filtrar
-                  </button>
+                  <select aria-label="Resultado" value={statusLogs} onChange={(e) => setStatusLogs(e.target.value as typeof statusLogs)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-marca-viva">
+                    <option value="todos">Todos os resultados</option>
+                    <option value="SUCESSO">Sucesso</option>
+                    <option value="FALHA">Falha</option>
+                    <option value="BLOQUEADO">Bloqueado</option>
+                  </select>
                 </div>
               </div>
             </div>
 
             <div className="divide-y divide-gray-200">
-              {accessLogs.map((log) => (
+              {logsVisiveis.map((log) => (
                 <div key={log.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
@@ -943,8 +954,8 @@ export function UsersScreen() {
                   </div>
                 </div>
               ))}
-              {!accessLogs.length && (
-                <div className="px-6 py-6 text-sm text-gray-500">Nenhum registro encontrado.</div>
+              {!logsVisiveis.length && (
+                <div className="px-6 py-6 text-sm text-gray-500">Nenhum registro com esse filtro.</div>
               )}
             </div>
           </div>
@@ -957,7 +968,7 @@ export function UsersScreen() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-red-800 mb-2">Alertas de Seguranca</h3>
+                <h3 className="text-red-800 mb-2">Alertas de Segurança</h3>
                 <ul className="space-y-2 text-sm text-red-700">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-red-600 rounded-full"></span>
@@ -976,7 +987,7 @@ export function UsersScreen() {
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <h3 className="text-gray-800 mb-4 flex items-center gap-2">
                 <Lock className="w-5 h-5 text-gray-600" />
-                Politicas de Senha
+                Políticas de Senha
               </h3>
               <div className="space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -985,7 +996,7 @@ export function UsersScreen() {
                     checked={policyForUi.requireStrongPassword}
                     disabled={!isSystemEditor}
                     onChange={(e) => setPolicy({ ...policyForUi, requireStrongPassword: e.target.checked })}
-                    className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]"
+                    className="w-4 h-4 rounded border-gray-300 text-marca-texto focus:ring-marca-viva"
                   />
                   <span className="text-sm text-gray-700">Exigir senha forte (min. caracteres)</span>
                 </label>
@@ -1006,7 +1017,7 @@ export function UsersScreen() {
                   />
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-700">
-                  <span>Expiracao de senha (dias)</span>
+                  <span>Expiração de senha (dias)</span>
                   <input
                     type="number"
                     min={0}
@@ -1059,7 +1070,7 @@ export function UsersScreen() {
                   />
                 </div>
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={policyForUi.twoFactorEnabled} disabled className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]" />
+                  <input type="checkbox" checked={policyForUi.twoFactorEnabled} disabled className="w-4 h-4 rounded border-gray-300 text-marca-texto focus:ring-marca-viva" />
                   <span className="text-sm text-gray-700">2FA (preparado)</span>
                 </label>
               </div>
@@ -1070,10 +1081,10 @@ export function UsersScreen() {
             <button
               onClick={handleSavePolicy}
               disabled={!isSystemEditor}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] disabled:opacity-40"
+              className="flex items-center gap-2 px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover disabled:opacity-40"
             >
               <Save className="w-4 h-4" />
-              Salvar Politicas
+              Salvar Políticas
             </button>
           </div>
         </div>
@@ -1082,8 +1093,8 @@ export function UsersScreen() {
       {showUserModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0">
-              <h3 className="text-white text-lg">{isEditing ? 'Editar Usuario' : 'Novo Usuario'}</h3>
+            <div className="bg-gradient-to-r from-marca to-marca-hover px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0">
+              <h3 className="text-white text-lg">{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</h3>
               <button
                 onClick={() => setShowUserModal(false)}
                 className="text-white hover:bg-white/20 rounded-lg p-1 text-2xl leading-none"
@@ -1100,7 +1111,7 @@ export function UsersScreen() {
                     type="text"
                     value={formState.name}
                     onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
@@ -1109,7 +1120,7 @@ export function UsersScreen() {
                     type="email"
                     value={formState.email}
                     onChange={(e) => setFormState({ ...formState, email: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
@@ -1118,7 +1129,7 @@ export function UsersScreen() {
                     type="text"
                     value={formState.cpf}
                     onChange={(e) => setFormState({ ...formState, cpf: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
@@ -1127,16 +1138,16 @@ export function UsersScreen() {
                     type="date"
                     value={formState.birthDate}
                     onChange={(e) => setFormState({ ...formState, birthDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Data de Admissao</label>
+                  <label className="block text-sm text-gray-700 mb-2">Data de Admissão</label>
                   <input
                     type="date"
                     value={formState.admissionDate}
                     onChange={(e) => setFormState({ ...formState, admissionDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
@@ -1145,7 +1156,7 @@ export function UsersScreen() {
                     type="text"
                     value={formState.documentId}
                     onChange={(e) => setFormState({ ...formState, documentId: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
@@ -1154,7 +1165,7 @@ export function UsersScreen() {
                     type="text"
                     value={formState.role === 'SYSTEM' ? systemLogin : formState.login}
                     onChange={(e) => setFormState({ ...formState, login: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                     disabled={formState.role === 'SYSTEM'}
                   />
                 </div>
@@ -1166,7 +1177,7 @@ export function UsersScreen() {
                         type="password"
                         value={formState.password}
                         onChange={(e) => setFormState({ ...formState, password: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                       />
                     </div>
                     <div>
@@ -1175,7 +1186,7 @@ export function UsersScreen() {
                         type="password"
                         value={formState.confirmPassword}
                         onChange={(e) => setFormState({ ...formState, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                       />
                     </div>
                   </>
@@ -1187,12 +1198,12 @@ export function UsersScreen() {
                         type="checkbox"
                         checked={formState.adminResetPassword}
                         onChange={(e) => setFormState({ ...formState, adminResetPassword: e.target.checked })}
-                        className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]"
+                        className="w-4 h-4 rounded border-gray-300 text-marca-texto focus:ring-marca-viva"
                       />
                       <span className="text-sm text-amber-800">Resetar senha com geracao aleatoria (expira em {policyForUi?.adminResetPasswordTtlHours || 24}h)</span>
                     </label>
                     <p className="text-xs text-amber-700 mt-2">
-                      A senha temporaria sera trocada no primeiro acesso do usuario.
+                      A senha temporária será trocada no primeiro acesso do usuário.
                     </p>
                   </div>
                 )}
@@ -1201,7 +1212,7 @@ export function UsersScreen() {
                   <select
                     value={formState.role}
                     onChange={(e) => setFormState({ ...formState, role: e.target.value as Role })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                     disabled={isEditing && formState.role === 'SYSTEM'}
                   >
                     {roleOptions.map((role) => (
@@ -1217,7 +1228,7 @@ export function UsersScreen() {
                     type="text"
                     value={formState.unit}
                     onChange={(e) => setFormState({ ...formState, unit: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
@@ -1226,7 +1237,7 @@ export function UsersScreen() {
                     type="text"
                     value={formState.sector}
                     onChange={(e) => setFormState({ ...formState, sector: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                   />
                 </div>
                 <div>
@@ -1234,7 +1245,7 @@ export function UsersScreen() {
                   <select
                     value={formState.status}
                     onChange={(e) => setFormState({ ...formState, status: e.target.value as UserRecord['status'] })}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
                     disabled={formState.role === 'SYSTEM'}
                   >
                     <option value="active">Ativo</option>
@@ -1250,7 +1261,7 @@ export function UsersScreen() {
                         type="checkbox"
                         checked={formState.platforms.web}
                         onChange={(e) => setFormState({ ...formState, platforms: { ...formState.platforms, web: e.target.checked } })}
-                        className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]"
+                        className="w-4 h-4 rounded border-gray-300 text-marca-texto focus:ring-marca-viva"
                       />
                       <Monitor className="w-4 h-4 text-gray-600" />
                       <span className="text-sm text-gray-700">Web</span>
@@ -1260,7 +1271,7 @@ export function UsersScreen() {
                         type="checkbox"
                         checked={formState.platforms.app}
                         onChange={(e) => setFormState({ ...formState, platforms: { ...formState.platforms, app: e.target.checked } })}
-                        className="w-4 h-4 rounded border-gray-300 text-[#0EA5E9] focus:ring-[#0EA5E9]"
+                        className="w-4 h-4 rounded border-gray-300 text-marca-texto focus:ring-marca-viva"
                       />
                       <Smartphone className="w-4 h-4 text-gray-600" />
                       <span className="text-sm text-gray-700">App Mobile</span>
@@ -1272,12 +1283,12 @@ export function UsersScreen() {
                     <p className="text-sm text-gray-800 mb-2">Guia de senha forte</p>
                     <ul className="space-y-1 text-xs text-gray-700">
                       <li className={passwordGuide.checks.hasMinLength ? 'text-green-700' : ''}>- Minimo de {policyForUi?.minPasswordLength || 8} caracteres</li>
-                      <li className={passwordGuide.checks.hasLower ? 'text-green-700' : ''}>- Ao menos 1 letra minuscula</li>
-                      <li className={passwordGuide.checks.hasUpper ? 'text-green-700' : ''}>- Ao menos 1 letra maiuscula</li>
-                      <li className={passwordGuide.checks.hasNumber ? 'text-green-700' : ''}>- Ao menos 1 digito</li>
+                      <li className={passwordGuide.checks.hasLower ? 'text-green-700' : ''}>- Ao menos 1 letra minúscula</li>
+                      <li className={passwordGuide.checks.hasUpper ? 'text-green-700' : ''}>- Ao menos 1 letra maiúscula</li>
+                      <li className={passwordGuide.checks.hasNumber ? 'text-green-700' : ''}>- Ao menos 1 dígito</li>
                       <li className={passwordGuide.checks.hasSpecial ? 'text-green-700' : ''}>- Ao menos 1 caractere especial</li>
-                      <li className={!passwordGuide.checks.inBlocklist ? 'text-green-700' : 'text-red-700'}>- Nao pode estar na blocklist de senhas vazadas</li>
-                      <li className={!passwordGuide.checks.reusesPersonalData ? 'text-green-700' : 'text-red-700'}>- Nao pode usar dados pessoais do usuario</li>
+                      <li className={!passwordGuide.checks.inBlocklist ? 'text-green-700' : 'text-red-700'}>- Não pode estar na lista de senhas vazadas</li>
+                      <li className={!passwordGuide.checks.reusesPersonalData ? 'text-green-700' : 'text-red-700'}>- Não pode usar dados pessoais do usuário</li>
                     </ul>
                   </div>
                 )}
@@ -1286,7 +1297,7 @@ export function UsersScreen() {
               {!isEditing && formState.role === 'SYSTEM' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    Usuario Sistema: login {systemLogin}. Senha padrao: {getSystemDefaultPassword()}
+                    Usuário Sistema: login {systemLogin}. Senha padrão: {getSystemDefaultPassword()}
                   </p>
                 </div>
               )}
@@ -1301,9 +1312,9 @@ export function UsersScreen() {
               </button>
               <button
                 onClick={handleSaveUser}
-                className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-sm hover:bg-[#0284C7] transition-colors"
+                className="px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover transition-colors"
               >
-                {isEditing ? 'Salvar Usuario' : 'Criar Usuario'}
+                {isEditing ? 'Salvar Usuário' : 'Criar Usuário'}
               </button>
             </div>
           </div>

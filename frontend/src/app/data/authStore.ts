@@ -113,7 +113,7 @@ const ROLE_LABELS: Record<Role, string> = {
   SYSTEM: 'Sistema',
   ADMIN: 'Administrador',
   MANAGER: 'Gestor',
-  DOCTOR: 'Medico',
+  DOCTOR: 'Médico',
   NURSE: 'Enfermeiro',
   ADMINISTRATIVE: 'Administrativo',
   PATIENT: 'Paciente',

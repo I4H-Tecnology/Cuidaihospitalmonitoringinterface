@@ -249,11 +249,11 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
             <h3 className="font-semibold mb-4">{widget.config.title}</h3>
             <ResponsiveContainer width="100%" height="100%">
               <RechartsLine data={mockLineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#0EA5E9" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--grafico-grade)" />
+                <XAxis stroke="var(--grafico-eixo)" dataKey="time" tick={{ fontSize: 12 }} />
+                <YAxis stroke="var(--grafico-eixo)" tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--grafico-dica)', border: '1px solid var(--grafico-grade)' }} />
+                <Line type="monotone" dataKey="value" stroke="var(--marca-viva)" strokeWidth={2} />
               </RechartsLine>
             </ResponsiveContainer>
           </div>
@@ -265,11 +265,11 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
             <h3 className="font-semibold mb-4">{widget.config.title}</h3>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={mockBarData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="sector" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#0EA5E9" radius={[8, 8, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--grafico-grade)" />
+                <XAxis stroke="var(--grafico-eixo)" dataKey="sector" tick={{ fontSize: 12 }} />
+                <YAxis stroke="var(--grafico-eixo)" tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--grafico-dica)', border: '1px solid var(--grafico-grade)' }} />
+                <Bar dataKey="value" fill="var(--marca-viva)" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -295,7 +295,7 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--grafico-dica)', border: '1px solid var(--grafico-grade)' }} />
               </RechartsPie>
             </ResponsiveContainer>
           </div>
@@ -307,11 +307,11 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
             <h3 className="font-semibold mb-4">{widget.config.title}</h3>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={mockAreaData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#0EA5E9" fill="#7DD3FC" fillOpacity={0.3} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--grafico-grade)" />
+                <XAxis stroke="var(--grafico-eixo)" dataKey="day" tick={{ fontSize: 12 }} />
+                <YAxis stroke="var(--grafico-eixo)" tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--grafico-dica)', border: '1px solid var(--grafico-grade)' }} />
+                <Area type="monotone" dataKey="value" stroke="var(--marca-viva)" fill="var(--marca-clara)" fillOpacity={0.3} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -396,7 +396,7 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
       onClick={onSelect}
       className={`bg-white rounded-xl shadow-sm border-2 transition-all cursor-move ${
         isDragging ? 'opacity-50 scale-95' : 'opacity-100'
-      } ${isSelected ? 'border-[#0EA5E9] ring-2 ring-[#0EA5E9]/20' : 'border-gray-200 hover:border-gray-300'}`}
+      } ${isSelected ? 'border-marca-viva ring-2 ring-marca-viva/20' : 'border-gray-200 hover:border-gray-300'}`}
       style={{ height: widget.height || '300px' }}
     >
       {/* Widget Header */}
@@ -449,7 +449,7 @@ function DropZone({ onDrop, position, children }: DropZoneProps) {
     <div
       ref={drop}
       className={`min-h-[300px] transition-all ${
-        isOver ? 'bg-blue-50 border-2 border-dashed border-[#0EA5E9] rounded-xl' : ''
+        isOver ? 'bg-blue-50 border-2 border-dashed border-marca-viva rounded-xl' : ''
       }`}
     >
       {children}
@@ -476,13 +476,13 @@ function LibraryWidget({ widget }: LibraryWidgetProps) {
   return (
     <div
       ref={drag}
-      className={`p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-[#0EA5E9] hover:shadow-md transition-all cursor-move ${
+      className={`p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-marca-viva hover:shadow-md transition-all cursor-move ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
       <div className="flex items-center gap-3">
         <div className="p-2 bg-blue-50 rounded-lg">
-          <Icon className="w-5 h-5 text-[#0EA5E9]" />
+          <Icon className="w-5 h-5 text-marca-texto" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{widget.name}</p>
@@ -583,7 +583,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
       <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-[1800px] max-h-[95vh] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white p-6 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-marca to-marca-hover text-white p-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={onClose}
@@ -624,16 +624,12 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                 <Sparkles className="w-4 h-4" />
                 <span>Sugerir por perfil</span>
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-                <Eye className="w-4 h-4" />
-                <span>Visualizar</span>
-              </button>
               <button
                 onClick={handleSave}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                   isSaved 
                     ? 'bg-green-600 hover:bg-green-700' 
-                    : 'bg-white text-[#0EA5E9] hover:bg-blue-50'
+                    : 'bg-white text-marca-texto hover:bg-blue-50'
                 }`}
               >
                 {isSaved ? (
@@ -647,10 +643,6 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                     <span>Salvar</span>
                   </>
                 )}
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
-                <Upload className="w-4 h-4" />
-                <span>Publicar</span>
               </button>
             </div>
           </div>
@@ -684,7 +676,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
             <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
               <div className="p-4 border-b border-gray-200 bg-white">
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Grid3x3 className="w-5 h-5 text-[#0EA5E9]" />
+                  <Grid3x3 className="w-5 h-5 text-marca-texto" />
                   Biblioteca de Widgets
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -694,7 +686,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                       onClick={() => setSelectedCategory(cat)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         selectedCategory === cat
-                          ? 'bg-[#0EA5E9] text-white shadow-sm'
+                          ? 'bg-marca text-white shadow-sm'
                           : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                       }`}
                     >
@@ -725,7 +717,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
             </div>
 
             {/* Center - Canvas */}
-            <div className="flex-1 overflow-y-auto bg-[#F8FBFC] p-8">
+            <div className="flex-1 overflow-y-auto bg-fundo-app p-8">
               {widgets.length === 0 ? (
                 <DropZone onDrop={handleDrop} position={0}>
                   <div className="min-h-[600px] border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center">
@@ -739,7 +731,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                       </p>
                       <button
                         onClick={handleAISuggest}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white rounded-xl hover:shadow-lg transition-all"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-marca to-marca-hover text-white rounded-xl hover:shadow-lg transition-all"
                       >
                         <Sparkles className="w-5 h-5" />
                         <span>Sugerir por perfil</span>
@@ -760,7 +752,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                     </DropZone>
                   ))}
                   <DropZone onDrop={handleDrop} position={widgets.length}>
-                    <div className="min-h-[300px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-[#0EA5E9] transition-colors">
+                    <div className="min-h-[300px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-marca-viva transition-colors">
                       <div className="text-center">
                         <Plus className="w-12 h-12 text-gray-300 mx-auto mb-2" />
                         <p className="text-sm text-gray-500">Adicionar widget</p>
@@ -778,7 +770,7 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold flex items-center gap-2">
-                        <Settings className="w-5 h-5 text-[#0EA5E9]" />
+                        <Settings className="w-5 h-5 text-marca-texto" />
                         Configurações
                       </h3>
                       <button
@@ -913,13 +905,32 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
 
                     {/* Actions */}
                     <div className="pt-4 border-t border-gray-200 space-y-2">
-                      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const copia = { ...selectedWidget, id: `${selectedWidget.id}-copia-${Date.now()}`, title: `${selectedWidget.title} (cópia)` };
+                          setWidgets([...widgets, copia]);
+                          setSelectedWidget(copia);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
+                      >
                         <Copy className="w-4 h-4" />
-                        Duplicar Widget
+                        Duplicar widget
                       </button>
-                      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = URL.createObjectURL(new Blob([JSON.stringify(selectedWidget, null, 2)], { type: 'application/json' }));
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `widget-${selectedWidget.id}.json`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
+                      >
                         <Download className="w-4 h-4" />
-                        Exportar Configuração
+                        Exportar configuração
                       </button>
                       <button 
                         onClick={() => handleRemoveWidget(selectedWidget.id)}
