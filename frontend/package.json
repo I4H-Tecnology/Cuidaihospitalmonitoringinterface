@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:completo": "docker compose -f ../docker-compose.yml up -d --wait db backend && vite",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

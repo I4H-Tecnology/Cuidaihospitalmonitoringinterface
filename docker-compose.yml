@@ -1,9 +1,10 @@
 # =============================================================================
 #  MedSignal — ambiente local completo
 #
-#    docker compose run --rm dev       # dia a dia: db + api + frontend-dev,
-#                                       # com aviso de pronto no terminal
+#    docker compose run --rm dev       # dia a dia: db + api, com aviso de
+#                                       # pronto no terminal
 #    docker compose up -d              # a mesma coisa, sem o aviso
+#    cd frontend && npm run dev        # frontend dev, direto no Windows
 #    docker compose up -d adminer      # cliente web do banco, à parte (opcional)
 #    docker compose --profile prod up        # testa a imagem de produção (nginx)
 #
@@ -62,11 +63,17 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # Frontend em desenvolvimento — Vite com hot reload.
-  # O código é montado por bind mount; node_modules fica no volume do container
-  # para não brigar com o node_modules do Windows.
+  # Frontend em desenvolvimento DENTRO do Docker — opcional, fora da subida
+  # padrão. No dia a dia o Vite roda direto no Windows (`npm run dev` em
+  # frontend/, ver README): lendo o código por esta pasta montada, cada arquivo
+  # levava de 10 a 21 s para abrir na primeira vez, contra 0,1 s nativo, e as
+  # telas abertas pela primeira vez demoravam isso. Continua aqui para quem
+  # está em Linux ou com o projeto dentro do WSL2, onde a montagem é rápida:
+  #   docker compose --profile frontend-docker up -d frontend-dev
+  # node_modules fica no volume do container para não brigar com o do Windows.
   # ---------------------------------------------------------------------------
   frontend-dev:
+    profiles: ['frontend-docker']
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
@@ -193,9 +200,10 @@ services:
       sh -c "
       echo '' &&
       echo 'MedSignal no ar:' &&
-      echo '  Frontend   http://localhost:5173' &&
       echo '  API        http://localhost:8000/docs' &&
       echo '  Banco      localhost:5432' &&
+      echo '' &&
+      echo 'Frontend: em outro terminal, cd frontend && npm run dev  (http://localhost:5173)' &&
       echo '' &&
       echo 'Adminer (cliente do banco, opcional): docker compose up -d adminer' &&
       echo 'Ctrl+C sai deste aviso sem derrubar nada. Para desligar: docker compose down' &&
@@ -206,8 +214,6 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
-      frontend-dev:
-        condition: service_started
 
 volumes:
   pgdata:
