@@ -222,6 +222,14 @@ class CameraResumo(BaseModel):
     pacienteNome: str | None = None
     ocorrencias24h: int = 0
     ultimaOcorrencia: str | None = None
+    # Processo do serviço de visão que analisa esta câmera. Nulo = o painel usa
+    # o serviço padrão, se for esta a câmera que ele está observando.
+    visaoUrl: str | None = None
+
+
+# Ao contrário de urlStream, aqui o esquema é fixo: o endereço vai parar num
+# <img src> e num fetch do navegador, e só HTTP serve para isso.
+URL_DA_VISAO = r"^https?://\S+$"
 
 
 class CameraPayload(BaseModel):
@@ -231,6 +239,7 @@ class CameraPayload(BaseModel):
     # RTSP, HTTP ou o que a câmera expuser. Validação leve de propósito: exigir
     # esquema fixo aqui barraria fonte legítima que o MVP ainda nem conhece.
     urlStream: str = Field(min_length=4, max_length=500)
+    visaoUrl: str | None = Field(default=None, max_length=300, pattern=URL_DA_VISAO)
 
 
 class CameraEdicaoPayload(BaseModel):
@@ -240,6 +249,8 @@ class CameraEdicaoPayload(BaseModel):
     identificador: str | None = Field(default=None, min_length=2, max_length=60)
     urlStream: str | None = Field(default=None, min_length=4, max_length=500)
     ambienteId: str | None = None
+    # Texto vazio limpa o campo (volta ao serviço padrão); ausente, mantém.
+    visaoUrl: str | None = Field(default=None, max_length=300, pattern=r"^$|" + URL_DA_VISAO)
 
 
 # -----------------------------------------------------------------------------
@@ -455,3 +466,170 @@ class PacienteEdicaoPayload(BaseModel):
     # String vazia limpa o campo; ausente mantém.
     historicoMedico: str | None = Field(default=None, max_length=4000)
     medicoResponsavel: str | None = Field(default=None, max_length=120)
+
+
+# -----------------------------------------------------------------------------
+# App Paciente: visão da equipe e portal da família (25/10/2026)
+# -----------------------------------------------------------------------------
+
+class AcompanhanteDaClinica(AcompanhanteResumo):
+    """Acompanhante na lista geral da clínica (tela App Paciente)."""
+
+    pacienteNome: str
+    ambienteNome: str | None = None
+    termoAceitoEm: str | None = None
+    ultimoAcessoEm: str | None = None
+
+
+class FamiliaEntrada(BaseModel):
+    # "<id do acompanhante>.<token>", exatamente o que o QR Code carrega.
+    codigo: str = Field(min_length=20, max_length=200)
+
+
+class FamiliaSessao(BaseModel):
+    token: str
+    expiraEm: str
+
+
+class FamiliaTermo(BaseModel):
+    versao: str
+    texto: str
+
+
+class FamiliaPainel(BaseModel):
+    """O que a família vê. Nada clínico: nome, lugar, câmera e prazo."""
+
+    acompanhanteNome: str
+    pacienteNome: str
+    ambienteNome: str | None = None
+    clinicaNome: str
+    expiraEm: str
+    termo: FamiliaTermo
+    termoAceito: bool
+    cameraConectada: bool
+    videoDisponivel: bool
+
+
+class FamiliaTermoAceite(BaseModel):
+    versao: str
+
+
+class FamiliaIngresso(BaseModel):
+    """Ingresso de vídeo: vale 30 s para abrir o stream (vai na URL da <img>)."""
+
+    ingresso: str
+
+
+# -----------------------------------------------------------------------------
+# Contratos (25/10/2026)
+# -----------------------------------------------------------------------------
+
+CategoriaContrato = Literal["servico", "manutencao", "locacao", "fornecimento", "software", "outro"]
+SituacaoContrato = Literal["agendado", "vigente", "vencendo", "vencido", "encerrado"]
+
+
+class ContratoResumo(BaseModel):
+    id: str
+    numero: str | None = None
+    objeto: str
+    fornecedor: str
+    fornecedorDocumento: str | None = None
+    categoria: CategoriaContrato
+    valorMensal: float | None = None
+    inicio: str
+    fim: str | None = None
+    renovacaoAutomatica: bool
+    avisoPrevioDias: int
+    responsavel: str | None = None
+    observacoes: str | None = None
+    situacao: SituacaoContrato
+    # Data até a qual decidir renovar ou não (fim - aviso prévio).
+    decidirAte: str | None = None
+    encerradoEm: str | None = None
+    motivoEncerramento: str | None = None
+    criadoPorNome: str | None = None
+    criadoEm: str
+    pedidosVinculados: int = 0
+
+
+class ContratoPayload(BaseModel):
+    tenantId: str
+    numero: str | None = Field(default=None, max_length=40)
+    objeto: str = Field(min_length=3, max_length=200)
+    fornecedor: str = Field(min_length=2, max_length=120)
+    fornecedorDocumento: str | None = Field(default=None, pattern=r"^$|^(\d{11}|\d{14})$")
+    categoria: CategoriaContrato
+    valorMensal: float | None = Field(default=None, ge=0, le=99_999_999)
+    inicio: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    fim: str | None = Field(default=None, pattern=r"^$|^\d{4}-\d{2}-\d{2}$")
+    renovacaoAutomatica: bool = False
+    avisoPrevioDias: int = Field(default=30, ge=0, le=365)
+    responsavel: str | None = Field(default=None, max_length=120)
+    observacoes: str | None = Field(default=None, max_length=2000)
+
+
+class ContratoEncerramento(BaseModel):
+    tenantId: str
+    motivo: str = Field(min_length=5, max_length=500)
+
+
+# -----------------------------------------------------------------------------
+# Compras (25/10/2026)
+# -----------------------------------------------------------------------------
+
+StatusPedido = Literal["solicitado", "aprovado", "recusado", "comprado", "recebido", "cancelado"]
+
+
+class ItemPedido(BaseModel):
+    descricao: str = Field(min_length=2, max_length=200)
+    quantidade: float = Field(gt=0, le=1_000_000)
+    unidade: str = Field(default="un", min_length=1, max_length=20)
+    valorUnitario: float | None = Field(default=None, ge=0, le=9_999_999)
+
+
+class EtapaPedido(BaseModel):
+    etapa: Literal["solicitado", "decidido", "comprado", "recebido", "cancelado"]
+    quem: str | None = None
+    quando: str
+
+
+class PedidoResumo(BaseModel):
+    id: str
+    numero: int
+    titulo: str
+    justificativa: str | None = None
+    urgente: bool
+    status: StatusPedido
+    fornecedor: str | None = None
+    contratoId: str | None = None
+    contratoObjeto: str | None = None
+    itens: list[ItemPedido]
+    # Soma de quantidade x valor estimado dos itens com preço.
+    valorEstimado: float | None = None
+    valorFinal: float | None = None
+    solicitanteId: str
+    solicitanteNome: str
+    motivoRecusa: str | None = None
+    motivoCancelamento: str | None = None
+    trilha: list[EtapaPedido]
+    criadoEm: str
+
+
+class PedidoPayload(BaseModel):
+    tenantId: str
+    titulo: str = Field(min_length=3, max_length=160)
+    justificativa: str | None = Field(default=None, max_length=1000)
+    urgente: bool = False
+    itens: list[ItemPedido] = Field(min_length=1, max_length=50)
+
+
+class PedidoMotivo(BaseModel):
+    tenantId: str
+    motivo: str = Field(min_length=5, max_length=500)
+
+
+class PedidoCompra(BaseModel):
+    tenantId: str
+    fornecedor: str = Field(min_length=2, max_length=120)
+    valorFinal: float = Field(ge=0, le=99_999_999)
+    contratoId: str | None = None
