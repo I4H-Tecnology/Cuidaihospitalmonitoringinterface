@@ -86,14 +86,17 @@ export default defineConfig(({ mode }) => ({
       // fica vermelho por causa de uma meta que não se aplica a esta linha.
       thresholds: {
         autoUpdate: true,
-        // Piso rebaseado apos o merge de dev, que trouxe +258 linhas no
-        // authStore e, com elas, caminhos ainda nao cobertos. O denominador
-        // mudou, entao o piso antigo (51,87 em branches) deixou de ser
-        // comparavel. A catraca volta a subir a partir daqui.
-        lines: 4,
-        functions: 43.03,
-        branches: 65.33,
-        statements: 4,
+        // Piso rebaseado em 27/10/2026 na troca do Vitest 3 pelo 4 (CVE no
+        // tinypool e no @vitest/mocker do 3). O provider v8 do 4 remapeia a
+        // cobertura pela AST e passou a contar funcoes e branches de arquivo
+        // que nenhum teste carrega: functions caiu de 32,64 para 7,11 e
+        // branches de 68,47 para 6,9 com os mesmos 171 testes. O denominador
+        // mudou, entao o piso antigo deixou de ser comparavel. Valores medidos;
+        // a catraca volta a subir a partir daqui.
+        lines: 11.03,
+        functions: 7.11,
+        branches: 6.9,
+        statements: 10.62,
       },
     },
   },
