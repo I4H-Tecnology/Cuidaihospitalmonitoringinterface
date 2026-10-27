@@ -367,6 +367,9 @@ class Publicador:
         """O que o /estado e o /health mostram sobre a publicação."""
         return {
             "ativo": True,
+            # O id é o que o painel compara com o cadastro para saber de qual
+            # quarto é este vídeo; "camera" é só a descrição para gente ler.
+            "camera_id": self.cfg.camera_id,
             "camera": self.contexto.descrever() if self.contexto else None,
             "ambiente_id": self.contexto.ambiente_id if self.contexto else None,
             "paciente_id": self.contexto.paciente_id if self.contexto else None,

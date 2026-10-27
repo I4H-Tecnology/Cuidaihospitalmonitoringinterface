@@ -78,10 +78,10 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
     <div className="min-h-screen bg-[#F3F6FA] flex items-center justify-center px-4">
       <div className="w-full max-w-[560px] bg-transparent">
         <div className="text-center mb-10">
-          <div className="mx-auto w-[88px] h-[88px] rounded-2xl bg-[#DFF2FB] flex items-center justify-center shadow-sm mb-4">
-            <img src={logoImage} alt="CuidAI" className="h-12 w-auto" />
+          <div className="mx-auto w-[88px] h-[88px] rounded-2xl bg-marca-suave flex items-center justify-center shadow-sm mb-4">
+            <img src={logoImage} alt="" className="h-12 w-auto" />
           </div>
-          <h1 className="text-[44px] leading-none font-bold text-[#0F2A4D] mb-2">CuidAI</h1>
+          <h1 className="text-[44px] leading-none font-bold text-[#0F2A4D] mb-2">MedSignal</h1>
           <p className="text-[#4D688B]">Sistema Hospitalar Inteligente</p>
         </div>
 
@@ -94,14 +94,14 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
           <div className="space-y-4">
             <label className="block text-[#304A6E]">E-mail</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA6C4]" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#5F7697]" />
               <input
                 type="email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 disabled={step === 'reset' || isLoading}
                 placeholder="seu@email.com"
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-[#7DD3FC]"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-marca-clara"
               />
             </div>
 
@@ -113,7 +113,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="Código de recuperação"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-[#7DD3FC]"
+                  className="w-full px-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-marca-clara"
                 />
                 <input
                   type="password"
@@ -121,7 +121,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Nova senha"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-[#7DD3FC]"
+                  className="w-full px-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-marca-clara"
                 />
                 <input
                   type="password"
@@ -129,7 +129,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   placeholder="Confirmar nova senha"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-[#7DD3FC]"
+                  className="w-full px-4 py-3 rounded-xl border border-[#C8D7E8] bg-white text-[#1B3556] focus:outline-none focus:ring-2 focus:ring-marca-clara"
                 />
                 {devCode && (
                   <p className="text-xs text-amber-700">Ambiente dev: código gerado {devCode}</p>
@@ -141,7 +141,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
               type="button"
               disabled={isLoading}
               onClick={step === 'request' ? handleRequest : handleReset}
-              className="w-full mt-2 py-3 rounded-xl bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-semibold transition-colors shadow-md disabled:opacity-70"
+              className="w-full mt-2 py-3 rounded-xl bg-marca hover:bg-marca-hover text-white font-semibold transition-colors shadow-md disabled:opacity-70"
             >
               {isLoading ? (
                 <span className="inline-flex items-center gap-2">
@@ -159,7 +159,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
           <button
             type="button"
             onClick={onBack}
-            className="mt-6 w-full inline-flex items-center justify-center gap-2 text-[#0EA5E9] hover:text-[#0284C7] font-medium"
+            className="mt-6 w-full inline-flex items-center justify-center gap-2 text-marca-texto hover:text-marca-texto font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar para o login

@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ApiError, criarAcompanhante } from '../../data/api';
 import type { AcompanhanteCriado, PacienteResumo } from '../../data/api';
+import { urlDoPortalDaFamilia } from '../../data/familia';
 
 /**
  * Cadastro de acompanhante (RF25, RF26, RN05).
@@ -95,8 +96,8 @@ export function ModalAcompanhante({ paciente, aoFechar, aoCriar }: Props) {
       <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl overflow-hidden">
         <header className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#E8F4F8]">
-              <QrCode className="h-5 w-5 text-[#0A7EA4]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+              <QrCode className="h-5 w-5 text-marca-texto" />
             </div>
             <div>
               <h2 id="titulo-acompanhante" className="text-gray-800">
@@ -130,9 +131,9 @@ export function ModalAcompanhante({ paciente, aoFechar, aoCriar }: Props) {
             </div>
 
             <div className="flex flex-col items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
-              <QRCodeSVG value={criado.tokenQrcode} size={192} level="M" includeMargin />
+              <QRCodeSVG value={urlDoPortalDaFamilia(criado.tokenQrcode)} size={192} level="M" includeMargin />
               <p className="text-xs text-gray-500 text-center">
-                Válido até {new Date(criado.expiraEm).toLocaleString('pt-BR')} · dá acesso apenas à câmera do quarto deste paciente
+                Aponte a câmera do celular: abre o portal da família já com o acesso. Válido até {new Date(criado.expiraEm).toLocaleString('pt-BR')}, só para a câmera do quarto deste paciente.
               </p>
             </div>
 
@@ -170,7 +171,7 @@ export function ModalAcompanhante({ paciente, aoFechar, aoCriar }: Props) {
               <button
                 type="button"
                 onClick={aoFechar}
-                className="rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm text-white hover:bg-[#0EA5E9]"
+                className="rounded-lg bg-marca px-4 py-2 text-sm text-white hover:bg-marca-hover"
               >
                 Já salvei o código, fechar
               </button>
@@ -190,7 +191,7 @@ export function ModalAcompanhante({ paciente, aoFechar, aoCriar }: Props) {
                 onChange={(e) => setNome(e.target.value)}
                 maxLength={120}
                 placeholder="Nome do familiar ou responsável"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
               />
             </div>
 
@@ -205,7 +206,7 @@ export function ModalAcompanhante({ paciente, aoFechar, aoCriar }: Props) {
                 onChange={(e) => setDocumento(e.target.value)}
                 maxLength={20}
                 placeholder="Somente números"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
               />
             </div>
 
@@ -217,7 +218,7 @@ export function ModalAcompanhante({ paciente, aoFechar, aoCriar }: Props) {
                 id="validade-acompanhante"
                 value={validadeHoras}
                 onChange={(e) => setValidadeHoras(Number(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
               >
                 {VALIDADES.map((v) => (
                   <option key={v.horas} value={v.horas}>{v.rotulo}</option>
@@ -247,7 +248,7 @@ export function ModalAcompanhante({ paciente, aoFechar, aoCriar }: Props) {
               <button
                 type="submit"
                 disabled={salvando}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm text-white hover:bg-[#0EA5E9] disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-marca px-4 py-2 text-sm text-white hover:bg-marca-hover disabled:opacity-60"
               >
                 {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
                 Gerar QR Code

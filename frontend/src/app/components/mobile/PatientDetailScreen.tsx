@@ -48,8 +48,8 @@ export function PatientDetailScreen({ paciente, tenantId, onBack }: Props) {
   }, [tenantId, paciente.id]);
 
   return (
-    <div className="min-h-screen bg-[#F8FBFC] pb-20">
-      <header className="bg-gradient-to-r from-[#7DD3FC] to-[#0EA5E9] px-4 py-4 sticky top-0 z-50">
+    <div className="min-h-screen bg-fundo-app pb-20">
+      <header className="bg-gradient-to-r from-marca to-marca-hover px-4 py-4 sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <button type="button" onClick={onBack} className="w-10 h-10 flex items-center justify-center" aria-label="Voltar">
             <ArrowLeft className="w-6 h-6 text-white" />
@@ -62,7 +62,7 @@ export function PatientDetailScreen({ paciente, tenantId, onBack }: Props) {
         <div className="bg-white rounded-lg p-5 mb-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-marca to-marca-hover rounded-full flex items-center justify-center">
                 <span className="text-white text-xl">{iniciais(paciente.nome)}</span>
               </div>
               <div>
@@ -71,7 +71,7 @@ export function PatientDetailScreen({ paciente, tenantId, onBack }: Props) {
                   {paciente.idade != null ? `${paciente.idade} anos` : 'Idade não informada'} · internado em {dataBR(paciente.dataAdmissao)}
                 </p>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="w-4 h-4 text-[#0A7EA4]" />
+                  <MapPin className="w-4 h-4 text-marca-texto" />
                   <span>{paciente.ambienteNome ?? 'Sem ambiente vinculado'}</span>
                 </div>
               </div>
@@ -81,9 +81,9 @@ export function PatientDetailScreen({ paciente, tenantId, onBack }: Props) {
         </div>
 
         <div className="mb-4 grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-l-[#0EA5E9]">
+          <div className="bg-white rounded-lg p-4 shadow-sm border-l-4 border-l-marca-viva">
             <div className="flex items-center gap-2 mb-2">
-              <Bell className="w-5 h-5 text-[#0A7EA4]" />
+              <Bell className="w-5 h-5 text-marca-texto" />
               <span className="text-xs text-gray-500">Ocorrências abertas</span>
             </div>
             <p className="text-2xl text-gray-800">{paciente.ocorrenciasAbertas}</p>

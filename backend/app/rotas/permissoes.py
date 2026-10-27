@@ -70,12 +70,24 @@ def salvar_permissoes(tenant_id: str, role: str, payload: PermissionsPayload,
     }
     import json
 
+    # Escreve só na linha DA CLÍNICA. O perfil global (clinica_id NULL) é o
+    # modelo compartilhado por todas as clínicas: atualizá-lo aqui mudaria as
+    # permissões de quem nunca customizou nada (review do PR #2). Se a clínica
+    # ainda não tem linha própria, ela nasce como cópia do perfil que valia até
+    # agora. A leitura (obter_permissoes e exigir_permissao) já prefere a linha
+    # da clínica à global, então a cópia passa a valer sozinha.
     atualizados = db.executar(
         """
-        UPDATE perfil SET permissoes = %s::jsonb
-        WHERE upper(nome) = upper(%s) AND (clinica_id = %s OR clinica_id IS NULL)
+        INSERT INTO perfil (clinica_id, nome, descricao, permissoes)
+        SELECT %s, p.nome, p.descricao, %s::jsonb
+          FROM perfil p
+         WHERE upper(p.nome) = upper(%s) AND (p.clinica_id = %s OR p.clinica_id IS NULL)
+         ORDER BY p.clinica_id NULLS LAST
+         LIMIT 1
+        ON CONFLICT (COALESCE(clinica_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(nome))
+        DO UPDATE SET permissoes = EXCLUDED.permissoes
         """,
-        (json.dumps(mapa), role, clinica["id"]),
+        (clinica["id"], json.dumps(mapa), role, clinica["id"]),
     )
     if not atualizados:
         raise HTTPException(404, "Perfil não encontrado.")

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from .. import db
 from ..comum import clinica_por_slug, iso, logger
+from .operacional import registrar_movimentacao
 from ..seguranca import (
     UsuarioAutenticado,
     exigir_permissao,
@@ -140,7 +141,7 @@ def dar_alta(
     clinica = clinica_por_slug(payload.tenantId)
 
     paciente = db.buscar_um(
-        "SELECT id, nome, status, data_admissao FROM paciente WHERE id = %s AND clinica_id = %s",
+        "SELECT id, nome, status, data_admissao, ambiente_id FROM paciente WHERE id = %s AND clinica_id = %s",
         (paciente_id, clinica["id"]),
     )
     if not paciente:
@@ -183,6 +184,11 @@ def dar_alta(
             (paciente_id,),
         )
         revogados = cur.rowcount
+        registrar_movimentacao(
+            cur, clinica["id"], paciente_id,
+            "transferencia_externa" if payload.motivo == "transferido" else "alta",
+            origem=paciente["ambiente_id"], usuario_id=usuario.id,
+        )
 
         cur.execute(
             """
@@ -231,18 +237,21 @@ def criar_paciente(
             raise HTTPException(404, "Ambiente não encontrado nesta clínica.")
         ambiente_id = ambiente["id"]
 
-    novo = db.buscar_um(
-        """
-        INSERT INTO paciente (clinica_id, ambiente_id, nome, data_nascimento, data_admissao,
-                              historico_medico, medico_responsavel)
-        VALUES (%s, %s, %s, %s, COALESCE(%s::date, CURRENT_DATE), %s, %s)
-        RETURNING id
-        """,
-        (clinica["id"], ambiente_id, payload.nome.strip(),
-         payload.dataNascimento or None, payload.dataAdmissao or None,
-         (payload.historicoMedico or "").strip() or None,
-         (payload.medicoResponsavel or "").strip() or None),
-    )
+    with db.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO paciente (clinica_id, ambiente_id, nome, data_nascimento, data_admissao,
+                                  historico_medico, medico_responsavel)
+            VALUES (%s, %s, %s, %s, COALESCE(%s::date, CURRENT_DATE), %s, %s)
+            RETURNING id
+            """,
+            (clinica["id"], ambiente_id, payload.nome.strip(),
+             payload.dataNascimento or None, payload.dataAdmissao or None,
+             (payload.historicoMedico or "").strip() or None,
+             (payload.medicoResponsavel or "").strip() or None),
+        )
+        novo = cur.fetchone()
+        registrar_movimentacao(cur, clinica["id"], novo["id"], "admissao", destino=ambiente_id, usuario_id=usuario.id)
 
     logger.info("Paciente cadastrado: %s por %s", payload.nome, usuario.nome)
     return obter_paciente(str(novo["id"]), payload.tenantId, usuario)
@@ -259,7 +268,7 @@ def editar_paciente(
     clinica = clinica_por_slug(payload.tenantId)
 
     atual = db.buscar_um(
-        "SELECT id, status FROM paciente WHERE id = %s AND clinica_id = %s",
+        "SELECT id, status, ambiente_id FROM paciente WHERE id = %s AND clinica_id = %s",
         (paciente_id, clinica["id"]),
     )
     if not atual:
@@ -300,6 +309,14 @@ def editar_paciente(
 
     valores.append(paciente_id)
     # `campos` só tem fragmentos fixos deste módulo; os valores vão por parâmetro.
-    db.executar(f"UPDATE paciente SET {', '.join(campos)} WHERE id = %s", tuple(valores))  # nosec B608
+    with db.cursor() as cur:
+        cur.execute(f"UPDATE paciente SET {', '.join(campos)} WHERE id = %s", tuple(valores))  # nosec B608
+        novo_ambiente = (payload.ambienteId or None) if payload.ambienteId is not None else atual["ambiente_id"]
+        if payload.status == "internado" and atual["status"] != "internado":
+            registrar_movimentacao(cur, clinica["id"], paciente_id, "admissao", destino=novo_ambiente,
+                                   motivo="Reinternação", usuario_id=usuario.id)
+        elif payload.ambienteId is not None and str(novo_ambiente or "") != str(atual["ambiente_id"] or ""):
+            registrar_movimentacao(cur, clinica["id"], paciente_id, "transferencia", atual["ambiente_id"], novo_ambiente,
+                                   usuario_id=usuario.id)
     logger.info("Paciente %s atualizado por %s", paciente_id, usuario.nome)
     return obter_paciente(paciente_id, payload.tenantId, usuario)

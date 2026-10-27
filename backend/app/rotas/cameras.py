@@ -48,6 +48,7 @@ def consultar_cameras(clinica_id, camera_id: str | None = None) -> list[dict]:
     return db.buscar_todos(  # nosec B608
         f"""
         SELECT cam.id, cam.identificador, cam.url_stream, cam.status, cam.ultimo_ping,
+               cam.visao_url,
                amb.id AS ambiente_id, amb.nome AS ambiente_nome, amb.tipo AS ambiente_tipo,
                pac.id AS paciente_id, pac.nome AS paciente_nome,
                (cam.ultimo_ping IS NOT NULL
@@ -88,6 +89,7 @@ def montar_camera(l: dict) -> CameraResumo:
         pacienteNome=l["paciente_nome"],
         ocorrencias24h=l["ocorrencias_24h"] or 0,
         ultimaOcorrencia=iso(l["ultima_ocorrencia"]),
+        visaoUrl=l["visao_url"],
     )
 
 
@@ -165,11 +167,16 @@ def criar_camera(
     try:
         nova = db.buscar_um(
             """
-            INSERT INTO camera (ambiente_id, identificador, url_stream, status)
-            VALUES (%s, %s, %s, 'offline')
-            RETURNING id, identificador, url_stream, status, ultimo_ping
+            INSERT INTO camera (ambiente_id, identificador, url_stream, status, visao_url)
+            VALUES (%s, %s, %s, 'offline', %s)
+            RETURNING id, identificador, url_stream, status, ultimo_ping, visao_url
             """,
-            (ambiente["id"], payload.identificador.strip(), payload.urlStream.strip()),
+            (
+                ambiente["id"],
+                payload.identificador.strip(),
+                payload.urlStream.strip(),
+                payload.visaoUrl.rstrip("/") if payload.visaoUrl else None,
+            ),
         )
     except UniqueViolation:
         raise HTTPException(
@@ -203,6 +210,7 @@ def criar_camera(
         pacienteNome=paciente["nome"] if paciente else None,
         ocorrencias24h=0,
         ultimaOcorrencia=None,
+        visaoUrl=nova["visao_url"],
     )
 
 
@@ -212,7 +220,7 @@ def editar_camera(
     payload: CameraEdicaoPayload,
     usuario: UsuarioAutenticado = Depends(exigir_permissao("monitoring", "edit")),
 ):
-    """Edita identificador, URL do stream ou ambiente de uma câmera já cadastrada.
+    """Edita identificador, URL do stream, ambiente ou serviço de visão de uma câmera.
 
     A posse é conferida pelo ambiente: a câmera pertence à clínica através
     dele. Mudar de ambiente exige que o novo também seja da mesma clínica.
@@ -247,6 +255,9 @@ def editar_camera(
             raise HTTPException(404, "Ambiente não encontrado nesta clínica.")
         campos.append("ambiente_id = %s")
         valores.append(payload.ambienteId)
+    if payload.visaoUrl is not None:
+        campos.append("visao_url = %s")
+        valores.append(payload.visaoUrl.rstrip("/") or None)
     if not campos:
         raise HTTPException(400, "Nada a alterar.")
 

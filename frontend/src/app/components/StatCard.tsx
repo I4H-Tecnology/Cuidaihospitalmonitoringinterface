@@ -23,7 +23,7 @@ export function StatCard({ title, value, subtitle, icon, variant = 'default' }: 
           <p className="text-3xl text-gray-800">{value}</p>
           <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
         </div>
-        <div className="w-12 h-12 bg-[#E8F4F8] rounded-lg flex items-center justify-center text-[#0A7EA4]">
+        <div className="w-12 h-12 bg-marca-suave rounded-lg flex items-center justify-center text-marca-texto">
           {icon}
         </div>
       </div>

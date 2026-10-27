@@ -76,6 +76,26 @@ configuração.
 O `/estado` e o `/health` passam a mostrar um bloco `publicacao` com quantas
 ocorrências foram registradas e quantas estão esperando em disco.
 
+## Mais de uma câmera
+
+Cada processo observa **uma** câmera. Para outro quarto, suba outro processo
+numa porta própria; o que vier no ambiente vale mais que o `.env`:
+
+```bash
+VISAO_CAMERA_ID=<id da câmera do outro quarto> VISAO_FONTE=rtsp \
+VISAO_RTSP_URL=rtsp://usuario:senha@192.168.0.11:554/stream \
+  visao/.venv/Scripts/python.exe visao/servir.py --porta 8002
+```
+
+Depois, em **Configurações → Dispositivos**, edite a câmera e preencha
+**Vídeo ao vivo** com `http://localhost:8002`. O monitoramento passa a mostrar
+o vídeo desse quarto quando ele for escolhido na lista.
+
+A câmera sem esse campo usa o serviço padrão (`VITE_VISAO_URL`, porta 8001),
+mas só se for ela que ele está observando: um quarto nunca mostra o vídeo de
+outro. Bancos criados antes desta coluna precisam de
+`db/scripts/2026-10-25-camera-visao-url.sql`.
+
 ## Antes de qualquer coisa: teste a câmera
 
 ```bash
@@ -176,9 +196,20 @@ O código é idêntico nos dois casos. Muda apenas como o processo sobe.
 
 ```bash
 python -m venv visao/.venv
+# Torch antes do resto: o ultralytics puxaria do PyPI o build só de CPU.
+# Com GPU NVIDIA:
+visao\.venv\Scripts\python.exe -m pip install --index-url https://download.pytorch.org/whl/cu124 torch==2.5.1+cu124 torchvision==0.20.1+cu124
+# Sem GPU NVIDIA, no lugar da linha acima:
+#   visao\.venv\Scripts\python.exe -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchvision==0.20.1
 visao\.venv\Scripts\python.exe -m pip install -r visao/requirements.txt
 visao\.venv\Scripts\python.exe visao/verificar_camera.py
 ```
+
+Confira onde o YOLO está rodando no `/health`, campo `dispositivo`:
+`cuda:0 (…, FP16)` é a GPU; `cpu` quer dizer que o torch instalado não tem
+CUDA. Medido numa RTX 4050 de notebook, YOLOv8n com rastreamento num quadro de
+640 px: 73 ms na CPU isolada (504 ms em média dentro do serviço, disputando a
+máquina) e 15–22 ms na GPU em FP16.
 
 ## Se a câmera não abrir
 

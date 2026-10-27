@@ -53,28 +53,46 @@ const CLASSE_ESTADO: Record<PessoaDetectada['estado'], string> = {
   caido: 'bg-red-100 text-red-800 border-red-200',
 };
 
-export function CameraAoVivo() {
+/**
+ * `url` é o processo do serviço de visão desta câmera. Cada processo observa
+ * uma câmera só; quem troca de câmera troca de url (e de `key`, para o estado
+ * do vídeo anterior não vazar para o novo).
+ *
+ * `compacto` é o quadro do mosaico do monitoramento: só o vídeo, sem cabeçalho
+ * nem lista de pessoas, sem botão (o quadro inteiro já é clicável) e com o
+ * estado consultado mais devagar, porque são vários ao mesmo tempo.
+ */
+export function CameraAoVivo({ url = VISAO_URL, compacto = false }: { url?: string; compacto?: boolean }) {
   const [estado, setEstado] = useState<EstadoVisao | null>(null);
   const [servicoNoAr, setServicoNoAr] = useState<boolean | null>(null);
+  // HTTP de erro em /estado: a porta respondeu, mas quem respondeu não é o
+  // serviço de visão. Quase sempre outro programa ocupando a mesma porta.
+  const [statusEstranho, setStatusEstranho] = useState<number | null>(null);
   const [videoCarregou, setVideoCarregou] = useState(false);
   // Muda a cada tentativa de reconexão: forçar um src novo é o que faz o
   // navegador reabrir o stream. Sem isso ele reaproveita a conexão morta.
   const tentativa = useRef(0);
-  const [srcVideo, setSrcVideo] = useState(`${VISAO_URL}/stream?t=${Date.now()}`);
+  const [srcVideo, setSrcVideo] = useState(`${url}/stream?t=${Date.now()}`);
 
   useEffect(() => {
     let ativo = true;
 
     const consultar = async () => {
       try {
-        const resposta = await fetch(`${VISAO_URL}/estado`, { cache: 'no-store' });
-        if (!resposta.ok) throw new Error(String(resposta.status));
+        const resposta = await fetch(`${url}/estado`, { cache: 'no-store' });
+        if (!resposta.ok) {
+          if (ativo) setStatusEstranho(resposta.status);
+          throw new Error(String(resposta.status));
+        }
         const dados: EstadoVisao = await resposta.json();
         if (!ativo) return;
         setEstado(dados);
         setServicoNoAr(true);
-      } catch {
+        setStatusEstranho(null);
+      } catch (erro) {
         if (!ativo) return;
+        // Rede recusada não tem status; não apaga o da tentativa anterior à toa.
+        if (!(erro instanceof Error && /^\d+$/.test(erro.message))) setStatusEstranho(null);
         setServicoNoAr(false);
         setVideoCarregou(false);
       }
@@ -83,17 +101,17 @@ export function CameraAoVivo() {
     consultar();
     // 1s é suficiente: o pipeline produz a 8 fps, e o texto não precisa
     // acompanhar quadro a quadro — quem faz isso é a imagem.
-    const timer = window.setInterval(consultar, 1000);
+    const timer = window.setInterval(consultar, compacto ? 3000 : 1000);
     return () => {
       ativo = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [url, compacto]);
 
   const reconectar = () => {
     tentativa.current += 1;
     setVideoCarregou(false);
-    setSrcVideo(`${VISAO_URL}/stream?t=${Date.now()}`);
+    setSrcVideo(`${url}/stream?t=${Date.now()}`);
   };
 
   const pessoas = estado?.pessoas ?? [];
@@ -102,11 +120,76 @@ export function CameraAoVivo() {
   // soluções diferentes. A tela precisa dizer qual dos dois é.
   const diagnostico = diagnosticarCaptura(servicoNoAr, estado?.captura);
 
+  const areaDoVideo = (
+    <div className="relative bg-gray-900 aspect-video">
+      {diagnostico.tipo === 'servico-fora' ? (
+        compacto ? (
+          <AvisoNoQuadro
+            icone={<CameraOff className="h-6 w-6 text-white/40" />}
+            texto={statusEstranho ? `Outro programa responde em ${url}` : 'Serviço de visão não responde'}
+          />
+        ) : (
+          <ServicoForaDoAr aoTentarDeNovo={reconectar} url={url} statusEstranho={statusEstranho} />
+        )
+      ) : diagnostico.tipo === 'camera-fora' ? (
+        compacto ? (
+          <AvisoNoQuadro
+            icone={<RefreshCw className="h-6 w-6 animate-spin text-amber-400" />}
+            texto="Câmera fora do ar, reconectando…"
+          />
+        ) : (
+          <CameraForaDoAr
+            tentativa={diagnostico.tentativa}
+            proximaEmS={diagnostico.proximaEmS}
+            erro={diagnostico.erro}
+            fonte={estado?.fonte}
+          />
+        )
+      ) : (
+        <>
+          <img
+            key={srcVideo}
+            src={srcVideo}
+            alt="Transmissão da câmera com a detecção sobreposta"
+            className="h-full w-full object-contain"
+            onLoad={() => setVideoCarregou(true)}
+            onError={() => setVideoCarregou(false)}
+          />
+          {!videoCarregou && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300">
+              <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+              <p className="text-sm">Conectando à câmera…</p>
+            </div>
+          )}
+          {/* No quadro, o canto esquerdo é da etiqueta de queda do mosaico. */}
+          {alguemNoChao && (
+            <div
+              role="alert"
+              className={`absolute ${compacto ? 'right-2 top-2' : 'left-3 top-3'} flex items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-white`}
+            >
+              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+              <span className="text-sm">Pessoa no chão detectada</span>
+            </div>
+          )}
+          {/* A tarja global já marca o modo de teste; repetir em cada quadro
+              do mosaico só polui. */}
+          {!compacto && estado?.modo_teste && (
+            <span className="absolute right-3 top-3 rounded bg-amber-500 px-2 py-1 text-xs text-amber-950">
+              MODO DE TESTE
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  if (compacto) return areaDoVideo;
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-[#0A7EA4]" aria-hidden="true" />
+          <Camera className="h-4 w-4 text-marca-texto" aria-hidden="true" />
           <h3 className="text-gray-800">Câmera ao vivo</h3>
         </div>
         <div className="flex items-center gap-2 text-sm">
@@ -121,49 +204,7 @@ export function CameraAoVivo() {
         </div>
       </header>
 
-      <div className="relative bg-gray-900 aspect-video">
-        {diagnostico.tipo === 'servico-fora' ? (
-          <ServicoForaDoAr aoTentarDeNovo={reconectar} />
-        ) : diagnostico.tipo === 'camera-fora' ? (
-          <CameraForaDoAr
-            tentativa={diagnostico.tentativa}
-            proximaEmS={diagnostico.proximaEmS}
-            erro={diagnostico.erro}
-            fonte={estado?.fonte}
-          />
-        ) : (
-          <>
-            <img
-              key={srcVideo}
-              src={srcVideo}
-              alt="Transmissão da câmera com a detecção sobreposta"
-              className="h-full w-full object-contain"
-              onLoad={() => setVideoCarregou(true)}
-              onError={() => setVideoCarregou(false)}
-            />
-            {!videoCarregou && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300">
-                <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
-                <p className="text-sm">Conectando à câmera…</p>
-              </div>
-            )}
-            {alguemNoChao && (
-              <div
-                role="alert"
-                className="absolute left-3 top-3 flex items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-white"
-              >
-                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                <span className="text-sm">Pessoa no chão detectada</span>
-              </div>
-            )}
-            {estado?.modo_teste && (
-              <span className="absolute right-3 top-3 rounded bg-amber-500 px-2 py-1 text-xs text-amber-950">
-                MODO DE TESTE
-              </span>
-            )}
-          </>
-        )}
-      </div>
+      {areaDoVideo}
 
       <div className="px-4 py-3">
         {pessoas.length === 0 ? (
@@ -204,23 +245,50 @@ export function CameraAoVivo() {
   );
 }
 
-function ServicoForaDoAr({ aoTentarDeNovo }: { aoTentarDeNovo: () => void }) {
+function AvisoNoQuadro({ icone, texto }: { icone: React.ReactNode; texto: string }) {
+  return (
+    <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
+      {icone}
+      <p className="text-xs text-white/70">{texto}</p>
+    </div>
+  );
+}
+
+function ServicoForaDoAr({
+  aoTentarDeNovo, url, statusEstranho,
+}: { aoTentarDeNovo: () => void; url: string; statusEstranho: number | null }) {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
-      <CameraOff className="h-8 w-8 text-gray-500" aria-hidden="true" />
-      <p className="text-sm text-gray-300">Serviço de visão não está respondendo.</p>
-      {/* Instrução concreta em vez de "erro de conexão": quem abre esta tela
-          precisa saber o que fazer, não que algo deu errado. */}
-      <p className="max-w-md text-xs text-gray-500">
-        Com a fonte em webcam, ele roda fora do Docker. Suba com:{' '}
-        <code className="rounded bg-gray-800 px-1 py-0.5 text-gray-300">
-          visao\.venv\Scripts\python.exe visao/servir.py
-        </code>
-      </p>
+      <CameraOff className="h-8 w-8 text-white/40" aria-hidden="true" />
+      {statusEstranho ? (
+        <>
+          {/* Aconteceu de verdade: outro projeto no Docker publicava a mesma
+              porta, e "não está respondendo" mandava procurar no lugar errado. */}
+          <p className="text-sm text-gray-300">
+            {url} respondeu, mas não é o serviço de visão (HTTP {statusEstranho}).
+          </p>
+          <p className="max-w-md text-xs text-white/60">
+            Outro programa está usando essa porta. Troque VISAO_PORTA e VITE_VISAO_URL no .env por
+            uma porta livre e suba o serviço de novo.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-gray-300">Serviço de visão não está respondendo.</p>
+          {/* Instrução concreta em vez de "erro de conexão": quem abre esta tela
+              precisa saber o que fazer, não que algo deu errado. */}
+          <p className="max-w-md text-xs text-white/60">
+            Com a fonte em webcam, ele roda fora do Docker. Suba com:{' '}
+            <code className="rounded bg-gray-800 px-1 py-0.5 text-gray-300">
+              visao\.venv\Scripts\python.exe visao/servir.py
+            </code>
+          </p>
+        </>
+      )}
       <button
         type="button"
         onClick={aoTentarDeNovo}
-        className="rounded bg-[#0A7EA4] px-3 py-1.5 text-sm text-white hover:bg-[#0EA5E9]"
+        className="rounded bg-marca px-3 py-1.5 text-sm text-white hover:bg-marca-hover"
       >
         Tentar novamente
       </button>
@@ -240,15 +308,15 @@ function CameraForaDoAr({
     >
       <RefreshCw className="h-8 w-8 animate-spin text-amber-400" aria-hidden="true" />
       <p className="text-sm text-amber-200">Câmera fora do ar — o serviço está tentando reconectar.</p>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-white/70">
         Tentativa {tentativa}
         {proximaEmS != null && ` · próxima em ${Math.ceil(proximaEmS)} s`}
         {fonte && ` · ${fonte}`}
       </p>
       {/* O motivo cru ajuda quem vai ao local: "arquivo não encontrado" e
           "RTSP não responde" pedem ações diferentes. */}
-      {erro && <p className="max-w-md truncate text-xs text-gray-500" title={erro}>{erro}</p>}
-      <p className="max-w-md text-xs text-gray-500">
+      {erro && <p className="max-w-md truncate text-xs text-white/60" title={erro}>{erro}</p>}
+      <p className="max-w-md text-xs text-white/60">
         O serviço de visão continua no ar. Confira cabo, rede ou a própria câmera; a
         captura volta sozinha quando a fonte responder.
       </p>

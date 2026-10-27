@@ -114,7 +114,7 @@ function CartaoPaciente({
         className="flex w-full items-center gap-4 px-5 py-3 text-left transition-colors
                    hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] text-white">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-marca to-marca-hover text-white">
           <User className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">

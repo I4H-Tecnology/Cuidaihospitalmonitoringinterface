@@ -28,8 +28,11 @@
 --    ADMINISTRATIVE, PATIENT e VISITOR. Nome fora dessa lista faz
 --    getRoleLabel() devolver undefined e quebra a busca de permissões.
 --
---    Cobre os 14 módulos que o rbac.ts conhece, com as quatro ações e as duas
---    plataformas. É o que "acesso completo" significa aqui.
+--    Cobre os 13 módulos de backend/app/comum.py:MODULOS (a mesma lista de
+--    db/init/02_perfis.sql), com as quatro ações e as duas plataformas. É o
+--    que "acesso completo" significa aqui. O UPDATE abaixo SUBSTITUI o JSON
+--    inteiro: módulo que faltar nesta lista some do ADMIN (foi assim que a
+--    lista antiga, de antes de 13/09, tirava acompanhantes e financeiro).
 -- ---------------------------------------------------------------------------
 INSERT INTO perfil (clinica_id, nome, descricao, permissoes)
 VALUES (
@@ -46,8 +49,8 @@ VALUES (
            )
     FROM unnest(ARRAY[
       'dashboard', 'monitoring', 'alerts', 'clinical_logs', 'patients',
-      'beds', 'appointments', 'reports', 'settings', 'users',
-      'hospital_management', 'financial', 'inventory', 'hr'
+      'beds', 'reports', 'settings', 'users', 'companions',
+      'finance', 'payroll', 'finance_admin'
     ]) AS modulo
   )
 )
@@ -64,8 +67,8 @@ UPDATE perfil SET permissoes = (
          )
   FROM unnest(ARRAY[
     'dashboard', 'monitoring', 'alerts', 'clinical_logs', 'patients',
-    'beds', 'appointments', 'reports', 'settings', 'users',
-    'hospital_management', 'financial', 'inventory', 'hr'
+    'beds', 'reports', 'settings', 'users', 'companions',
+    'finance', 'payroll', 'finance_admin'
   ]) AS modulo
 )
 WHERE nome = 'ADMIN' AND clinica_id IS NULL;

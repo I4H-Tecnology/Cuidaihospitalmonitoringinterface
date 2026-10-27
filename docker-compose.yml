@@ -1,9 +1,10 @@
 # =============================================================================
 #  MedSignal — ambiente local completo
 #
-#    docker compose run --rm dev       # dia a dia: db + api + frontend-dev,
-#                                       # com aviso de pronto no terminal
+#    docker compose run --rm dev       # dia a dia: db + api, com aviso de
+#                                       # pronto no terminal
 #    docker compose up -d              # a mesma coisa, sem o aviso
+#    cd frontend && npm run dev        # frontend dev, direto no Windows
 #    docker compose up -d adminer      # cliente web do banco, à parte (opcional)
 #    docker compose --profile prod up        # testa a imagem de produção (nginx)
 #
@@ -62,11 +63,17 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # Frontend em desenvolvimento — Vite com hot reload.
-  # O código é montado por bind mount; node_modules fica no volume do container
-  # para não brigar com o node_modules do Windows.
+  # Frontend em desenvolvimento DENTRO do Docker — opcional, fora da subida
+  # padrão. No dia a dia o Vite roda direto no Windows (`npm run dev` em
+  # frontend/, ver README): lendo o código por esta pasta montada, cada arquivo
+  # levava de 10 a 21 s para abrir na primeira vez, contra 0,1 s nativo, e as
+  # telas abertas pela primeira vez demoravam isso. Continua aqui para quem
+  # está em Linux ou com o projeto dentro do WSL2, onde a montagem é rápida:
+  #   docker compose --profile frontend-docker up -d frontend-dev
+  # node_modules fica no volume do container para não brigar com o do Windows.
   # ---------------------------------------------------------------------------
   frontend-dev:
+    profiles: ['frontend-docker']
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
@@ -129,12 +136,25 @@ services:
       # chave publicada, e qualquer um forjaria um token valido.
       SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
       TOKEN_HORAS: ${TOKEN_HORAS:-8}
+      # "dev" devolve o codigo de recuperacao de senha na resposta da API
+      # (nao ha envio de e-mail). Qualquer outro valor, inclusive vazio, nao devolve.
+      MEDSIGNAL_AMBIENTE: ${MEDSIGNAL_AMBIENTE:-producao}
       # Log estruturado (json|texto) e nivel, iguais aos do servico de visao.
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMATO: ${LOG_FORMATO:-json}
       # Clipes de evidencia gravados pelo servico de visao. A API so serve e
       # expurga (24 h); a pasta e a mesma do host, montada abaixo.
       CLIPES_DIR: /app/dados/clipes
+      # Fuso do "hoje" do módulo financeiro (vencido, vence hoje).
+      FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
+      # Portal da família: a API repassa o vídeo da câmera do paciente, então
+      # precisa enxergar o serviço de visão. Com webcam ele roda no host, fora
+      # do Docker; daqui o host é host.docker.internal, não localhost.
+      VISAO_URL_PADRAO: ${VISAO_URL_PADRAO:-http://host.docker.internal:8001}
+      VISAO_HOST_LOCAL: ${VISAO_HOST_LOCAL:-host.docker.internal}
+    extra_hosts:
+      # No Docker Desktop o nome já existe; no Linux, esta linha o cria.
+      - 'host.docker.internal:host-gateway'
     volumes:
       - ./visao/dados/clipes:/app/dados/clipes
     healthcheck:
@@ -178,10 +198,39 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # Atalho do dia a dia: `docker compose run --rm dev` sobe db + backend +
-  # frontend-dev (na ordem certa, esperando o banco ficar saudável) e mostra
-  # os endereços no terminal. Ctrl+C só fecha este aviso — os três serviços
-  # continuam no ar; `docker compose down` para desligar de verdade.
+  # Módulo financeiro como SERVIÇO PRÓPRIO — opcional. O MedSignal usa o módulo
+  # embutido na API acima; este serviço existe para o outro jeito de reusar o
+  # módulo: um sistema que não é Python (Laravel, Node) falando com ele por
+  # HTTP, com um JWT assinado pelo segredo compartilhado.
+  #   docker compose --profile financeiro-servico up -d --build financeiro
+  # Divide o banco com a API sem conflito: o schema é o mesmo (`financeiro`) e
+  # cada sistema enxerga só as empresas dele.
+  # ---------------------------------------------------------------------------
+  financeiro:
+    profiles: ['financeiro-servico']
+    build:
+      context: ./backend/financeiro
+      dockerfile: Dockerfile
+    container_name: medsignal-financeiro
+    restart: unless-stopped
+    ports:
+      - '${FINANCEIRO_PORT:-8100}:8100'
+    environment:
+      FINANCEIRO_DATABASE_URL: postgresql://${POSTGRES_USER:-medsignal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-medsignal}
+      # Sem padrão de propósito: vazio, o serviço recusa subir (servidor.py).
+      FINANCEIRO_JWT_SEGREDO: ${FINANCEIRO_JWT_SEGREDO:-}
+      FINANCEIRO_CORS: http://localhost:${FRONTEND_DEV_PORT:-5173}
+      FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Atalho do dia a dia: `docker compose run --rm dev` sobe db + backend (na
+  # ordem certa, esperando o banco ficar saudável) e mostra os endereços no
+  # terminal. O frontend roda fora daqui, com `npm run dev` em frontend/.
+  # Ctrl+C só fecha este aviso — os serviços continuam no ar;
+  # `docker compose down` para desligar de verdade.
   # Não é um serviço de verdade: é o alpine parado, só para dar nome ao grupo.
   # ---------------------------------------------------------------------------
   dev:
@@ -190,9 +239,10 @@ services:
       sh -c "
       echo '' &&
       echo 'MedSignal no ar:' &&
-      echo '  Frontend   http://localhost:5173' &&
       echo '  API        http://localhost:8000/docs' &&
       echo '  Banco      localhost:5432' &&
+      echo '' &&
+      echo 'Frontend: em outro terminal, cd frontend && npm run dev  (http://localhost:5173)' &&
       echo '' &&
       echo 'Adminer (cliente do banco, opcional): docker compose up -d adminer' &&
       echo 'Ctrl+C sai deste aviso sem derrubar nada. Para desligar: docker compose down' &&
@@ -203,8 +253,6 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
-      frontend-dev:
-        condition: service_started
 
 volumes:
   pgdata:

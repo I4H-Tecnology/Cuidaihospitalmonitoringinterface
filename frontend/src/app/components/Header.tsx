@@ -1,207 +1,143 @@
-import React, { useState } from 'react';
-import { Bell, Moon, Sun, Settings, User, LogOut, HelpCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, ChevronRight, LogOut, Menu, Moon, Settings, Smartphone, Sun, User } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { SeletorDeTema } from './SeletorDeTema';
+import type { SecaoConfiguracao } from './settings/secoes';
 
 interface HeaderProps {
   title: string;
-  subtitle: string;
+  /** Grupo do menu onde a tela mora; vira a trilha "Grupo › Tela". */
+  grupo?: string | null;
   unreadNotifications?: number;
   onNotificationClick?: () => void;
+  onAbrirConfiguracoes?: (secao: SecaoConfiguracao) => void;
+  onAbrirMenu?: () => void;
+  onAbrirAppMobile?: () => void;
 }
 
-export function Header({ title, subtitle, unreadNotifications = 0, onNotificationClick }: HeaderProps) {
+/**
+ * Cabeçalho de todas as telas.
+ *
+ * Mostra onde se está (trilha) e não repete o título grande: cada tela já
+ * tem o próprio, logo abaixo. Os botões são os que fazem algo — o de ajuda e
+ * a "Central de Ajuda" do menu não levavam a lugar nenhum e saíram. As cores
+ * vêm dos tokens do tema, então o mesmo código serve aos seis temas.
+ */
+export function Header({
+  title, grupo, unreadNotifications = 0, onNotificationClick, onAbrirConfiguracoes, onAbrirMenu, onAbrirAppMobile,
+}: HeaderProps) {
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { user, logout } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const botaoMenu = useRef<HTMLButtonElement>(null);
 
-  const handleLogout = () => {
-    setShowUserMenu(false);
-    logout();
+  useEffect(() => {
+    if (!menuAberto) return;
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setMenuAberto(false); botaoMenu.current?.focus(); }
+    };
+    document.addEventListener('keydown', tecla);
+    return () => document.removeEventListener('keydown', tecla);
+  }, [menuAberto]);
+
+  const abrir = (secao: SecaoConfiguracao) => {
+    setMenuAberto(false);
+    onAbrirConfiguracoes?.(secao);
   };
 
-  // Get user initials
-  const userInitials = user?.avatar || user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'AD';
+  const iniciais = user?.avatar || user?.name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+  const botao = 'relative flex h-10 w-10 items-center justify-center rounded-lg text-marca-texto transition-colors bg-marca-suave hover:bg-marca-suave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-viva';
+  const itemMenu = 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline-none';
 
   return (
-    <header className={`border-b sticky top-0 z-50 shadow-sm ${
-      isDarkMode 
-        ? 'bg-gray-800 border-gray-700' 
-        : 'bg-white border-gray-200'
-    }`}>
-      <div className="px-8 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className={isDarkMode ? 'text-cyan-400' : 'text-[#0A7EA4]'}>{title}</h1>
-            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{subtitle}</p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                isDarkMode
-                  ? 'bg-gray-700 hover:bg-gray-600 text-yellow-400'
-                  : 'bg-[#E8F4F8] hover:bg-[#D6EEF5] text-[#0A7EA4]'
-              }`}
-              title={isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
-            >
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-8">
+        <div className="flex min-w-0 items-center gap-3">
+          {onAbrirMenu && (
+            <button type="button" onClick={onAbrirMenu} className={`${botao} lg:hidden`} aria-label="Abrir menu">
+              <Menu className="h-5 w-5" aria-hidden="true" />
             </button>
-
-            {/* Help */}
-            <button
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                isDarkMode
-                  ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                  : 'bg-[#E8F4F8] hover:bg-[#D6EEF5] text-[#0A7EA4]'
-              }`}
-              title="Ajuda"
-            >
-              <HelpCircle className="w-5 h-5" />
-            </button>
-
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                onClick={onNotificationClick}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                    : 'bg-[#E8F4F8] hover:bg-[#D6EEF5] text-[#0A7EA4]'
-                }`}
-                title="Notificações"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* User Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-10 h-10 bg-gradient-to-br from-[#7DD3FC] to-[#0EA5E9] rounded-full flex items-center justify-center hover:shadow-lg transition-shadow"
-              >
-                <span className="text-white text-sm font-medium">{userInitials}</span>
-              </button>
-
-              {showUserMenu && (
-                <>
-                  {/* Backdrop */}
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowUserMenu(false)}
-                  />
-                  
-                  {/* Menu */}
-                  <div className={`absolute right-0 mt-2 w-64 rounded-lg shadow-xl z-50 overflow-hidden ${
-                    isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-                  }`}>
-                    {/* User Info */}
-                    <div className={`px-4 py-3 border-b ${
-                      isDarkMode ? 'border-gray-700 bg-gray-750' : 'border-gray-200 bg-gray-50'
-                    }`}>
-                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                        {user?.name || 'Usuário'}
-                      </p>
-                      <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {user?.role || 'Perfil não definido'}
-                      </p>
-                    </div>
-
-                    {/* Menu Items */}
-                    <div className="py-2">
-                      <button className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
-                        isDarkMode 
-                          ? 'text-gray-300 hover:bg-gray-700' 
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}>
-                        <User className="w-4 h-4" />
-                        Meu Perfil
-                      </button>
-                      <button className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
-                        isDarkMode 
-                          ? 'text-gray-300 hover:bg-gray-700' 
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}>
-                        <Settings className="w-4 h-4" />
-                        Preferências
-                      </button>
-                      <button className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
-                        isDarkMode 
-                          ? 'text-gray-300 hover:bg-gray-700' 
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}>
-                        <HelpCircle className="w-4 h-4" />
-                        Central de Ajuda
-                      </button>
-                    </div>
-
-                    {/* Theme Switcher */}
-                    <div className={`px-4 py-3 border-t ${
-                      isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                    }`}>
-                      <p className={`text-xs mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        Aparência
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            if (isDarkMode) toggleDarkMode();
-                            setShowUserMenu(false);
-                          }}
-                          className={`flex-1 px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors ${
-                            !isDarkMode
-                              ? 'bg-[#0EA5E9] text-white'
-                              : isDarkMode 
-                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Sun className="w-3 h-3" />
-                          Claro
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (!isDarkMode) toggleDarkMode();
-                            setShowUserMenu(false);
-                          }}
-                          className={`flex-1 px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors ${
-                            isDarkMode
-                              ? 'bg-[#0EA5E9] text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          <Moon className="w-3 h-3" />
-                          Escuro
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Logout */}
-                    <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <button className={`w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors ${
-                        isDarkMode 
-                          ? 'text-red-400 hover:bg-gray-700' 
-                          : 'text-red-600 hover:bg-red-50'
-                      }`} onClick={handleLogout}>
-                        <LogOut className="w-4 h-4" />
-                        Sair da Conta
-                      </button>
-                    </div>
-                  </div>
-                </>
+          )}
+          <nav aria-label="Você está em" className="min-w-0">
+            <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+              {grupo && (
+                <li className="hidden shrink-0 items-center gap-1.5 text-gray-600 sm:flex">
+                  {grupo}
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </li>
               )}
-            </div>
+              <li aria-current="page" className="truncate font-medium text-gray-900">{title}</li>
+            </ol>
+          </nav>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {onAbrirAppMobile && (
+            <button type="button" onClick={onAbrirAppMobile} className={`${botao} hidden sm:flex`} title="Ver o app mobile da enfermagem" aria-label="Ver o app mobile da enfermagem">
+              <Smartphone className="h-5 w-5" aria-hidden="true" />
+            </button>
+          )}
+          <button type="button" onClick={toggleDarkMode} className={botao} title={isDarkMode ? 'Usar tema claro' : 'Usar tema escuro'} aria-label={isDarkMode ? 'Usar tema claro' : 'Usar tema escuro'}>
+            {isDarkMode ? <Sun className="h-5 w-5" aria-hidden="true" /> : <Moon className="h-5 w-5" aria-hidden="true" />}
+          </button>
+          <button
+            type="button"
+            onClick={onNotificationClick}
+            className={botao}
+            title="Notificações"
+            aria-label={unreadNotifications ? `Notificações: ${unreadNotifications} nova(s)` : 'Notificações'}
+          >
+            <Bell className="h-5 w-5" aria-hidden="true" />
+            {unreadNotifications > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs text-white" aria-hidden="true">
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            )}
+          </button>
+
+          <div className="relative">
+            <button
+              ref={botaoMenu}
+              type="button"
+              onClick={() => setMenuAberto((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuAberto}
+              aria-label={`Menu de ${user?.name ?? 'usuário'}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-marca to-marca-hover text-sm font-medium text-white transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-marca-viva focus-visible:ring-offset-2"
+            >
+              {iniciais}
+            </button>
+
+            {menuAberto && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuAberto(false)} aria-hidden="true" />
+                <div role="menu" className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+                  <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <p className="truncate font-medium text-gray-900">{user?.name || 'Usuário'}</p>
+                    <p className="truncate text-xs text-gray-600">{user?.roleLabel || user?.role || 'Perfil não definido'} · {user?.login}</p>
+                  </div>
+                  <div className="py-1.5">
+                    <button type="button" role="menuitem" onClick={() => abrir('conta')} className={itemMenu}><User className="h-4 w-4" aria-hidden="true" /> Minha conta</button>
+                    <button type="button" role="menuitem" onClick={() => abrir('notificacoes')} className={itemMenu}><Bell className="h-4 w-4" aria-hidden="true" /> Notificações</button>
+                    <button type="button" role="menuitem" onClick={() => abrir('aparencia')} className={itemMenu}><Settings className="h-4 w-4" aria-hidden="true" /> Preferências</button>
+                  </div>
+                  <div className="border-t border-gray-200 px-4 py-3">
+                    <p className="mb-2 text-xs text-gray-600">Tema</p>
+                    <SeletorDeTema />
+                  </div>
+                  <div className="border-t border-gray-200">
+                    <button type="button" role="menuitem" onClick={() => { setMenuAberto(false); logout(); }} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-700 transition-colors hover:bg-red-50">
+                      <LogOut className="h-4 w-4" aria-hidden="true" /> Sair da conta
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
     </header>
   );
 }
+

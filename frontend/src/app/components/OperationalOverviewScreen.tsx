@@ -151,7 +151,7 @@ export function OperationalOverviewScreen() {
             <div className={`bg-white rounded-lg border ${statusStyle.border} p-5 shadow-sm`}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-gray-500">Status Operacional</p>
-                <div className="w-10 h-10 rounded-lg bg-[#E8F4F8] flex items-center justify-center text-[#0A7EA4]">
+                <div className="w-10 h-10 rounded-lg bg-marca-suave flex items-center justify-center text-marca-texto">
                   <Shield className="w-5 h-5" />
                 </div>
               </div>
@@ -234,7 +234,7 @@ export function OperationalOverviewScreen() {
             </div>
 
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] px-5 py-4">
+              <div className="bg-gradient-to-r from-marca to-marca-hover px-5 py-4">
                 <div className="flex items-center gap-2 text-white mb-1">
                   <Lightbulb className="w-5 h-5" />
                   <h3 className="text-white">Insights Automáticos (IA)</h3>

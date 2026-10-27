@@ -21,6 +21,10 @@ ORGANIZAÇÃO:
   não era o tamanho: era que qualquer rota precisava importar o módulo que
   monta a aplicação, o que fecha um ciclo de import ao primeiro `from .main`.
 
+  O financeiro é outro caso: é um pacote à parte (`backend/financeiro`), que
+  não importa nada daqui e serve a outros sistemas. Entra pela única porta
+  `integracao_financeiro.py`.
+
 Substitua por inteiro quando o FastAPI real chegar.
 """
 
@@ -33,23 +37,33 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from . import clipes, db, registro
+from financeiro import tarefas as tarefas_financeiro
+
+from . import clipes, db, integracao_financeiro, registro
 from .alertas import central
 from .comum import TABELA_EVENTOS, TABELA_POLITICA
 from .rotas import (
     acompanhantes,
+    analytics,
     auditoria,
     autenticacao,
     cameras,
     clinica,
+    compras,
+    contratos,
+    crm,
     evolucoes,
+    familia,
+    operacional,
     ocorrencias,
     pacientes,
     painel,
     permissoes,
     prescricoes,
+    risco_queda,
     riscos,
     saude,
+    sensores,
     usuarios,
 )
 
@@ -68,13 +82,19 @@ async def lifespan(_: FastAPI):
     db.abrir_pool()
     db.executar(TABELA_POLITICA)
     db.executar(TABELA_EVENTOS)
+    # Módulo financeiro: schema próprio (`financeiro`), migrações próprias.
+    integracao_financeiro.preparar()
     # A rota que registra a ocorrência é síncrona e roda em threadpool. Sem
     # esta referência ela não teria como agendar o envio no event loop.
     central.registrar_loop(asyncio.get_running_loop())
     # Retenção de 24 h dos clipes (RNF05, RN09): roda no boot e de hora em
     # hora, independentemente de o serviço de visão estar no ar.
     expurgo = asyncio.create_task(clipes.laco_de_expurgo())
+    # Contas recorrentes (aluguel, mensalidade) aparecem em contas a pagar e a
+    # receber sem ninguém precisar lembrar de gerá-las.
+    recorrencias = asyncio.create_task(tarefas_financeiro.laco_de_recorrencias(integracao_financeiro.banco))
     yield
+    recorrencias.cancel()
     expurgo.cancel()
     db.fechar_pool()
 
@@ -114,7 +134,18 @@ app.include_router(clinica.router, tags=["clínica"])
 app.include_router(ocorrencias.router, tags=["ocorrências"])
 app.include_router(pacientes.router, tags=["pacientes"])
 app.include_router(acompanhantes.router, tags=["acompanhantes"])
+app.include_router(familia.router, tags=["portal da família"])
+app.include_router(contratos.router, tags=["contratos"])
+app.include_router(compras.router, tags=["compras"])
+app.include_router(analytics.router, tags=["analytics"])
+app.include_router(crm.router, tags=["crm"])
+app.include_router(operacional.router, tags=["operacional"])
+app.include_router(risco_queda.router, tags=["risco de queda"])
+app.include_router(sensores.router, tags=["sensores"])
 app.include_router(evolucoes.router, tags=["evoluções"])
 app.include_router(riscos.router, tags=["alergias e riscos"])
 app.include_router(prescricoes.router, tags=["prescrições"])
 app.include_router(saude.router, tags=["saúde"])
+# Módulo financeiro (backend/financeiro), montado pelo adaptador. As tags de
+# cada área vêm do próprio módulo.
+app.include_router(integracao_financeiro.router)

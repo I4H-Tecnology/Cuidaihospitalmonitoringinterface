@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  AlertTriangle, Check, CheckCircle, Clock, Film, Loader2, MapPin, Search, User, Wifi, WifiOff,
+  AlertTriangle, Check, CheckCircle, Clock, Loader2, MapPin, Search, User, Wifi, WifiOff,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAlertas } from '../data/useAlertas';
 import {
-  ApiError, darCiencia, encerrarOcorrencia, fetchClipeDaOcorrencia, iniciarAtendimento,
+  ApiError, darCiencia, encerrarOcorrencia, iniciarAtendimento,
 } from '../data/api';
 import type { ClassificacaoOcorrencia, OcorrenciaResumo } from '../data/api';
+import { ClipeDaOcorrencia } from './ClipeDaOcorrencia';
 import { ModalEncerrarOcorrencia } from './ModalEncerrarOcorrencia';
 import { quandoFoi } from '../data/tempo';
 
@@ -44,7 +45,7 @@ const ESTILO: Record<string, { fundo: string; barra: string; chip: string; rotul
   },
   falso_positivo: {
     fundo: 'bg-white', barra: 'border-l-gray-400',
-    chip: 'bg-gray-400 text-white', rotulo: 'Falso positivo',
+    chip: 'bg-gray-600 text-white', rotulo: 'Falso positivo',
   },
   encerrada: {
     fundo: 'bg-white', barra: 'border-l-green-500',
@@ -145,7 +146,7 @@ export function AlertsScreen() {
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por paciente, ambiente ou câmera"
             className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2.5 text-sm
-                       focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]"
+                       focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
           />
         </div>
         <div className="flex gap-1">
@@ -161,7 +162,7 @@ export function AlertsScreen() {
               onClick={() => setFiltro(valor)}
               className={`px-3 py-2 rounded-lg text-sm transition-colors ${
                 filtro === valor
-                  ? 'bg-[#0A7EA4] text-white'
+                  ? 'bg-marca text-white'
                   : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -252,7 +253,8 @@ function Indicador({ rotulo, valor, cor }: { rotulo: string; valor: number; cor:
   );
 }
 
-function CartaoAlerta({
+/** Também usado no painel do quarto, no monitoramento: o mesmo ciclo nos dois lugares. */
+export function CartaoAlerta({
   ocorrencia: o, ocupado, podeAtender, aoDarCiencia, aoAtender, aoEncerrar,
 }: {
   ocorrencia: OcorrenciaResumo;
@@ -298,7 +300,7 @@ function CartaoAlerta({
       </div>
 
       {o.observacao && (
-        <p className="mt-3 rounded bg-white/60 px-3 py-2 text-sm text-gray-600">{o.observacao}</p>
+        <p className="mt-3 rounded bg-black/5 px-3 py-2 text-sm text-gray-600 dark:bg-white/5">{o.observacao}</p>
       )}
 
       <ClipeDaOcorrencia ocorrencia={o} />
@@ -322,8 +324,8 @@ function CartaoAlerta({
               type="button"
               onClick={aoAtender}
               disabled={ocupado}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-4 py-2 text-sm
-                         text-white hover:bg-[#0EA5E9] disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-marca px-4 py-2 text-sm
+                         text-white hover:bg-marca-hover disabled:opacity-60"
             >
               {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
               Iniciar atendimento
@@ -341,81 +343,6 @@ function CartaoAlerta({
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-const VINTE_E_QUATRO_HORAS_MS = 24 * 3600 * 1000;
-const JANELA_DE_GRAVACAO_MS = 30 * 1000;
-
-/**
- * Clipe de evidência: 5 s antes e 5 s depois da ocorrência (RNF05).
- *
- * O vídeo é buscado com o token e vira uma URL de objeto — a tag <video> não
- * manda cabeçalho, e o clipe nunca é servido sem autenticação. Após 24 h o
- * arquivo é expurgado e a ocorrência continua aqui, sem vídeo (RN09, RNF18).
- */
-function ClipeDaOcorrencia({ ocorrencia: o }: { ocorrencia: OcorrenciaResumo }) {
-  const { tenantId } = useAuth();
-  const [url, setUrl] = useState<string | null>(null);
-  const [carregando, setCarregando] = useState(false);
-  const [aviso, setAviso] = useState<string | null>(null);
-
-  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
-
-  const idade = Date.now() - new Date(o.dataHora).getTime();
-
-  const abrir = async () => {
-    if (!tenantId) return;
-    setCarregando(true);
-    setAviso(null);
-    try {
-      const blob = await fetchClipeDaOcorrencia(tenantId, o.id);
-      setUrl(URL.createObjectURL(blob));
-    } catch (erro) {
-      setAviso(
-        erro instanceof ApiError && erro.status === 404
-          ? 'Clipe indisponível: ainda em gravação ou já expurgado (retenção de 24 h).'
-          : 'Não foi possível carregar o clipe.',
-      );
-    } finally {
-      setCarregando(false);
-    }
-  };
-
-  if (url) {
-    return (
-      <video
-        controls
-        autoPlay
-        muted
-        src={url}
-        className="mt-3 w-full max-w-md rounded bg-black"
-        aria-label="Clipe de evidência da ocorrência"
-      />
-    );
-  }
-
-  if (!o.temClipe) {
-    let texto = 'Sem vídeo disponível para esta ocorrência.';
-    if (idade > VINTE_E_QUATRO_HORAS_MS) texto = 'Vídeo expurgado após 24 h (RNF05). O registro permanece.';
-    else if (idade < JANELA_DE_GRAVACAO_MS) texto = 'Clipe em gravação…';
-    return <p className="mt-3 text-xs text-gray-400">{texto}</p>;
-  }
-
-  return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={abrir}
-        disabled={carregando}
-        className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5
-                   text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-      >
-        {carregando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Film className="w-3.5 h-3.5" />}
-        Ver clipe (10 s)
-      </button>
-      {aviso && <p className="mt-1 text-xs text-amber-700">{aviso}</p>}
     </div>
   );
 }

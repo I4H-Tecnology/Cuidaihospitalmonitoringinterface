@@ -116,8 +116,8 @@ export function ModalPaciente({ paciente, aoFechar, aoSalvar }: Props) {
   };
 
   const escolhido = ambientes.find((a) => a.id === ambienteId);
-  const campo = 'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]';
-  const campoPequeno = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#0A7EA4] focus:outline-none focus:ring-1 focus:ring-[#0A7EA4]';
+  const campo = 'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca';
+  const campoPequeno = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca';
 
   return (
     <div
@@ -132,8 +132,8 @@ export function ModalPaciente({ paciente, aoFechar, aoSalvar }: Props) {
       <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#E8F4F8]">
-              <UserPlus className="h-5 w-5 text-[#0A7EA4]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-marca-suave">
+              <UserPlus className="h-5 w-5 text-marca-texto" />
             </div>
             <div>
               <h2 id="titulo-paciente" className="text-gray-800">
@@ -223,7 +223,7 @@ export function ModalPaciente({ paciente, aoFechar, aoSalvar }: Props) {
                 />
                 <ListaEditavel
                   titulo={editando ? 'Novas medicações' : 'Medicações prescritas'}
-                  icone={<Pill className="h-4 w-4 text-[#0A7EA4]" />}
+                  icone={<Pill className="h-4 w-4 text-marca-texto" />}
                   dica={editando ? 'As já registradas ficam na aba Medicações, onde podem ser suspensas.' : 'Medicamento, posologia e quem receitou. Sem médico, assume o responsável.'}
                   vazio="Nenhuma medicação informada."
                   rotuloAdicionar="Adicionar medicação"
@@ -260,7 +260,7 @@ export function ModalPaciente({ paciente, aoFechar, aoSalvar }: Props) {
             <button type="button" onClick={aoFechar} disabled={salvando} className="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50">
               Cancelar
             </button>
-            <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-5 py-2.5 text-sm text-white hover:bg-[#0EA5E9] disabled:opacity-60 disabled:cursor-not-allowed">
+            <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 rounded-lg bg-marca px-5 py-2.5 text-sm text-white hover:bg-marca-hover disabled:opacity-60 disabled:cursor-not-allowed">
               {salvando && <Loader2 className="h-4 w-4 animate-spin" />}
               {salvando ? 'Salvando…' : editando ? 'Salvar' : 'Admitir paciente'}
             </button>

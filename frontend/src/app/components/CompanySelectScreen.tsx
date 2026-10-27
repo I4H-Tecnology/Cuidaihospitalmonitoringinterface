@@ -1,9 +1,9 @@
 ﻿import React, { useEffect, useState } from 'react';
-import logoImage from "../../assets/logo.png";
-import sideImage from "../../assets/login1.png";
+import { HeartPulse } from 'lucide-react';
 import backgroundPattern from "../../assets/login2.png";
 import { useSystemToast } from './ui/SystemToast';
 import { ApiError, fetchTenants } from '../data/api';
+import { PainelDaMarca } from './PainelDaMarca';
 
 interface CompanySelectScreenProps {
   onContinue: (tenant: string) => void;
@@ -35,7 +35,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
           console.error('[empresa] Falha inesperada ao carregar tenants', error);
         }
         if (mounted) setTenants([]);
-        showToast({ message: 'Não foi possível carregar as empresas.' });
+        showToast({ message: 'Não foi possível falar com o servidor. Tente de novo em instantes.' });
       });
     return () => {
       mounted = false;
@@ -47,19 +47,19 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
     const normalized = normalizeCompany(company);
 
     if (!normalized) {
-      showToast({ message: 'Digite sua empresa' });
+      showToast({ message: 'Digite o identificador da clínica.' });
       return;
     }
 
     const tenant = tenants.find((item) => item.id === normalized);
     if (!tenant) {
       console.warn('[empresa] Tenant não encontrado', { tenant: normalized });
-      showToast({ message: 'Empresa não encontrada' });
+      showToast({ message: 'Clínica não encontrada. Confira o identificador.' });
       return;
     }
 
     if (!tenant.active) {
-      showToast({ message: 'Empresa inativa. Fale com o administrador.' });
+      showToast({ message: 'Esta clínica está inativa. Fale com o administrador.' });
       return;
     }
 
@@ -68,7 +68,7 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-8 bg-gray-100"
+      className="min-h-screen flex items-center justify-center p-4 sm:p-8 bg-gray-100"
       style={{
         backgroundImage: `url(${backgroundPattern})`,
         backgroundSize: 'cover',
@@ -76,53 +76,50 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
       }}
     >
       <div className="w-full max-w-6xl flex rounded-3xl overflow-hidden shadow-2xl bg-white">
-        <div className="hidden lg:flex lg:w-[60%] bg-[#E8F4F8] items-center justify-center">
-          <img
-            src={sideImage}
-            alt="MedSignal - Monitore Inteligentemente o seu Hospital"
-            className="w-full h-auto object-contain"
-          />
-        </div>
+        <PainelDaMarca />
 
-        <div className="w-full lg:w-[40%] bg-white flex flex-col relative overflow-hidden">
-          <div className="w-full flex-1 flex items-center justify-center p-12">
+        <div className="w-full lg:w-[45%] bg-white flex flex-col relative overflow-hidden">
+          <div className="w-full flex-1 flex items-center justify-center p-8 sm:p-12">
             <div className="w-full max-w-md flex flex-col items-center text-center">
-              <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
-                <img
-                  src={logoImage}
-                  alt="MedSignal"
-                  className="h-16 w-16 object-contain"
-                />
+              <div className="mb-6">
+                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-marca to-marca-hover shadow-md" aria-hidden="true">
+                <HeartPulse className="h-9 w-9 text-white" />
+              </span>
               </div>
 
               <div className="flex items-center gap-3 mb-7">
-                <div className="w-8 h-8 bg-[#0EA5E9] rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-marca rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-sm">1</span>
                 </div>
                 <h1 className="text-[22px] font-semibold text-slate-800 leading-snug">
-                  Encontre sua empresa
+                  Encontre sua clínica
                 </h1>
               </div>
 
               <form onSubmit={handleSubmit} className="w-full space-y-4">
-                <div>
+                <div className="text-left">
+                  <label htmlFor="company" className="mb-1.5 block text-sm font-medium text-gray-800">Identificador da clínica</label>
                   <input
                     id="company"
                     type="text"
-                    placeholder="Empresa"
+                    autoComplete="organization"
+                    autoFocus
+                    placeholder="ex.: clinica-demo"
+                    aria-describedby="company-ajuda"
                     value={company}
                     onChange={(e) => {
                       setCompany(normalizeCompany(e.target.value));
                     }}
-                    className="block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0EA5E9] focus:border-transparent transition-all outline-none text-[15px] text-gray-900 placeholder:text-gray-400"
+                    className="block w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-marca-viva focus:border-transparent transition-all outline-none text-[15px] text-gray-900 placeholder:text-gray-500"
                   />
+                  <p id="company-ajuda" className="mt-1.5 text-xs text-gray-600">Quem administra o sistema na sua clínica sabe qual é.</p>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-[#6EC1E4] hover:bg-[#4DA3FF] text-white py-3.5 px-4 rounded-lg font-medium tracking-[0.01em] focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:ring-offset-2 transition-all shadow-md"
+                  className="w-full bg-marca hover:bg-marca-hover text-white py-3.5 px-4 rounded-lg font-medium tracking-[0.01em] focus:outline-none focus:ring-2 focus:ring-marca-viva focus:ring-offset-2 transition-all shadow-md"
                 >
-                  Proximo passo
+                  Continuar
                 </button>
               </form>
             </div>

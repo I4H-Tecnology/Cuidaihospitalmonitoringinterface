@@ -55,7 +55,8 @@ Cada serviço tem o próprio `README.md` com as instruções específicas.
 
 ## Rodando localmente
 
-Pré-requisitos: **Docker Desktop**. Nada mais — nem Node instalado no Windows.
+Pré-requisitos: **Docker Desktop** (banco e API) e **Node 22+** no Windows
+(frontend; o `jsdom` 30 dos testes exige o 22).
 
 ```bash
 cp .env.example .env
@@ -67,21 +68,66 @@ Preencha `POSTGRES_PASSWORD` e `SECRET_KEY` no `.env`. Para gerar a chave:
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Depois:
+Na primeira vez, instale as dependências do frontend:
+
+```bash
+cd frontend && npm install
+```
+
+Depois, um comando só, de dentro de `frontend/`:
+
+```bash
+npm run dev:completo
+```
+
+Sobe banco e API no Docker, espera os dois ficarem saudáveis e abre o frontend
+em http://localhost:5173. `Ctrl+C` derruba só o frontend; banco e API continuam
+no ar até `docker compose down`.
+
+Se preferir separado (por exemplo, para ver o aviso de pronto do Docker):
 
 ```bash
 docker compose run --rm dev
 ```
 
-Sobe banco, API e frontend, na ordem certa, e mostra os endereços no terminal
-quando está tudo pronto. `Ctrl+C` só fecha esse aviso — os serviços continuam
-no ar; `docker compose down` desliga de verdade.
+E, em outro terminal:
+
+```bash
+cd frontend && npm run dev
+```
 
 | Serviço | Endereço | O que é |
 | --- | --- | --- |
-| `frontend-dev` | http://localhost:5173 | Vite com hot reload |
+| frontend (`npm run dev`) | http://localhost:5173 | Vite com hot reload, direto no Windows |
 | `backend` | http://localhost:8000/docs | API (FastAPI), documentação interativa |
 | `db` | localhost:5432 | PostgreSQL 16 |
+
+O `npm run dev` lê o mesmo `.env` da raiz (`VITE_API_URL`, `VITE_VISAO_URL`,
+`MEDSIGNAL_MODO_TESTE`, `FRONTEND_DEV_PORT`), com os mesmos padrões de antes.
+
+#### Por que o frontend não roda mais no Docker
+
+No Windows, o container lê o código por uma pasta montada, e cada leitura de
+arquivo passa por essa ponte. Medido em 25/10/2026: a primeira abertura de cada
+arquivo levava **de 10 a 21 s** no container, contra 0,05 a 0,1 s com o Vite
+nativo. O `index.html` levava de 3 a 6 s a cada recarga. Na prática, toda tela
+aberta pela primeira vez, ou logo depois de uma edição, ficava esses segundos
+em "Carregando…". Banco e API não sofrem com isso: a API é imagem, não pasta
+montada.
+
+O serviço `frontend-dev` continua no compose, fora da subida padrão, para quem
+roda em Linux ou com o projeto dentro do WSL2, onde a montagem é rápida:
+
+```bash
+docker compose --profile frontend-docker up -d frontend-dev
+```
+
+Se você já tinha o container antigo rodando, pare-o antes do `npm run dev`; ele
+ocupa a porta 5173 e o Vite recusa subir:
+
+```bash
+docker compose stop frontend-dev
+```
 
 Para criar seu usuário administrador, veja `db/scripts/criar-admin.sql`.
 
@@ -152,12 +198,9 @@ same-origin e registra um erro no console.
 
 ## Sem Docker
 
-O frontend roda direto, desde que você tenha Node 22+ (o `jsdom` 30 dos testes exige):
-
-```bash
-npm install
-npm run dev
-```
+O frontend já roda direto no Windows, com Node 22+ (ver
+[Rodando localmente](#rodando-localmente)): `npm install` e `npm run dev` em
+`frontend/`. Sem a API no ar, a tela de login falha com erro de rede.
 
 ---
 

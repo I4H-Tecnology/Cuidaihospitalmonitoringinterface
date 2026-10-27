@@ -9,6 +9,8 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+# Módulo financeiro: pacote à parte, ligado por app/integracao_financeiro.py.
+COPY financeiro ./financeiro
 
 EXPOSE 8000
 

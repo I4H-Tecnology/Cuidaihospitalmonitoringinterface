@@ -91,7 +91,7 @@ export function BedsRoomsScreen() {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar ambiente ou paciente"
-              className="rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+              className="rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-marca-viva"
             />
           </div>
           <button
@@ -137,7 +137,7 @@ export function BedsRoomsScreen() {
               <section key={a.id} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
                 <header className="mb-3 flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <DoorOpen className="h-5 w-5 text-[#0A7EA4]" />
+                    <DoorOpen className="h-5 w-5 text-marca-texto" />
                     <div>
                       <h3 className="text-gray-800">{a.nome}</h3>
                       <p className="text-xs text-gray-500">{TIPO[a.tipo] ?? a.tipo}</p>

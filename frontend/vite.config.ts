@@ -1,10 +1,42 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vitest/config'
+import { loadEnv } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+// Raiz do repositório, onde mora o .env do projeto inteiro.
+const RAIZ = path.resolve(__dirname, '..')
+
+/**
+ * `npm run dev` roda direto no Windows, fora do Docker (ver README): lendo o
+ * código pela pasta montada no container, cada arquivo levava de 10 a 21 s para
+ * abrir na primeira vez. Aqui o .env da raiz faz o papel do bloco
+ * `environment:` que o serviço frontend-dev tem no compose, com os mesmos
+ * padrões; variável que já vem do ambiente (o próprio compose, quando o
+ * frontend-dev sobe) continua valendo. Fora do modo development (build, testes)
+ * não mexe em nada.
+ */
+function servidorDeDesenvolvimento(mode: string) {
+  const env: Record<string, string> = mode === 'development' ? loadEnv(mode, RAIZ, '') : {}
+  if (mode === 'development') {
+    process.env.VITE_API_URL ??= env.VITE_API_URL || 'http://localhost:8000'
+    process.env.VITE_VISAO_URL ??= env.VITE_VISAO_URL || 'http://localhost:8001'
+    process.env.VITE_MODO_TESTE ??= env.MEDSIGNAL_MODO_TESTE || 'false'
+  }
+  return {
+    // A API só libera CORS para esta porta (CORS_ORIGINS no compose). Ocupada,
+    // é melhor falhar na subida do que pular para a 5174 e ver o navegador
+    // recusar toda requisição.
+    port: Number(env.FRONTEND_DEV_PORT) || 5173,
+    strictPort: true,
+  }
+}
+
+// Arrow com corpo de expressão, não de bloco: o `thresholds.autoUpdate` lá
+// embaixo reescreve este arquivo e só reconhece esse formato.
+export default defineConfig(({ mode }) => ({
+  server: servidorDeDesenvolvimento(mode),
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
@@ -65,4 +97,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

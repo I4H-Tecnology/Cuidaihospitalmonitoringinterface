@@ -213,6 +213,9 @@ class ServicoVisao:
         self._latencias: deque[float] = deque(maxlen=240)   # ~30 s a 8 fps
         self._chegadas: deque[float] = deque(maxlen=64)
         self._trava = threading.Lock()
+        # Onde o YOLO roda ("cuda:0 (…, FP16)" ou "cpu"). Só se sabe depois
+        # que o pipeline carrega os modelos, no primeiro quadro.
+        self.dispositivo: str | None = None
 
     # -- laço principal ---------------------------------------------------
 
@@ -288,6 +291,9 @@ class ServicoVisao:
                     self.tentativa = 0
                     self.proxima_tentativa_em = None
                     self._espera.zerar()
+                    self.dispositivo = getattr(
+                        getattr(pipeline, "detector", None), "descricao_dispositivo", None
+                    )
                     # O fps é medido sobre as últimas chegadas; contar o tempo
                     # em que a fonte esteve fora derrubaria o número por
                     # minutos depois de a captura já ter voltado ao normal.
@@ -373,6 +379,7 @@ class ServicoVisao:
         if len(chegadas) >= 2 and chegadas[-1] > chegadas[0]:
             fps = round((len(chegadas) - 1) / (chegadas[-1] - chegadas[0]), 2)
         return {
+            "dispositivo": self.dispositivo,
             "fps_real": fps,
             "fps_alvo": self.cfg.fps_alvo,
             "latencia_media_ms": round(statistics.mean(latencias), 1) if latencias else None,

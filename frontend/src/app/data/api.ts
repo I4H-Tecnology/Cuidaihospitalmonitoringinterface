@@ -6,7 +6,7 @@ const rawApiBaseUrl =
 if (!rawApiBaseUrl) {
   console.error('[api] VITE_API_URL is not set. Falling back to same-origin requests.');
 }
-const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
+export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 
 /* ---------------------------------------------------------------------------
  * Token de sessão
@@ -40,6 +40,16 @@ export const registrarPerdaDeSessao = (callback: () => void): void => {
   aoPerderSessao = callback;
 };
 
+/**
+ * A sessão morreu (a API respondeu 401): descarta o token e avisa quem
+ * registrou. Exportada para clientes que não passam por `request`, como o do
+ * módulo financeiro, que tem cliente HTTP próprio.
+ */
+export const perderSessao = (): void => {
+  descartarToken();
+  aoPerderSessao?.();
+};
+
 export class ApiError extends Error {
   status: number;
   payload: Record<string, unknown>;
@@ -53,7 +63,7 @@ export class ApiError extends Error {
 
 type FetchOptions = RequestInit & { json?: boolean };
 
-const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> => {
+export const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const requestUrl = `${API_BASE_URL}${normalizedPath}`;
   if (import.meta.env.DEV) {
@@ -76,8 +86,7 @@ const request = async <T>(path: string, options: FetchOptions = {}): Promise<T> 
     const payload = await response.json().catch(() => ({}));
     if (response.status === 401) {
       // Token expirado ou inválido. Insistir com ele só gera mais 401.
-      descartarToken();
-      aoPerderSessao?.();
+      perderSessao();
     }
     throw new ApiError(payload.error || 'Erro inesperado.', response.status, payload);
   }
@@ -263,6 +272,8 @@ export interface CameraResumo {
   pacienteNome?: string | null;
   ocorrencias24h: number;
   ultimaOcorrencia?: string | null;
+  /** Processo do serviço de visão desta câmera. Nulo = serviço padrão do painel. */
+  visaoUrl?: string | null;
 }
 
 export interface OcorrenciaResumo {
@@ -299,6 +310,7 @@ export const createCamera = (payload: {
   ambienteId: string;
   identificador: string;
   urlStream: string;
+  visaoUrl?: string;
 }) =>
   request<CameraResumo>('/api/cameras', {
     method: 'POST',
@@ -307,7 +319,8 @@ export const createCamera = (payload: {
 
 export const editarCamera = (
   cameraId: string,
-  payload: { tenantId: string; identificador?: string; urlStream?: string; ambienteId?: string }
+  // visaoUrl vazio limpa o campo e a câmera volta ao serviço padrão.
+  payload: { tenantId: string; identificador?: string; urlStream?: string; ambienteId?: string; visaoUrl?: string }
 ) =>
   request<CameraResumo>(`/api/cameras/${cameraId}`, {
     method: 'PATCH',
@@ -695,3 +708,142 @@ export const inativarPrescricao = (tenantId: string, prescricaoId: string) =>
     `/api/prescricoes/${prescricaoId}/inativar?tenantId=${encodeURIComponent(tenantId)}`,
     { method: 'POST' }
   );
+
+/* ---------------------------------------------------------------------------
+ * App Paciente: todos os acessos de família da clínica (25/10/2026)
+ * -------------------------------------------------------------------------- */
+
+export interface AcompanhanteDaClinica extends AcompanhanteResumo {
+  pacienteNome: string;
+  ambienteNome: string | null;
+  termoAceitoEm: string | null;
+  ultimoAcessoEm: string | null;
+}
+
+export const fetchAcompanhantesDaClinica = (tenantId: string) =>
+  request<AcompanhanteDaClinica[]>(`/api/acompanhantes?tenantId=${encodeURIComponent(tenantId)}`);
+
+/* ---------------------------------------------------------------------------
+ * Contratos (Administração → Contratos, 25/10/2026)
+ * -------------------------------------------------------------------------- */
+
+export type CategoriaContrato = 'servico' | 'manutencao' | 'locacao' | 'fornecimento' | 'software' | 'outro';
+export type SituacaoContrato = 'agendado' | 'vigente' | 'vencendo' | 'vencido' | 'encerrado';
+
+export interface ContratoResumo {
+  id: string;
+  numero: string | null;
+  objeto: string;
+  fornecedor: string;
+  fornecedorDocumento: string | null;
+  categoria: CategoriaContrato;
+  valorMensal: number | null;
+  inicio: string;
+  fim: string | null;
+  renovacaoAutomatica: boolean;
+  avisoPrevioDias: number;
+  responsavel: string | null;
+  observacoes: string | null;
+  /** Calculada pelo servidor a partir das datas, no fuso da clínica. */
+  situacao: SituacaoContrato;
+  /** Até quando decidir renovar ou não (fim − aviso prévio). */
+  decidirAte: string | null;
+  encerradoEm: string | null;
+  motivoEncerramento: string | null;
+  criadoPorNome: string | null;
+  criadoEm: string;
+  pedidosVinculados: number;
+}
+
+export interface ContratoPayload {
+  numero?: string;
+  objeto: string;
+  fornecedor: string;
+  fornecedorDocumento?: string;
+  categoria: CategoriaContrato;
+  valorMensal?: number | null;
+  inicio: string;
+  fim?: string;
+  renovacaoAutomatica: boolean;
+  avisoPrevioDias: number;
+  responsavel?: string;
+  observacoes?: string;
+}
+
+export const fetchContratos = (tenantId: string) =>
+  request<ContratoResumo[]>(`/api/contratos?tenantId=${encodeURIComponent(tenantId)}`);
+
+export const criarContrato = (tenantId: string, contrato: ContratoPayload) =>
+  request<ContratoResumo>('/api/contratos', { method: 'POST', body: JSON.stringify({ tenantId, ...contrato }) });
+
+export const editarContrato = (tenantId: string, contratoId: string, contrato: ContratoPayload) =>
+  request<ContratoResumo>(`/api/contratos/${contratoId}`, { method: 'PATCH', body: JSON.stringify({ tenantId, ...contrato }) });
+
+export const encerrarContrato = (tenantId: string, contratoId: string, motivo: string) =>
+  request<{ ok: boolean }>(`/api/contratos/${contratoId}/encerrar`, { method: 'POST', body: JSON.stringify({ tenantId, motivo }) });
+
+/* ---------------------------------------------------------------------------
+ * Compras (Administração → Compras, 25/10/2026)
+ * -------------------------------------------------------------------------- */
+
+export type StatusPedido = 'solicitado' | 'aprovado' | 'recusado' | 'comprado' | 'recebido' | 'cancelado';
+
+export interface ItemPedido {
+  descricao: string;
+  quantidade: number;
+  unidade: string;
+  valorUnitario: number | null;
+}
+
+export interface EtapaPedido {
+  etapa: 'solicitado' | 'decidido' | 'comprado' | 'recebido' | 'cancelado';
+  quem: string | null;
+  quando: string;
+}
+
+export interface PedidoResumo {
+  id: string;
+  numero: number;
+  titulo: string;
+  justificativa: string | null;
+  urgente: boolean;
+  status: StatusPedido;
+  fornecedor: string | null;
+  contratoId: string | null;
+  contratoObjeto: string | null;
+  itens: ItemPedido[];
+  valorEstimado: number | null;
+  valorFinal: number | null;
+  solicitanteId: string;
+  solicitanteNome: string;
+  motivoRecusa: string | null;
+  motivoCancelamento: string | null;
+  trilha: EtapaPedido[];
+  criadoEm: string;
+}
+
+const q = (tenantId: string) => `?tenantId=${encodeURIComponent(tenantId)}`;
+
+export const fetchPedidos = (tenantId: string) => request<PedidoResumo[]>(`/api/compras${q(tenantId)}`);
+
+export const criarPedido = (tenantId: string, pedido: { titulo: string; justificativa?: string; urgente: boolean; itens: ItemPedido[] }) =>
+  request<PedidoResumo>('/api/compras', { method: 'POST', body: JSON.stringify({ tenantId, ...pedido }) });
+
+export const aprovarPedido = (tenantId: string, id: string) =>
+  request<PedidoResumo>(`/api/compras/${id}/aprovar${q(tenantId)}`, { method: 'POST' });
+
+export const recusarPedido = (tenantId: string, id: string, motivo: string) =>
+  request<PedidoResumo>(`/api/compras/${id}/recusar`, { method: 'POST', body: JSON.stringify({ tenantId, motivo }) });
+
+export const registrarCompra = (tenantId: string, id: string, dados: { fornecedor: string; valorFinal: number; contratoId?: string | null }) =>
+  request<PedidoResumo>(`/api/compras/${id}/comprar`, { method: 'POST', body: JSON.stringify({ tenantId, ...dados }) });
+
+export const confirmarRecebimento = (tenantId: string, id: string) =>
+  request<PedidoResumo>(`/api/compras/${id}/receber${q(tenantId)}`, { method: 'POST' });
+
+export const cancelarPedido = (tenantId: string, id: string, motivo: string) =>
+  request<{ ok: boolean }>(`/api/compras/${id}/cancelar`, { method: 'POST', body: JSON.stringify({ tenantId, motivo }) });
+
+/** "R$ 1.234,56". Valor ausente vira traço, não zero: zero é um valor. */
+export const formatarReais = (valor: number | null | undefined): string =>
+  valor == null ? '—' : valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

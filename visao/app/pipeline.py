@@ -93,7 +93,15 @@ class PipelineDeteccao:
     ) -> None:
         self.cfg = cfg
         self.detector = DetectorPessoas(pasta_pesos=pasta_pesos)
+        # Um MediaPipe POR PESSOA. Em modo vídeo ele usa os landmarks do quadro
+        # anterior para achar o corpo no próximo; com um só para todos, o
+        # recorte da enfermeira herdava a pose da paciente e vice-versa.
+        # `estimador` é carregado no preparar() e vai para a primeira pessoa,
+        # para ela não pagar a inicialização no meio do vídeo.
         self.estimador = EstimadorPose()
+        self._poses: dict[int, EstimadorPose] = {}
+        self._visto_no_quadro: dict[int, int] = {}
+        self._quadros = 0
         self.extrator = ExtratorCaracteristicas()
         self.classificador = ClassificadorQuedas(limiares)
 
@@ -121,10 +129,15 @@ class PipelineDeteccao:
         self.extrator.esquecer(ids_ativos)
         self.classificador.esquecer(ids_ativos)
 
+        self._quadros += 1
+        for id_ativo in ids_ativos:
+            self._visto_no_quadro[id_ativo] = self._quadros
+        self._liberar_poses()
+
         t0 = time.monotonic()
         for pessoa in pessoas:
             recorte = pessoa.recortar(quadro.imagem)
-            pose = self.estimador.estimar(recorte, deslocamento=(pessoa.x1, pessoa.y1))
+            pose = self._pose_de(pessoa.id_rastreio).estimar(recorte, deslocamento=(pessoa.x1, pessoa.y1))
             caracteristicas = self.extrator.extrair(pessoa, pose, quadro.timestamp)
 
             avaliacao = None
@@ -150,6 +163,41 @@ class PipelineDeteccao:
         resultado.ms_total = (time.monotonic() - inicio) * 1000
         return resultado
 
+    # Quadros sem ver a pessoa antes de fechar o MediaPipe dela (~2 s a 8 fps).
+    # Detecção de quem está deitado pisca; recriar a cada piscada custaria a
+    # inicialização do modelo de novo e jogaria fora a continuidade da pose.
+    QUADROS_PARA_LIBERAR_POSE = 16
+
+    def _pose_de(self, id_rastreio: int) -> EstimadorPose:
+        estimador = self._poses.get(id_rastreio)
+        if estimador is None:
+            if self.estimador not in self._poses.values():
+                estimador = self.estimador
+            else:
+                estimador = EstimadorPose()
+                estimador.carregar()
+            self._poses[id_rastreio] = estimador
+        return estimador
+
+    def _liberar_poses(self) -> None:
+        for id_antigo in list(self._poses):
+            if self._quadros - self._visto_no_quadro.get(id_antigo, 0) > self.QUADROS_PARA_LIBERAR_POSE:
+                estimador = self._poses.pop(id_antigo)
+                self._visto_no_quadro.pop(id_antigo, None)
+                if estimador is self.estimador:
+                    # O pré-carregado volta limpo para a próxima pessoa.
+                    estimador.fechar()
+                    estimador.carregar()
+                else:
+                    estimador.fechar()
+
+    def _fechar_poses(self) -> None:
+        for estimador in self._poses.values():
+            if estimador is not self.estimador:
+                estimador.fechar()
+        self._poses.clear()
+        self._visto_no_quadro.clear()
+
     def reiniciar(self, limiares: Limiares | None = None) -> None:
         """Esquece tudo o que foi visto, mantendo os modelos carregados.
 
@@ -161,6 +209,7 @@ class PipelineDeteccao:
         self.detector.reiniciar_rastreio()
         # O MediaPipe em modo vídeo reaproveita a detecção anterior; fechar e
         # reabrir é o jeito de apagar essa memória.
+        self._fechar_poses()
         self.estimador.fechar()
         self.estimador.carregar()
         self.extrator = ExtratorCaracteristicas()
@@ -178,4 +227,5 @@ class PipelineDeteccao:
                     return
 
     def fechar(self) -> None:
+        self._fechar_poses()
         self.estimador.fechar()

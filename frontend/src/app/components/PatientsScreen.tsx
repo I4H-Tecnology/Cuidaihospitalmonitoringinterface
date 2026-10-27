@@ -86,8 +86,8 @@ export function PatientsScreen({ aoAbrirPaciente }: Props) {
             <button
               type="button"
               onClick={() => setModalNovo(true)}
-              className="flex items-center gap-2 rounded-lg bg-[#0A7EA4] px-5 py-2.5 text-sm
-                         text-white shadow-sm transition-colors hover:bg-[#0EA5E9]"
+              className="flex items-center gap-2 rounded-lg bg-marca px-5 py-2.5 text-sm
+                         text-white shadow-sm transition-colors hover:bg-marca-hover"
             >
               <UserPlus className="h-4 w-4" />
               Admitir paciente
@@ -126,7 +126,7 @@ export function PatientsScreen({ aoAbrirPaciente }: Props) {
                 onClick={() => setVisao(valor)}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-colors ${
                   visao === valor
-                    ? 'bg-[#0A7EA4] text-white shadow-sm'
+                    ? 'bg-marca text-white shadow-sm'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
               >

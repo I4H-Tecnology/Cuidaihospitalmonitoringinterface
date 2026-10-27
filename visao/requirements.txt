@@ -2,7 +2,10 @@
 opencv-python==4.10.0.84
 numpy==1.26.4          # mediapipe ainda nao aceita numpy 2.x
 
-# Deteccao de pessoa. Torch CPU deve vir do indice proprio:
+# Deteccao de pessoa. Torch vem do indice proprio, conforme a maquina.
+#   Com GPU NVIDIA (o YOLO roda nela em FP16, varias vezes mais rapido):
+#   pip install --index-url https://download.pytorch.org/whl/cu124 torch==2.5.1+cu124 torchvision==0.20.1+cu124
+#   Sem GPU NVIDIA:
 #   pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchvision==0.20.1
 ultralytics==8.3.55
 lap==0.5.13            # assignment linear do ByteTrack; o ultralytics baixa
