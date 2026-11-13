@@ -12,7 +12,6 @@ import {
 } from '../data/api';
 import type { CameraResumo, ClassificacaoOcorrencia, OcorrenciaResumo, PacienteResumo } from '../data/api';
 import { estaAberta } from '../data/ocorrencias';
-import { getModuleForScreen } from '../data/rbac';
 import { useAlertas } from '../data/useAlertas';
 import { VISAO_URL, fetchServicoPadrao, urlDoVideoAoVivo } from '../data/visao';
 
@@ -56,7 +55,7 @@ interface Props {
 }
 
 export function MonitoringScreen({ aoAbrirPaciente }: Props) {
-  const { tenantId, can } = useAuth();
+  const { tenantId, can, podeAbrirTela } = useAuth();
   const { ocorrencias, carregando: carregandoOcorrencias, recarregar } = useAlertas(tenantId);
   const [cameras, setCameras] = useState<CameraResumo[]>([]);
   const [padrao, setPadrao] = useState<{ noAr: boolean; camera: string | null }>({ noAr: false, camera: null });
@@ -77,7 +76,7 @@ export function MonitoringScreen({ aoAbrirPaciente }: Props) {
 
   const podeAdicionar = can('monitoring', 'edit');
   const podeAtender = can('alerts', 'edit');
-  const podeAbrirProntuario = !!aoAbrirPaciente && can(getModuleForScreen('pep'), 'view');
+  const podeAbrirProntuario = !!aoAbrirPaciente && podeAbrirTela('pep');
 
   const carregar = useCallback(async () => {
     if (!tenantId) return;

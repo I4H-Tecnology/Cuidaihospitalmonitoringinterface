@@ -7,7 +7,7 @@ import { useSaudeDoSistema } from './useSaudeDoSistema';
 
 /** Sobre: versão e servidor, para quem abre chamado com o suporte saber o que dizer. */
 export function SecaoSobre({ onNavigate }: { onNavigate?: (tela: Screen) => void }) {
-  const { can } = useAuth();
+  const { podeAbrirTela } = useAuth();
   const { saude, erro, carregando, recarregar } = useSaudeDoSistema();
 
   return (
@@ -44,7 +44,7 @@ export function SecaoSobre({ onNavigate }: { onNavigate?: (tela: Screen) => void
         {erro && <div className="pb-5"><Aviso>{erro}</Aviso></div>}
       </Cartao>
 
-      {onNavigate && can('monitoring', 'view') && (
+      {onNavigate && podeAbrirTela('saude') && (
         <button type="button" onClick={() => onNavigate('saude')} className={BOTAO_SECUNDARIO}>
           <Activity className="h-4 w-4" aria-hidden="true" />
           Ver a saúde completa do sistema

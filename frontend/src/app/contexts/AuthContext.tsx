@@ -7,6 +7,7 @@ import {
   type Platform,
   type Role
 } from '../data/authStore';
+import { TELAS_DE_TODOS, getModuleForScreen, perfilAbreTela, type Screen } from '../data/rbac';
 import {
   descartarToken,
   fetchPermissions,
@@ -38,6 +39,8 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string; requiresPasswordChange?: boolean }>;
   logout: (action?: string) => void;
   can: (module: string, action: 'view' | 'create' | 'edit' | 'delete') => boolean;
+  /** A tela abre para este usuário? Junta a permissão do módulo e o filtro de telas do perfil. */
+  podeAbrirTela: (screen: Screen) => boolean;
   recordAccess: (log: { action: string; module: string; platform: Platform; status: 'SUCESSO' | 'FALHA' | 'BLOQUEADO' }) => void;
   isLoading: boolean;
 }
@@ -224,6 +227,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return Boolean(permissions?.[module]?.[action]);
   };
 
+  const podeAbrirTela = (screen: Screen) =>
+    perfilAbreTela(user?.role, screen) &&
+    (TELAS_DE_TODOS.has(screen) || can(getModuleForScreen(screen), 'view'));
+
   useEffect(() => {
     if (!tenantId || !user) return;
 
@@ -258,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         can,
+        podeAbrirTela,
         recordAccess,
         isLoading
       }}

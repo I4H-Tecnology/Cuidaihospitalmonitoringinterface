@@ -48,7 +48,8 @@ import {
   recordAccessLog,
   savePermissions,
   saveSecurityPolicy,
-  updateUserRequest
+  updateUserRequest,
+  ApiError
 } from '../data/api';
 
 type UserTab = 'users' | 'permissions' | 'access-history' | 'security';
@@ -167,7 +168,12 @@ const emptyForm = (tenantId: string | null) => ({
 });
 
 export function UsersScreen() {
-  const { tenantId, user: currentUser } = useAuth();
+  const { tenantId, user: currentUser, can } = useAuth();
+  // Os botões seguem a permissão do módulo `users`, a mesma que a API confere:
+  // perfil de leitura (o da banca do TCC, o gestor) não vê o que daria 403.
+  const podeCriarUsuario = can('users', 'create');
+  const podeEditarUsuario = can('users', 'edit');
+  const podeExcluirUsuario = can('users', 'delete');
   const { showToast } = useSystemToast();
   const [currentTab, setCurrentTab] = useState<UserTab>('users');
   const [selectedRole, setSelectedRole] = useState<Role>('ADMIN');
@@ -254,6 +260,13 @@ export function UsersScreen() {
 
     if (!formState.name || !formState.email || !normalizedLogin) {
       showToast({ message: 'Preencha os campos obrigatórios.' });
+      return;
+    }
+
+    // O banco recusa e-mail sem "@" (CHECK em usuario.email). Avisar aqui evita
+    // um erro genérico depois de preencher o formulário inteiro.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email.trim())) {
+      showToast({ message: 'Informe um e-mail válido, como nome@dominio.com.' });
       return;
     }
 
@@ -408,7 +421,10 @@ export function UsersScreen() {
 
       setShowUserModal(false);
     } catch (error) {
-      showToast({ message: 'Não foi possível salvar o usuário.' });
+      // A API explica o motivo quando sabe (login ou e-mail repetido, e-mail
+      // inválido); sem isso a pessoa fica sem saber o que corrigir.
+      const motivo = error instanceof ApiError && error.status < 500 ? error.message : '';
+      showToast({ message: motivo ? `Não foi possível salvar o usuário: ${motivo}` : 'Não foi possível salvar o usuário.' });
     }
   };
 
@@ -541,7 +557,7 @@ export function UsersScreen() {
           <div>
             <h1 className="text-gray-800 mb-1">Usuários</h1>
           </div>
-          {currentTab === 'users' && (
+          {currentTab === 'users' && podeCriarUsuario && (
             <button
               onClick={openNewUserModal}
               className="flex items-center gap-2 px-4 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover transition-colors"
@@ -663,12 +679,16 @@ export function UsersScreen() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-1 hover:bg-gray-100 rounded transition-colors" title="Editar" onClick={() => openEditUserModal(user)}>
-                          <Edit className="w-4 h-4 text-gray-600" />
-                        </button>
-                        <button className="p-1 hover:bg-red-50 rounded transition-colors" title="Excluir" disabled={user.isSystemUser} onClick={() => handleDeleteUser(user)}>
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </button>
+                        {podeEditarUsuario && (
+                          <button className="p-1 hover:bg-gray-100 rounded transition-colors" title="Editar" onClick={() => openEditUserModal(user)}>
+                            <Edit className="w-4 h-4 text-gray-600" />
+                          </button>
+                        )}
+                        {podeExcluirUsuario && (
+                          <button className="p-1 hover:bg-red-50 rounded transition-colors" title="Excluir" disabled={user.isSystemUser} onClick={() => handleDeleteUser(user)}>
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -921,14 +941,15 @@ export function UsersScreen() {
                         log.status === 'FALHA' ? 'bg-red-100' :
                         'bg-orange-100'
                       }`}>
-                        {log.platform === 'web' ? (
-                          <Monitor className={`w-5 h-5 ${
+                        {/* A API não guarda a plataforma: sem ela, é o painel web. */}
+                        {log.platform === 'app' ? (
+                          <Smartphone className={`w-5 h-5 ${
                             log.status === 'SUCESSO' ? 'text-green-600' :
                             log.status === 'FALHA' ? 'text-red-600' :
                             'text-orange-600'
                           }`} />
                         ) : (
-                          <Smartphone className={`w-5 h-5 ${
+                          <Monitor className={`w-5 h-5 ${
                             log.status === 'SUCESSO' ? 'text-green-600' :
                             log.status === 'FALHA' ? 'text-red-600' :
                             'text-orange-600'
@@ -937,14 +958,14 @@ export function UsersScreen() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm text-gray-800">{log.user_id || 'Sistema'}</p>
+                          <p className="text-sm text-gray-800">{log.user_name || log.user_id || 'Sistema'}</p>
                           <span className="text-xs text-gray-400">{'→'}</span>
                           <p className="text-sm text-gray-600">{log.action}</p>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>Modulo: {log.module}</span>
-                          <span>IP: {log.ip_address}</span>
-                          <span>{new Date(log.created_at).toLocaleString()}</span>
+                          {log.module && <span>Módulo: {log.module}</span>}
+                          <span>IP: {log.ip_address ?? '—'}</span>
+                          <span>{new Date(log.created_at).toLocaleString('pt-BR')}</span>
                         </div>
                       </div>
                     </div>

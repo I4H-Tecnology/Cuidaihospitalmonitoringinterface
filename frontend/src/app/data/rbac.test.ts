@@ -5,7 +5,10 @@ import {
   TELAS_DE_TODOS,
   defaultPlatform,
   ehTelaFinanceira,
+  TELAS_DA_RFC,
   getModuleForScreen,
+  perfilAbreTela,
+  perfilSoDaRfc,
   screenModuleMap,
   type Screen,
 } from './rbac';
@@ -102,6 +105,54 @@ describe('mapa de telas para módulos de permissão', () => {
 
   it('assume a plataforma web por padrão', () => {
     expect(defaultPlatform).toBe('web');
+  });
+});
+
+describe('telas por perfil (VISITOR, a banca do TCC)', () => {
+  // A mesma lista de módulos que o VISITOR recebe em db/init/02_perfis.sql. Se
+  // uma tela da RFC passar a precisar de outro módulo, o banco e esta lista
+  // têm de mudar juntos — senão a tela abre vazia ou nem aparece.
+  const MODULOS_DO_VISITOR = [
+    'alerts', 'beds', 'companions', 'dashboard', 'monitoring',
+    'patients', 'reports', 'settings', 'users',
+  ];
+
+  it('abre só as telas da RFC', () => {
+    const abertas = TELAS.filter((t) => perfilAbreTela('VISITOR', t));
+    expect(abertas.sort()).toEqual([...TELAS_DA_RFC].sort());
+  });
+
+  it('não abre o que a seção 2.6 da RFC deixa de fora, nem o que veio depois', () => {
+    for (const tela of [
+      'pep', 'evolucoes', 'score-risco', 'sensores', 'ausencia-quarto', 'linha-eventos',
+      'internacoes', 'escalas', 'agenda', 'compras', 'contratos', 'saude',
+      'previsao', 'insights', 'indicadores-chave', 'financeiro:pagar', 'financeiro:pessoal',
+    ] as Screen[]) {
+      expect(perfilAbreTela('VISITOR', tela), tela).toBe(false);
+    }
+  });
+
+  it('toda tela liberada cai num módulo que o VISITOR recebe no banco', () => {
+    const modulos = new Set([...TELAS_DA_RFC].map((t) => getModuleForScreen(t)));
+    expect([...modulos].sort()).toEqual([...MODULOS_DO_VISITOR].sort());
+  });
+
+  it('reconhece o perfil que só vê o que a RFC especifica', () => {
+    // Serve ao que não é tela, como o "Novo dashboard" (protótipo com números
+    // de exemplo): só o VISITOR deixa de recebê-lo.
+    expect(perfilSoDaRfc('VISITOR')).toBe(true);
+    for (const role of ['ADMIN', 'MANAGER', 'NURSE', 'DOCTOR', 'SYSTEM'] as const) {
+      expect(perfilSoDaRfc(role), role).toBe(false);
+    }
+    expect(perfilSoDaRfc(undefined)).toBe(false);
+  });
+
+  it('só restringe o VISITOR: os outros perfis seguem pelo módulo', () => {
+    for (const role of ['ADMIN', 'MANAGER', 'NURSE', 'DOCTOR', 'SYSTEM'] as const) {
+      expect(perfilAbreTela(role, 'sensores')).toBe(true);
+      expect(perfilAbreTela(role, 'financeiro:pagar')).toBe(true);
+    }
+    expect(perfilAbreTela(undefined, 'compras')).toBe(true);
   });
 });
 

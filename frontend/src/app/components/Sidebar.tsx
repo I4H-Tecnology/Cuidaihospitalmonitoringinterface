@@ -23,7 +23,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getModuleForScreen, type Screen } from '../data/rbac';
+import type { Screen } from '../data/rbac';
 import { AREAS_FINANCEIRO } from '../../modulos/financeiro/navegacao';
 
 interface SidebarProps {
@@ -105,7 +105,7 @@ export function Sidebar({
   isCollapsed = false, onToggleCollapse, currentScreen = 'dashboard', onNavigate,
   casosAbertos = 0, alertasCriticos = 0, nomeDaClinica = null,
 }: SidebarProps) {
-  const { can } = useAuth();
+  const { can, podeAbrirTela } = useAuth();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
 
@@ -277,8 +277,7 @@ export function Sidebar({
 
   const isItemAllowed = (item: MenuItem): boolean => {
     if (item.screen) {
-      const module = getModuleForScreen(item.screen);
-      return can(module, 'view');
+      return podeAbrirTela(item.screen);
     }
     if (item.module) {
       return can(item.module, 'view');

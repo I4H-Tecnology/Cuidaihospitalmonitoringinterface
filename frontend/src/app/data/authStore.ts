@@ -71,6 +71,8 @@ export interface AccessLog {
   id: string;
   tenant_id: string;
   user_id?: string;
+  /** Nome de quem agiu, como a API devolve em /api/access-logs (null: sem usuário, como um login que falhou). */
+  user_name?: string | null;
   action: string;
   module: string;
   platform: Platform;
