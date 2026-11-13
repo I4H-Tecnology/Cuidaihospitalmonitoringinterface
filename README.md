@@ -251,9 +251,14 @@ da seção 2.5 estão codificadas como constraints, não só na aplicação — 
 dado inválido mesmo que a API esqueça de validar. Cada constraint referencia a regra
 correspondente (RN01, RN05, RN11...) em comentário.
 
-`db/init/02_perfis.sql` cria os perfis de acesso (ADMIN, MANAGER, NURSE) com a matriz
-de permissão por módulo. É **idempotente**: serve de init num volume novo e de reparo num
-banco que já existe, sem duplicar a matriz em dois arquivos.
+`db/init/02_perfis.sql` cria os perfis de acesso (ADMIN, MANAGER, NURSE e VISITOR) com a
+matriz de permissão por módulo. É **idempotente**: serve de init num volume novo e de reparo
+num banco que já existe, sem duplicar a matriz em dois arquivos.
+
+O VISITOR é o perfil de **somente leitura** da apresentação do TCC: vê só o que a RFC
+especifica e não escreve em nada. O usuário dele nasce com
+`db/scripts/criar-usuario-tcc.sql`, que recebe a senha por parâmetro (instruções no
+cabeçalho do arquivo).
 
 ```bash
 docker compose exec -T db psql -U medsignal -d medsignal   -f /docker-entrypoint-initdb.d/02_perfis.sql
