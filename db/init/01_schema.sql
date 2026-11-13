@@ -398,14 +398,7 @@ CREATE TABLE IF NOT EXISTS contrato (
   objeto                text NOT NULL CHECK (length(btrim(objeto)) >= 3),
   fornecedor            text NOT NULL CHECK (length(btrim(fornecedor)) >= 2),
   -- CNPJ ou CPF, só dígitos.
-  fornecedor_documento  text CHECK (fornecedor_documento ~ '^([0-9]{11}|[0-9]{14}) (RN08, RN09, RNF05)
---
---  Imagens e vídeos são mantidos por no máximo 24h e depois excluídos, ficando
---  só os dados da ocorrência. Esse dado NÃO vive neste banco: fica no volume do
---  serviço de visão computacional, com rotina de expurgo própria.
---  A `ocorrencia` guarda apenas o registro do evento, que é permanente.
--- =============================================================================
-),
+  fornecedor_documento  text CHECK (fornecedor_documento ~ '^([0-9]{11}|[0-9]{14})$'),
   categoria             text NOT NULL
                           CHECK (categoria IN ('servico', 'manutencao', 'locacao', 'fornecimento', 'software', 'outro')),
   valor_mensal          numeric(12,2) CHECK (valor_mensal >= 0),
