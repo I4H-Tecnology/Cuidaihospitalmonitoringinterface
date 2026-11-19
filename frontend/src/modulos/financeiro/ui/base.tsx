@@ -520,6 +520,7 @@ export function ConfirmarComMotivo({
 }) {
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   return (
     <Janela
       titulo={titulo}
@@ -535,8 +536,13 @@ export function ConfirmarComMotivo({
             carregando={enviando}
             onClick={async () => {
               setEnviando(true);
+              setErro(null);
               try {
                 await aoConfirmar(motivo.trim());
+              } catch (e) {
+                // Quem chama pode deixar a falha subir: ela aparece aqui, com o
+                // motivo digitado intacto, e não vira rejeição sem tratamento.
+                setErro(e instanceof Error ? e.message : 'Não foi possível concluir.');
               } finally {
                 setEnviando(false);
               }
@@ -548,6 +554,11 @@ export function ConfirmarComMotivo({
       }
     >
       <div className={`mb-4 text-sm ${texto.normal}`}>{mensagem}</div>
+      {erro && (
+        <div className="mb-4">
+          <Aviso tipo="erro">{erro}</Aviso>
+        </div>
+      )}
       <AreaTexto rotulo="Motivo (fica registrado na auditoria)" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
     </Janela>
   );
