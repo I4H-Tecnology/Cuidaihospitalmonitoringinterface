@@ -335,12 +335,21 @@ services:
       SONAR_HOST_URL: http://sonarqube:9000
       # Vazio, o servidor responde "Not authorized"; ver o roteiro acima.
       SONAR_TOKEN: ${SONAR_TOKEN:-}
-    # Não monte o repositório inteiro. O sensor de Python varre a árvore toda
-    # atrás de arquivos de build (PackageRootResolver) e ignora `exclusions`:
-    # com frontend/node_modules e visao/.venv (mais de 100 mil arquivos) num
-    # bind mount do Windows, ele passou de 9 minutos parado. Monte só o que
-    # está em sonar.sources, sonar.tests e no relatório de cobertura; se uma
-    # pasta nova entrar no sonar-project.properties, entra aqui também.
+    # Não monte o repositório inteiro. O sensor de Python percorre a árvore a
+    # partir da raiz do projeto (/usr/src) atrás de arquivos de build
+    # (PackageRootResolver.findBuildConfigFiles) e essa varredura não respeita
+    # `exclusions`. Medido num bind mount do Windows: uma passada por
+    # frontend/node_modules (68 mil arquivos) leva ~170 s e por visao/.venv
+    # (36 mil) ~120 s; com as duas dentro de /usr/src o sensor de Python passou
+    # de 9 minutos (a análise foi interrompida; o dump de threads mostrava a
+    # varredura). Monte só o que está em sonar.sources, sonar.tests e no
+    # relatório de cobertura; pasta nova no sonar-project.properties entra aqui.
+    #
+    # node_modules vai para /node_modules, FORA de /usr/src: o TypeScript o acha
+    # subindo as pastas, e os tipos das bibliotecas resolvem (a documentação do
+    # SonarQube recomenda as dependências instaladas) sem o sensor de Python
+    # vê-lo (~12 s). Rode `npm ci` em frontend/ antes; sem ele a pasta fica
+    # vazia e a análise volta a ficar sem os tipos das bibliotecas.
     volumes:
       - ./sonar-project.properties:/usr/src/sonar-project.properties:ro
       - ./backend:/usr/src/backend:ro
@@ -354,6 +363,7 @@ services:
       - ./visao/verificar_camera.py:/usr/src/visao/verificar_camera.py:ro
       - ./frontend/src:/usr/src/frontend/src:ro
       - ./frontend/tsconfig.json:/usr/src/frontend/tsconfig.json:ro
+      - ./frontend/node_modules:/node_modules:ro
       - ./frontend/coverage:/usr/src/frontend/coverage:ro
 
   # ---------------------------------------------------------------------------
