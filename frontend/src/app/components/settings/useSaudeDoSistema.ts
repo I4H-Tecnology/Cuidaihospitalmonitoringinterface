@@ -24,7 +24,7 @@ export function useSaudeDoSistema() {
     }
   }, [tenantId]);
 
-  useEffect(() => { recarregar(); }, [recarregar]);
+  useEffect(() => { void recarregar(); }, [recarregar]);
 
   return { saude, erro, carregando, recarregar };
 }

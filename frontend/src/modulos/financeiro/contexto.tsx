@@ -53,7 +53,7 @@ export function ProvedorFinanceiro(props: {
   }, [api]);
 
   useEffect(() => {
-    recarregarSessao();
+    void recarregarSessao();
   }, [recarregarSessao]);
 
   const avisar = useCallback((texto: string, tipo: Aviso['tipo'] = 'sucesso') => {
@@ -136,7 +136,7 @@ export function useDados<T>(buscar: () => Promise<T>, deps: unknown[]) {
   }, deps);
 
   useEffect(() => {
-    recarregar();
+    void recarregar();
   }, [recarregar]);
 
   return { dados, carregando, erro, recarregar, setDados };
