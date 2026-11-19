@@ -10,10 +10,16 @@ from contextlib import contextmanager
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://medsignal:medsignal@db:5432/medsignal",
-)
+# Sem valor padrão, de propósito: uma URL com senha escrita aqui é senha
+# publicada no repositório (e o SonarQube a aponta como BLOCKER, S6698). O
+# docker-compose.yml monta a URL a partir de POSTGRES_* do .env.
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL não definida. Com Docker, ela vem do docker-compose.yml "
+        "(POSTGRES_USER, POSTGRES_PASSWORD e POSTGRES_DB, no .env). Fora dele, "
+        "exporte-a, por exemplo: postgresql://usuario:senha@localhost:5432/medsignal"
+    )
 
 # open=False evita que o import trave se o banco ainda estiver subindo;
 # o pool conecta na primeira consulta.
