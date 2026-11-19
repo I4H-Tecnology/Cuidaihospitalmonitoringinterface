@@ -91,8 +91,18 @@ def escrever_mp4(caminho: Path, quadros: list[np.ndarray], fps: float) -> str:
         try:
             for quadro in quadros:
                 processo.stdin.write(np.ascontiguousarray(quadro[:altura, :largura]).tobytes())
-        finally:
-            processo.stdin.close()
+        except BrokenPipeError:
+            # O ffmpeg encerrou antes do fim. O código de saída e o stderr,
+            # lidos abaixo, dizem por quê, e o OpenCV entra como último recurso.
+            pass
+        except BaseException:
+            processo.kill()
+            processo.communicate()
+            raise
+        # Não feche o stdin aqui. No Linux, communicate() começa por
+        # stdin.flush() e estoura "flush of closed file" se ele já foi fechado;
+        # no Windows o caminho é outro (threads) e nunca reclamou. O próprio
+        # communicate() fecha o stdin e lê o stderr até o fim.
         _, erro = processo.communicate(timeout=120)
         if processo.returncode == 0 and caminho.exists():
             return "h264"

@@ -10,6 +10,7 @@ com captura viva, o buffer do clipe e o expurgo.
 
 from __future__ import annotations
 
+import io
 import os
 import sys
 import tempfile
@@ -17,6 +18,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -343,6 +345,31 @@ class ClipeDeEvidencia(unittest.TestCase):
         self.assertIsNotNone(estado["ultimo_expurgo"])
         self.assertEqual(estado["ultimo_expurgo_removeu"], 1)
         self.assertEqual(estado["clipes_em_disco"], 1)
+
+    def test_nao_fecha_o_stdin_do_ffmpeg_antes_do_communicate(self):
+        # No Linux, Popen.communicate() começa por stdin.flush(), que estoura
+        # "flush of closed file" se o stdin já foi fechado à mão. No Windows o
+        # caminho é outro e nunca estourou, então este teste imita o Linux com
+        # um processo falso, para a falha aparecer em qualquer sistema.
+        class ProcessoComoNoLinux:
+            def __init__(self, comando, **_):
+                self.destino = Path(comando[-1])
+                self.stdin = io.BytesIO()
+                self.returncode = 0
+
+            def communicate(self, input=None, timeout=None):
+                self.stdin.flush()            # ValueError se já foi fechado
+                self.stdin.close()
+                self.destino.write_bytes(b"mp4")
+                return b"", b""
+
+        destino = Path(tempfile.mkdtemp()) / "clipe.mp4"
+        quadros = [self.imagem(i) for i in range(3)]
+        with mock.patch.object(clipes, "_ffmpeg", return_value="ffmpeg-falso"), \
+                mock.patch.object(clipes.subprocess, "Popen", ProcessoComoNoLinux):
+            codec = clipes.escrever_mp4(destino, quadros, fps=8.0)
+        self.assertEqual(codec, "h264")
+        self.assertTrue(destino.exists())
 
     def test_nome_seguro_nao_deixa_barra_nem_dois_pontos(self):
         self.assertEqual(clipes.nome_seguro("cam:1:../../x"), "cam-1-..-..-x")
