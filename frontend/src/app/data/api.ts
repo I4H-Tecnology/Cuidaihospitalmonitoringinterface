@@ -1,3 +1,5 @@
+import { semBarraFinal } from './texto';
+
 const rawApiBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
@@ -6,7 +8,7 @@ const rawApiBaseUrl =
 if (!rawApiBaseUrl) {
   console.error('[api] VITE_API_URL is not set. Falling back to same-origin requests.');
 }
-export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
+export const API_BASE_URL = semBarraFinal(rawApiBaseUrl);
 
 /* ---------------------------------------------------------------------------
  * Token de sessão
@@ -235,10 +237,15 @@ export const deleteUserRequest = (tenantId: string, userId: string) =>
 export const fetchAccessLogs = (tenantId: string) =>
   request<any[]>(`/api/access-logs?tenantId=${encodeURIComponent(tenantId)}`);
 
+// Melhor esforço: quem chama não espera o registro e uma falha dele não pode
+// virar rejeição sem tratamento (nem derrubar a ação do usuário).
 export const recordAccessLog = (tenantId: string, log: any) =>
   request<{ ok: boolean }>('/api/access-logs', {
     method: 'POST',
     body: JSON.stringify({ tenantId, log })
+  }).catch((erro: unknown) => {
+    console.warn('Não foi possível registrar o log de acesso.', erro);
+    return { ok: false };
   });
 
 export const fetchOperationalOverview = (tenantId: string) =>

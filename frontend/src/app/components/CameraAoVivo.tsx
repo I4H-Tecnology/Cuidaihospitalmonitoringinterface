@@ -98,7 +98,7 @@ export function CameraAoVivo({ url = VISAO_URL, compacto = false }: { url?: stri
       }
     };
 
-    consultar();
+    void consultar();
     // 1s é suficiente: o pipeline produz a 8 fps, e o texto não precisa
     // acompanhar quadro a quadro — quem faz isso é a imagem.
     const timer = window.setInterval(consultar, compacto ? 3000 : 1000);

@@ -18,7 +18,15 @@ export function PatientCard({ paciente, onClick }: { paciente: PacienteResumo; o
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className={`${config.bg} ${config.border} border-l-4 rounded-lg p-4 mb-3 active:scale-98 transition-transform cursor-pointer`}
     >
       <div className="flex items-start justify-between mb-3">

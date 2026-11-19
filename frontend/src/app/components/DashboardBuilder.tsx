@@ -393,7 +393,17 @@ function Widget({ widget, onRemove, onSelect, isSelected }: WidgetProps) {
   return (
     <div
       ref={drag}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        // Só quando o foco está no próprio cartão: Enter/Espaço nos botões de dentro são deles.
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       className={`bg-white rounded-xl shadow-sm border-2 transition-all cursor-move ${
         isDragging ? 'opacity-50 scale-95' : 'opacity-100'
       } ${isSelected ? 'border-marca-viva ring-2 ring-marca-viva/20' : 'border-gray-200 hover:border-gray-300'}`}
@@ -786,8 +796,8 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                   <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     {/* Fonte de Dados */}
                     <div>
-                      <label className="block text-sm font-medium mb-2">Fonte de Dados</label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                      <label htmlFor="dashboardbuilder-fonte-de-dados" className="block text-sm font-medium mb-2">Fonte de Dados</label>
+                      <select id="dashboardbuilder-fonte-de-dados" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                         <option>Tempo Real</option>
                         <option>Últimas 24h</option>
                         <option>Última semana</option>
@@ -803,8 +813,8 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                       </label>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-gray-600 mb-1 block">Setor</label>
-                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                          <label htmlFor="dashboardbuilder-setor" className="text-xs text-gray-600 mb-1 block">Setor</label>
+                          <select id="dashboardbuilder-setor" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option>Todos</option>
                             <option>UTI</option>
                             <option>Enfermaria</option>
@@ -813,8 +823,8 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600 mb-1 block">Andar</label>
-                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                          <label htmlFor="dashboardbuilder-andar" className="text-xs text-gray-600 mb-1 block">Andar</label>
+                          <select id="dashboardbuilder-andar" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option>Todos</option>
                             <option>2º Andar</option>
                             <option>3º Andar</option>
@@ -822,8 +832,8 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600 mb-1 block">Status</label>
-                          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                          <label htmlFor="dashboardbuilder-status" className="text-xs text-gray-600 mb-1 block">Status</label>
+                          <select id="dashboardbuilder-status" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option>Todos</option>
                             <option>Normal</option>
                             <option>Atenção</option>
@@ -857,8 +867,8 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                       </label>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-xs text-gray-600 mb-1 block">Tamanho</label>
-                          <select 
+                          <label htmlFor="dashboardbuilder-tamanho" className="text-xs text-gray-600 mb-1 block">Tamanho</label>
+                          <select id="dashboardbuilder-tamanho" 
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                             value={selectedWidget.height}
                             onChange={(e) => {
@@ -876,8 +886,8 @@ export function DashboardBuilder({ onClose }: DashboardBuilderProps) {
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600 mb-1 block">Cor Principal</label>
-                          <div className="flex gap-2">
+                          <p id="dashboardbuilder-cor-principal" className="text-xs text-gray-600 mb-1 block">Cor Principal</p>
+                          <div role="group" aria-labelledby="dashboardbuilder-cor-principal" className="flex gap-2">
                             {['#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#6366F1'].map((color) => (
                               <button
                                 key={color}

@@ -159,7 +159,7 @@ function Duvidas({ sessao, aoIrParaMensagens }: { sessao: SessaoFamilia; aoIrPar
           </div>
         ))}
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); perguntarAgora(texto); }} className="mt-4 flex gap-2">
+      <form onSubmit={(e) => { e.preventDefault(); void perguntarAgora(texto); }} className="mt-4 flex gap-2">
         <label className="flex-1"><span className="sr-only">Sua dúvida</span>
           <input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={300} placeholder="Ex.: qual o horário de visita?" className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-marca-viva" />
         </label>

@@ -102,8 +102,8 @@ export function SaudeScreen() {
         setAtualizadoEm(new Date());
       }
     };
-    consultarApi();
-    consultarVisao();
+    void consultarApi();
+    void consultarVisao();
     const t1 = window.setInterval(consultarApi, INTERVALO_API_MS);
     const t2 = window.setInterval(consultarVisao, INTERVALO_VISAO_MS);
     return () => {

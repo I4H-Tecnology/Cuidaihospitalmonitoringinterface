@@ -478,7 +478,7 @@ export function Janela({
     };
   }, [aoFechar]);
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:p-8" onMouseDown={aoFechar}>
+    <div role="presentation" className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:p-8" onMouseDown={aoFechar}>
       <div
         ref={painel}
         role="dialog"

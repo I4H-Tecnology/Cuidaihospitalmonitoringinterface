@@ -114,8 +114,8 @@ export function EvolucoesScreen({ aoAbrirPaciente }: Props) {
         <form onSubmit={registrar} className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div>
-              <label className="mb-1 block text-xs text-gray-600">Paciente</label>
-              <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca">
+              <label htmlFor="evolucoesscreen-paciente" className="mb-1 block text-xs text-gray-600">Paciente</label>
+              <select id="evolucoesscreen-paciente" value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca">
                 <option value="">Escolha o paciente</option>
                 {internados.map((p) => (
                   <option key={p.id} value={p.id}>{p.nome}{p.ambienteNome ? ` · ${p.ambienteNome}` : ''}</option>
@@ -123,8 +123,8 @@ export function EvolucoesScreen({ aoAbrirPaciente }: Props) {
               </select>
             </div>
             <div className="md:col-span-3">
-              <label className="mb-1 block text-xs text-gray-600">Nova evolução</label>
-              <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2} maxLength={4000} placeholder="O que foi observado, feito ou orientado." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca" />
+              <label htmlFor="evolucoesscreen-nova-evolucao" className="mb-1 block text-xs text-gray-600">Nova evolução</label>
+              <textarea id="evolucoesscreen-nova-evolucao" value={texto} onChange={(e) => setTexto(e.target.value)} rows={2} maxLength={4000} placeholder="O que foi observado, feito ou orientado." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca" />
             </div>
           </div>
           <div className="mt-2 flex justify-end">

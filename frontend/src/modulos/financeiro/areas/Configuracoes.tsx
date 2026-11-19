@@ -153,7 +153,7 @@ function Fechamento() {
               org.setDados(await api.alterarFechamento(confirmando === 'fechar' ? ate : null, motivo));
               avisar(confirmando === 'fechar' ? 'Período fechado.' : 'Períodos reabertos.');
               setConfirmando(null);
-              recarregarSessao();
+              void recarregarSessao();
             } catch (e) {
               avisar(e instanceof Error ? e.message : 'Não foi possível concluir.', 'erro');
             }

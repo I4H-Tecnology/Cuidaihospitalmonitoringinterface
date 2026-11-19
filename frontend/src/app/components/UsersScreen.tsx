@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
+import { emailValido } from '../data/texto';
 import {
   Users,
   Shield,
@@ -27,9 +28,7 @@ import {
   formatRoleOptions,
   generateRandomPassword,
   getIpAddress,
-  getSystemDefaultPassword,
   getTenantName,
-  hashPassword,
   sanitizeSecurityPolicy,
   type AccessLog,
   type Permission,
@@ -265,7 +264,7 @@ export function UsersScreen() {
 
     // O banco recusa e-mail sem "@" (CHECK em usuario.email). Avisar aqui evita
     // um erro genérico depois de preencher o formulário inteiro.
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email.trim())) {
+    if (!emailValido(formState.email.trim())) {
       showToast({ message: 'Informe um e-mail válido, como nome@dominio.com.' });
       return;
     }
@@ -350,7 +349,7 @@ export function UsersScreen() {
           unit: formState.unit,
           sector: formState.sector || undefined,
           platforms: toPlatforms(formState.platforms),
-          passwordHash: effectivePassword ? hashPassword(effectivePassword) : existing.passwordHash,
+          passwordHash: existing.passwordHash,
           passwordChangedAt: effectivePassword ? now : existing.passwordChangedAt,
           mustChangePassword: effectivePassword ? mustChangePassword : existing.mustChangePassword,
           temporaryPasswordExpiresAt: effectivePassword ? temporaryPasswordExpiresAt : existing.temporaryPasswordExpiresAt
@@ -365,7 +364,7 @@ export function UsersScreen() {
         if (adminResetPassword) {
           showToast({ message: `Senha temporária aleatória gerada. Ela expira em ${policy.adminResetPasswordTtlHours}h e exigirá troca no primeiro acesso.` });
         }
-        recordAccessLog(tenantId, {
+        void recordAccessLog(tenantId, {
           user_id: currentUser?.id,
           action: adminResetPassword ? 'Reset administrativo de senha' : 'Alteracao de usuario',
           module: 'Usuarios',
@@ -390,7 +389,7 @@ export function UsersScreen() {
           admissionDate: formState.admissionDate || undefined,
           documentId: formState.documentId || undefined,
           login: normalizedLogin,
-          passwordHash: hashPassword(effectivePassword),
+          passwordHash: '',
           role: formState.role,
           status: formState.status,
           platforms: toPlatforms(formState.platforms),
@@ -409,7 +408,7 @@ export function UsersScreen() {
         });
         const refreshed = await fetchUsers(tenantId);
         setUsers(refreshed);
-        recordAccessLog(tenantId, {
+        void recordAccessLog(tenantId, {
           user_id: currentUser?.id,
           action: 'Criacao de usuario',
           module: 'Usuarios',
@@ -435,7 +434,7 @@ export function UsersScreen() {
       await deleteUserRequest(tenantId, user.id);
       const refreshed = await fetchUsers(tenantId);
       setUsers(refreshed);
-      recordAccessLog(tenantId, {
+      void recordAccessLog(tenantId, {
         user_id: currentUser?.id,
         action: 'Exclusao de usuario',
         module: 'Usuarios',
@@ -465,7 +464,7 @@ export function UsersScreen() {
       const profileLabel = profileMeta[selectedRole]?.title || selectedRole;
       const label = permissionLabels[key] || String(key);
 
-      recordAccessLog(tenantId, {
+      void recordAccessLog(tenantId, {
         user_id: currentUser?.id,
         action: `Alteracao permissao | Perfil: ${profileLabel} | Modulo: ${target.module} | ${label}: ${before ? 'ativo' : 'inativo'} -> ${after ? 'ativo' : 'inativo'} | Impacto: ${impacted} usuarios`,
         module: 'Permissoes',
@@ -484,7 +483,7 @@ export function UsersScreen() {
     if (!canEditPermissions) return;
     try {
       await savePermissions(tenantId, selectedRole, permissions);
-      recordAccessLog(tenantId, {
+      void recordAccessLog(tenantId, {
         user_id: currentUser?.id,
         action: 'Salvar permissoes do perfil',
         module: 'Permissoes',
@@ -504,7 +503,7 @@ export function UsersScreen() {
     try {
       await saveSecurityPolicy(tenantId, normalizedPolicy);
       setPolicy(normalizedPolicy);
-      recordAccessLog(tenantId, {
+      void recordAccessLog(tenantId, {
         user_id: currentUser?.id,
         action: 'Alteracao de politica de senha',
         module: 'Seguranca',
@@ -1127,8 +1126,8 @@ export function UsersScreen() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-2">Nome Completo *</label>
-                  <input
+                  <label htmlFor="usersscreen-nome-completo" className="block text-sm text-gray-700 mb-2">Nome Completo *</label>
+                  <input id="usersscreen-nome-completo"
                     type="text"
                     value={formState.name}
                     onChange={(e) => setFormState({ ...formState, name: e.target.value })}
@@ -1136,8 +1135,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">E-mail *</label>
-                  <input
+                  <label htmlFor="usersscreen-e-mail" className="block text-sm text-gray-700 mb-2">E-mail *</label>
+                  <input id="usersscreen-e-mail"
                     type="email"
                     value={formState.email}
                     onChange={(e) => setFormState({ ...formState, email: e.target.value })}
@@ -1145,8 +1144,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">CPF</label>
-                  <input
+                  <label htmlFor="usersscreen-cpf" className="block text-sm text-gray-700 mb-2">CPF</label>
+                  <input id="usersscreen-cpf"
                     type="text"
                     value={formState.cpf}
                     onChange={(e) => setFormState({ ...formState, cpf: e.target.value })}
@@ -1154,8 +1153,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Data de Nascimento</label>
-                  <input
+                  <label htmlFor="usersscreen-data-de-nascimento" className="block text-sm text-gray-700 mb-2">Data de Nascimento</label>
+                  <input id="usersscreen-data-de-nascimento"
                     type="date"
                     value={formState.birthDate}
                     onChange={(e) => setFormState({ ...formState, birthDate: e.target.value })}
@@ -1163,8 +1162,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Data de Admissão</label>
-                  <input
+                  <label htmlFor="usersscreen-data-de-admissao" className="block text-sm text-gray-700 mb-2">Data de Admissão</label>
+                  <input id="usersscreen-data-de-admissao"
                     type="date"
                     value={formState.admissionDate}
                     onChange={(e) => setFormState({ ...formState, admissionDate: e.target.value })}
@@ -1172,8 +1171,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Documento (opcional)</label>
-                  <input
+                  <label htmlFor="usersscreen-documento-opcional" className="block text-sm text-gray-700 mb-2">Documento (opcional)</label>
+                  <input id="usersscreen-documento-opcional"
                     type="text"
                     value={formState.documentId}
                     onChange={(e) => setFormState({ ...formState, documentId: e.target.value })}
@@ -1181,8 +1180,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Login *</label>
-                  <input
+                  <label htmlFor="usersscreen-login" className="block text-sm text-gray-700 mb-2">Login *</label>
+                  <input id="usersscreen-login"
                     type="text"
                     value={formState.role === 'SYSTEM' ? systemLogin : formState.login}
                     onChange={(e) => setFormState({ ...formState, login: e.target.value })}
@@ -1193,8 +1192,8 @@ export function UsersScreen() {
                 {!isEditing && (
                   <>
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2">Senha *</label>
-                      <input
+                      <label htmlFor="usersscreen-senha" className="block text-sm text-gray-700 mb-2">Senha *</label>
+                      <input id="usersscreen-senha"
                         type="password"
                         value={formState.password}
                         onChange={(e) => setFormState({ ...formState, password: e.target.value })}
@@ -1202,8 +1201,8 @@ export function UsersScreen() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2">Confirmar Senha</label>
-                      <input
+                      <label htmlFor="usersscreen-confirmar-senha" className="block text-sm text-gray-700 mb-2">Confirmar Senha</label>
+                      <input id="usersscreen-confirmar-senha"
                         type="password"
                         value={formState.confirmPassword}
                         onChange={(e) => setFormState({ ...formState, confirmPassword: e.target.value })}
@@ -1229,8 +1228,8 @@ export function UsersScreen() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Perfil *</label>
-                  <select
+                  <label htmlFor="usersscreen-perfil" className="block text-sm text-gray-700 mb-2">Perfil *</label>
+                  <select id="usersscreen-perfil"
                     value={formState.role}
                     onChange={(e) => setFormState({ ...formState, role: e.target.value as Role })}
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
@@ -1244,8 +1243,8 @@ export function UsersScreen() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Unidade *</label>
-                  <input
+                  <label htmlFor="usersscreen-unidade" className="block text-sm text-gray-700 mb-2">Unidade *</label>
+                  <input id="usersscreen-unidade"
                     type="text"
                     value={formState.unit}
                     onChange={(e) => setFormState({ ...formState, unit: e.target.value })}
@@ -1253,8 +1252,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Setor (opcional)</label>
-                  <input
+                  <label htmlFor="usersscreen-setor-opcional" className="block text-sm text-gray-700 mb-2">Setor (opcional)</label>
+                  <input id="usersscreen-setor-opcional"
                     type="text"
                     value={formState.sector}
                     onChange={(e) => setFormState({ ...formState, sector: e.target.value })}
@@ -1262,8 +1261,8 @@ export function UsersScreen() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-2">Status</label>
-                  <select
+                  <label htmlFor="usersscreen-status" className="block text-sm text-gray-700 mb-2">Status</label>
+                  <select id="usersscreen-status"
                     value={formState.status}
                     onChange={(e) => setFormState({ ...formState, status: e.target.value as UserRecord['status'] })}
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-marca-viva"
@@ -1275,8 +1274,8 @@ export function UsersScreen() {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm text-gray-700 mb-2">Plataformas de Acesso</label>
-                  <div className="flex items-center gap-4">
+                  <p id="usersscreen-plataformas-de-acesso" className="block text-sm text-gray-700 mb-2">Plataformas de Acesso</p>
+                  <div role="group" aria-labelledby="usersscreen-plataformas-de-acesso" className="flex items-center gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1318,7 +1317,7 @@ export function UsersScreen() {
               {!isEditing && formState.role === 'SYSTEM' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    Usuário Sistema: login {systemLogin}. Senha padrão: {getSystemDefaultPassword()}
+                    Usuário Sistema: login {systemLogin}. Defina a senha acima, seguindo a política de segurança.
                   </p>
                 </div>
               )}

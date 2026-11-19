@@ -155,7 +155,7 @@ function Conversa({ pacienteId, titulo, subtitulo, podeEscrever, aoVoltar, aoMud
               <textarea
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar(); } }}
                 rows={2}
                 maxLength={2000}
                 placeholder="Escreva para a família. Enter envia, Shift+Enter quebra a linha."

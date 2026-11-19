@@ -47,7 +47,7 @@ export function SecaoAmbientes({ aoIrPara, onNavigate }: {
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  const tiposPresentes = useMemo(() => [...new Set(ambientes.map((a) => a.tipo))].sort(), [ambientes]);
+  const tiposPresentes = useMemo(() => [...new Set(ambientes.map((a) => a.tipo))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [ambientes]);
   const visiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return ambientes

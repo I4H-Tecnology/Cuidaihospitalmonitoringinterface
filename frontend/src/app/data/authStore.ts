@@ -139,7 +139,6 @@ const DEFAULT_PASSWORD_BLOCKLIST = [
   '111111',
   '000000'
 ];
-const SYSTEM_DEFAULT_PASSWORD = 'Sistema@123';
 
 const DEFAULT_SECURITY_POLICY: SecurityPolicy = {
   requireStrongPassword: true,
@@ -162,16 +161,6 @@ const DEFAULT_SECURITY_POLICY: SecurityPolicy = {
 const nowIso = () => new Date().toISOString();
 
 const getTenantKey = (tenantId: string) => `cuidai_tenant_${tenantId}`;
-
-export const hashPassword = (password: string) => {
-  try {
-    return btoa(password);
-  } catch {
-    return password;
-  }
-};
-
-export const verifyPassword = (password: string, hash: string) => hashPassword(password) === hash;
 
 export const getRoleLabel = (role: Role) => ROLE_LABELS[role];
 
@@ -356,7 +345,8 @@ export const seedTenant = (tenantId: string): TenantData => {
     name: `Usuario Sistema (${tenantId})`,
     email: `sistema@${tenantId}.com`,
     login: systemLogin,
-    passwordHash: hashPassword(SYSTEM_DEFAULT_PASSWORD),
+    // A senha vive só no backend (bcrypt, `senha_hash`); a API devolve "" aqui.
+    passwordHash: '',
     role: 'SYSTEM',
     status: 'active',
     platforms: ['web'],
@@ -460,8 +450,6 @@ export const updatePermissions = (tenantId: string, role: Role, permissions: Per
   data.permissions[role] = permissions;
   saveTenantData(tenantId, data);
 };
-
-export const getSystemDefaultPassword = () => SYSTEM_DEFAULT_PASSWORD;
 
 export const getIpAddress = () => IP_PLACEHOLDER;
 
@@ -650,6 +638,21 @@ export const isTemporaryPasswordExpired = (user: UserRecord) => {
   return Date.now() > new Date(user.temporaryPasswordExpiresAt).getTime();
 };
 
+/**
+ * Inteiro uniforme em [0, limite). Descarta os valores que sobrariam no fim do
+ * intervalo de 32 bits para que nenhum índice saia mais provável que outro
+ * (viés de módulo).
+ */
+const randomIndex = (limite: number): number => {
+  const faixa = 0x100000000;
+  const maximo = faixa - (faixa % limite);
+  const buffer = new Uint32Array(1);
+  do {
+    crypto.getRandomValues(buffer);
+  } while (buffer[0] >= maximo);
+  return buffer[0] % limite;
+};
+
 export const generateRandomPassword = (policy: SecurityPolicy) => {
   const normalizedPolicy = sanitizeSecurityPolicy(policy);
   const length = Math.max(normalizedPolicy.minPasswordLength, 12);
@@ -661,7 +664,9 @@ export const generateRandomPassword = (policy: SecurityPolicy) => {
   const all = `${lowers}${uppers}${numbers}${specials}`;
   const picks: string[] = [];
 
-  const pick = (source: string) => source[Math.floor(Math.random() * source.length)];
+  // Senha temporária é segredo: o sorteio vem do gerador criptográfico do
+  // navegador (crypto.getRandomValues), não de Math.random(), que é previsível.
+  const pick = (source: string) => source[randomIndex(source.length)];
 
   if (normalizedPolicy.requireLowercase) picks.push(pick(lowers));
   if (normalizedPolicy.requireUppercase) picks.push(pick(uppers));
@@ -673,7 +678,7 @@ export const generateRandomPassword = (policy: SecurityPolicy) => {
   }
 
   for (let i = picks.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomIndex(i + 1);
     [picks[i], picks[j]] = [picks[j], picks[i]];
   }
 

@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Calculator, Plus } from 'lucide-react';
 import { useDados, useFinanceiro } from '../../contexto';
 import type { Emprestimo, SimulacaoEmprestimo } from '../../api/tipos';
-import { formatarBRL, type Dinheiro } from '../../util/dinheiro';
+import { formatarBRL, type Dinheiro, semZerosFinais } from '../../util/dinheiro';
 import { formatarData, hojeISO, somarDias } from '../../util/datas';
 import {
   Aviso, Botao, Campo, CampoDinheiro, Carregando, ConfirmarComMotivo, EtiquetaParcela, Janela, Numero, Seletor, Vazio,
@@ -52,7 +52,7 @@ export function Emprestimos() {
                     <p className={e.canceladoEm ? 'text-gray-400 line-through' : texto.titulo}>{e.descricao}</p>
                     <p className={`text-xs ${texto.suave}`}>{e.credorNome} · {formatarData(e.dataContratacao)}</p>
                   </td>
-                  <td className={tabela.celula}>{formatarBRL(e.valorPrincipal)} · {e.taxaMensal.replace(/\.?0+$/, '').replace('.', ',')}% a.m. · {e.sistema.toUpperCase()}</td>
+                  <td className={tabela.celula}>{formatarBRL(e.valorPrincipal)} · {semZerosFinais(e.taxaMensal).replace('.', ',')}% a.m. · {e.sistema.toUpperCase()}</td>
                   <td className={tabela.celula}>{e.parcelasPagas}/{e.parcelas} pagas</td>
                   <td className={tabela.celula}>{e.proximoVencimento ? formatarData(e.proximoVencimento) : '—'}</td>
                   <td className={tabela.numero}>{formatarBRL(e.saldoDevedor)}</td>
@@ -196,7 +196,7 @@ function DetalheEmprestimo({ id, aoFechar, aoMudar }: { id: string; aoFechar: ()
     <>
       <Janela
         titulo={e?.descricao ?? 'Empréstimo'}
-        subtitulo={e ? `${e.credorNome} · ${formatarBRL(e.valorPrincipal)} a ${e.taxaMensal.replace(/\.?0+$/, '').replace('.', ',')}% a.m. · juros totais ${formatarBRL(e.jurosTotais ?? '0')}` : undefined}
+        subtitulo={e ? `${e.credorNome} · ${formatarBRL(e.valorPrincipal)} a ${semZerosFinais(e.taxaMensal).replace('.', ',')}% a.m. · juros totais ${formatarBRL(e.jurosTotais ?? '0')}` : undefined}
         aoFechar={aoFechar}
         largura="max-w-3xl"
         rodape={

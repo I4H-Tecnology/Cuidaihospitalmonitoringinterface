@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Printer, Trash2 } from 'lucide-react';
 import { useDados, useFinanceiro } from '../../contexto';
 import type { Holerite, Rubrica } from '../../api/tipos';
-import { formatarBRL, paraCentavos, type Dinheiro } from '../../util/dinheiro';
+import { formatarBRL, paraCentavos, type Dinheiro, semZerosFinais } from '../../util/dinheiro';
 import { formatarCompetencia, formatarData } from '../../util/datas';
 import { VINCULOS } from '../../rotulos';
 import { Aviso, Botao, Campo, CampoDinheiro, Carregando, Etiqueta, Janela, Seletor, tabela, texto } from '../../ui/base';
@@ -147,7 +147,7 @@ function ListaDeItens({
                 {i.origem === 'ajuste' && <Etiqueta tom="atencao">contabilidade</Etiqueta>}
                 {i.credorNome && <p className={`text-xs ${texto.suave}`}>repasse a {i.credorNome}</p>}
               </td>
-              <td className={`${tabela.numero} ${texto.suave}`}>{i.referencia ? i.referencia.replace(/\.?0+$/, '').replace('.', ',') : ''}</td>
+              <td className={`${tabela.numero} ${texto.suave}`}>{i.referencia ? semZerosFinais(i.referencia).replace('.', ',') : ''}</td>
               <td className={tabela.numero}>{formatarBRL(i.valor)}</td>
               <td className="pr-2 text-right">
                 {editavel && i.origem === 'lancado' && (

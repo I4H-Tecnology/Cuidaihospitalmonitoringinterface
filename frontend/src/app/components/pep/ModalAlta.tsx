@@ -108,11 +108,13 @@ export function ModalAlta({ paciente, aoFechar, aoConcluir }: Props) {
               ] as const).map(([valor, titulo, ajuda]) => (
                 <label
                   key={valor}
+                  htmlFor={`motivo-${valor}`}
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
                     motivo === valor ? 'border-marca bg-marca-suave' : 'border-gray-200 hover:bg-gray-50'
                   }`}
                 >
                   <input
+                    id={`motivo-${valor}`}
                     type="radio"
                     name="motivo"
                     value={valor}
@@ -121,7 +123,7 @@ export function ModalAlta({ paciente, aoFechar, aoConcluir }: Props) {
                     className="mt-1"
                   />
                   <span>
-                    <span className="block text-sm text-gray-800">{titulo}</span>
+                    <span className="block text-sm text-gray-800">{titulo}</span>{' '}
                     <span className="block text-xs text-gray-500">{ajuda}</span>
                   </span>
                 </label>

@@ -181,7 +181,7 @@ function ModalCamera({
   const [identificador, setIdentificador] = useState(camera?.identificador ?? '');
   // Em edição a URL vem mascarada pela API (sem credencial); só é enviada se
   // o usuário digitar outra. Vazio = manter a atual.
-  const [urlStream, setUrlStream] = useState(editando ? '' : '');
+  const [urlStream, setUrlStream] = useState('');
   // Sem credencial, então vem inteira e pode ser editada no lugar.
   const [visaoUrl, setVisaoUrl] = useState(camera?.visaoUrl ?? '');
   const [ambienteId, setAmbienteId] = useState(camera?.ambienteId ?? ambientes[0]?.id ?? '');
@@ -241,25 +241,25 @@ function ModalCamera({
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm text-gray-700 mb-2">Nome do Dispositivo</label>
-              <input type="text" disabled title={MOTIVO_NOME} value={identificador} placeholder="Igual ao ID" className={travado} />
+              <label htmlFor="abacameras-nome-do-dispositivo" className="block text-sm text-gray-700 mb-2">Nome do Dispositivo</label>
+              <input id="abacameras-nome-do-dispositivo" type="text" disabled title={MOTIVO_NOME} value={identificador} placeholder="Igual ao ID" className={travado} />
               <p className="mt-1 text-xs text-gray-500">{MOTIVO_NOME}</p>
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Tipo *</label>
-              <select value={tipo} onChange={(e) => setTipo(e.target.value as typeof tipo)} disabled={editando} className={editando ? travado : campo}>
+              <label htmlFor="abacameras-tipo" className="block text-sm text-gray-700 mb-2">Tipo *</label>
+              <select id="abacameras-tipo" value={tipo} onChange={(e) => setTipo(e.target.value as typeof tipo)} disabled={editando} className={editando ? travado : campo}>
                 <option value="camera">Câmera</option>
                 <option value="sensor" disabled title={MOTIVO_SENSOR}>Sensor (indisponível nesta versão)</option>
                 <option value="tablet" disabled title={MOTIVO_TABLET}>Tablet (indisponível nesta versão)</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-2">ID do Dispositivo *</label>
-              <input type="text" value={identificador} onChange={(e) => setIdentificador(e.target.value)} maxLength={60} placeholder="CAM-QUARTO101" className={campo} />
+              <label htmlFor="abacameras-id-do-dispositivo" className="block text-sm text-gray-700 mb-2">ID do Dispositivo *</label>
+              <input id="abacameras-id-do-dispositivo" type="text" value={identificador} onChange={(e) => setIdentificador(e.target.value)} maxLength={60} placeholder="CAM-QUARTO101" className={campo} />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm text-gray-700 mb-2">Localização (ambiente monitorado) *</label>
-              <select value={ambienteId} onChange={(e) => setAmbienteId(e.target.value)} className={campo}>
+              <label htmlFor="abacameras-localizacao-ambiente-monitor" className="block text-sm text-gray-700 mb-2">Localização (ambiente monitorado) *</label>
+              <select id="abacameras-localizacao-ambiente-monitor" value={ambienteId} onChange={(e) => setAmbienteId(e.target.value)} className={campo}>
                 {ambientes.length === 0 && <option value="">Nenhum ambiente cadastrado</option>}
                 {ambientes.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -281,8 +281,8 @@ function ModalCamera({
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm text-gray-700 mb-2">Vídeo ao vivo (serviço de visão)</label>
-              <input
+              <label htmlFor="abacameras-video-ao-vivo-servico-de-vis" className="block text-sm text-gray-700 mb-2">Vídeo ao vivo (serviço de visão)</label>
+              <input id="abacameras-video-ao-vivo-servico-de-vis"
                 type="text"
                 value={visaoUrl}
                 onChange={(e) => setVisaoUrl(e.target.value)}

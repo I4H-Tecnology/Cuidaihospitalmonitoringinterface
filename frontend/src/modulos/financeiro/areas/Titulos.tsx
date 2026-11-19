@@ -67,7 +67,7 @@ export function Titulos({ tipo }: { tipo: TipoTitulo }) {
   const recarregarTudo = () => {
     lista.recarregar();
     resumo.recarregar();
-    cadastros.recarregar();
+    void cadastros.recarregar();
   };
 
   const pagar = tipo === 'pagar';

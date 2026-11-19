@@ -1,3 +1,4 @@
+import { focarAoAparecer } from '../../foco';
 import { useState } from 'react';
 import { AlertCircle, AlertTriangle, Ban, Loader2, Plus, ShieldAlert, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -102,19 +103,19 @@ export function AllergiesTab({ paciente, riscos, carregando, aoMudar }: Props) {
       {formulario && podeRegistrar && (
         <form onSubmit={registrar} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Tipo</label>
-            <select value={tipo} onChange={(e) => setTipo(e.target.value as RiscoResumo['tipo'])} className={campo}>
+            <label htmlFor="allergiestab-tipo" className="mb-1 block text-xs text-gray-600">Tipo</label>
+            <select id="allergiestab-tipo" value={tipo} onChange={(e) => setTipo(e.target.value as RiscoResumo['tipo'])} className={campo}>
               <option value="alergia">Alergia</option>
               <option value="risco">Risco</option>
             </select>
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-gray-600">Descrição</label>
-            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={300} placeholder={tipo === 'alergia' ? 'Ex.: dipirona' : 'Ex.: risco de queda ao levantar à noite'} className={campo} autoFocus />
+            <label htmlFor="allergiestab-descricao" className="mb-1 block text-xs text-gray-600">Descrição</label>
+            <input id="allergiestab-descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={300} placeholder={tipo === 'alergia' ? 'Ex.: dipirona' : 'Ex.: risco de queda ao levantar à noite'} className={campo} ref={focarAoAparecer} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Gravidade</label>
-            <select value={gravidade} onChange={(e) => setGravidade(e.target.value as RiscoResumo['gravidade'])} className={campo}>
+            <label htmlFor="allergiestab-gravidade" className="mb-1 block text-xs text-gray-600">Gravidade</label>
+            <select id="allergiestab-gravidade" value={gravidade} onChange={(e) => setGravidade(e.target.value as RiscoResumo['gravidade'])} className={campo}>
               <option value="leve">Leve</option>
               <option value="moderada">Moderada</option>
               <option value="grave">Grave</option>

@@ -206,7 +206,7 @@ export function Conciliacao() {
           aoConcluir={() => {
             setLancando(null);
             pendencias.recarregar();
-            cadastros.recarregar();
+            void cadastros.recarregar();
           }}
         />
       )}
