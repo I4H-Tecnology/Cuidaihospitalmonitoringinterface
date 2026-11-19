@@ -87,6 +87,32 @@ jobs:
       - name: Compilar backend e visão
         run: python -m py_compile backend/app/*.py backend/app/rotas/*.py backend/financeiro/*.py backend/financeiro/*/*.py visao/app/*.py visao/*.py
 
+  # Backend principal (backend/app): token, login, bloqueio, política de senha e
+  # permissões. Rodam sem banco: o acesso ao Postgres é trocado por respostas
+  # combinadas, então provam a regra e não o SQL (que só um banco de verdade
+  # prova, como o job `financeiro` faz com o dele). unittest, como em toda a
+  # base: é o que roda na máquina do aluno.
+  backend:
+    name: Backend principal (testes sem banco)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependências do backend
+        run: pip install -r backend/requirements.txt
+
+      - name: Testes do backend
+        run: python -m unittest discover -s backend/testes -t backend -v
+
   # Módulo financeiro (backend/financeiro): domínio (imposto, parcela, juros)
   # e integração contra um Postgres de verdade — gatilhos de período fechado,
   # somas conferidas no COMMIT e isolamento entre empresas só existem no banco,
@@ -127,6 +153,20 @@ jobs:
         env:
           FINANCEIRO_TESTE_DSN: postgresql://financeiro:financeiro@localhost:5432/financeiro_teste
         run: python -m unittest discover -s backend/financeiro/testes -t backend -v
+
+      # O Dockerfile copia arquivos e pastas por nome (nada de `COPY .`). O job
+      # `imagem` só roda na main, então sem estes dois passos uma pasta nova do
+      # módulo que faltasse no COPY só apareceria depois do merge.
+      - name: Construir a imagem do módulo financeiro
+        run: docker build -t medsignal-financeiro:${{ github.sha }} ./backend/financeiro
+
+      - name: Conferir que o servidor importa dentro da imagem
+        run: >-
+          docker run --rm
+          -e FINANCEIRO_JWT_SEGREDO=segredo-so-para-o-teste-0123456789abcdef
+          -e FINANCEIRO_DATABASE_URL=postgresql://teste@localhost:5432/teste
+          medsignal-financeiro:${{ github.sha }}
+          python -c "import financeiro.servidor"
 
   # Análise estática de código e segurança (núcleo comum). Roda dentro do CI,
   # sem serviço externo, conta ou token: o repositório é privado por decisão
@@ -211,7 +251,7 @@ jobs:
   imagem:
     name: Imagens Docker
     runs-on: ubuntu-latest
-    needs: [qualidade, visao, financeiro, seguranca]
+    needs: [qualidade, visao, backend, financeiro, seguranca]
     # Sem working-directory aqui: os contextos de build sao passados explicitos.
     # Só valida a imagem no que vai para produção.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
