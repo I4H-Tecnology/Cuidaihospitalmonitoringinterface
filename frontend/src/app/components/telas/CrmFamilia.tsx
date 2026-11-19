@@ -258,7 +258,7 @@ export function ChatbotScreen(_: PropsTela) {
           resposta={typeof editando === 'object' && 'id' in editando ? editando : null}
           perguntaInicial={typeof editando === 'object' && !('id' in editando) ? editando.pergunta : ''}
           aoFechar={() => setEditando(null)}
-          aoSalvar={(m) => { setEditando(null); setAviso(m); respostas.recarregar(); }}
+          aoSalvar={(m) => { setEditando(null); setAviso(m); void respostas.recarregar(); }}
         />
       )}
     </Tela>
@@ -532,7 +532,7 @@ export function NpsScreen(_: PropsTela) {
           </Painel>
         </>
       ))}
-      {registrar && <RegistrarResposta aoFechar={() => setRegistrar(false)} aoSalvar={() => { setRegistrar(false); setAviso('Resposta registrada.'); recarregar(); }} />}
+      {registrar && <RegistrarResposta aoFechar={() => setRegistrar(false)} aoSalvar={() => { setRegistrar(false); setAviso('Resposta registrada.'); void recarregar(); }} />}
     </Tela>
   );
 }

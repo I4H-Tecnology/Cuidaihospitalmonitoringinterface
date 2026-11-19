@@ -151,7 +151,7 @@ export function AlertasPrioritariosScreen({ onNavigate }: PropsTela) {
   const atrasados = (lembretes.dados ?? []).filter((l) => l.ativo && new Date(l.proximaEm) < new Date());
   const podeAgir = can('alerts', 'edit');
 
-  const agir = async (fazer: () => Promise<unknown>) => { if (await executar(fazer)) ocorrencias.recarregar(); };
+  const agir = async (fazer: () => Promise<unknown>) => { if (await executar(fazer)) void ocorrencias.recarregar(); };
 
   return (
     <Tela>

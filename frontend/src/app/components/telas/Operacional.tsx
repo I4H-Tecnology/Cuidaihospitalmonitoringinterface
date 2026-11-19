@@ -53,7 +53,7 @@ export function InternacoesScreen({ onNavigate }: PropsTela) {
         titulo="Internações"
         descricao="Quem está internado, em que ambiente, há quanto tempo e com que pendências."
         acoes={<>
-          <BotaoAtualizar carregando={pacientes.carregando} aoClicar={() => { pacientes.recarregar(); mov.recarregar(); }} />
+          <BotaoAtualizar carregando={pacientes.carregando} aoClicar={() => { void pacientes.recarregar(); void mov.recarregar(); }} />
           {can('patients', 'create') && <button type="button" onClick={() => setAdmitindo(true)} className={BOTAO_PRIMARIO}><UserPlus className="h-4 w-4" aria-hidden="true" /> Nova admissão</button>}
         </>}
       />
@@ -98,7 +98,7 @@ export function InternacoesScreen({ onNavigate }: PropsTela) {
         )}
       </Painel>
       {can('clinical_logs', 'view') && <button type="button" onClick={() => onNavigate('pep')} className={BOTAO_SECUNDARIO}><Stethoscope className="h-4 w-4" aria-hidden="true" /> Abrir o prontuário</button>}
-      {admitindo && <ModalPaciente aoFechar={() => setAdmitindo(false)} aoSalvar={(p) => { setAdmitindo(false); setAviso(`${p.nome} admitido(a).`); pacientes.recarregar(); mov.recarregar(); }} />}
+      {admitindo && <ModalPaciente aoFechar={() => setAdmitindo(false)} aoSalvar={(p) => { setAdmitindo(false); setAviso(`${p.nome} admitido(a).`); void pacientes.recarregar(); void mov.recarregar(); }} />}
     </Tela>
   );
 }
@@ -120,11 +120,11 @@ export function AltaTransferenciaScreen(_: PropsTela) {
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   const recentes = (mov.dados?.movimentacoes ?? []).filter((m) => m.tipo !== 'admissao').slice(0, 15);
   const pode = can('patients', 'edit');
-  const depois = (m: string) => { setAviso(m); pacientes.recarregar(); mov.recarregar(); };
+  const depois = (m: string) => { setAviso(m); void pacientes.recarregar(); void mov.recarregar(); };
 
   return (
     <Tela>
-      <CabecalhoTela titulo="Alta e Transferência" descricao="Trocar o paciente de ambiente ou dar saída, sempre com motivo. A câmera e o acesso da família acompanham a mudança." acoes={<BotaoAtualizar carregando={pacientes.carregando} aoClicar={() => { pacientes.recarregar(); mov.recarregar(); }} />} />
+      <CabecalhoTela titulo="Alta e Transferência" descricao="Trocar o paciente de ambiente ou dar saída, sempre com motivo. A câmera e o acesso da família acompanham a mudança." acoes={<BotaoAtualizar carregando={pacientes.carregando} aoClicar={() => { void pacientes.recarregar(); void mov.recarregar(); }} />} />
       {aviso && <Aviso tom="sucesso">{aviso}</Aviso>}
       {pacientes.erro && <Aviso tom="erro">{pacientes.erro}</Aviso>}
       {!pode && <Aviso>Seu perfil vê as movimentações, mas só quem pode editar pacientes transfere ou dá alta.</Aviso>}
@@ -383,7 +383,7 @@ export function EscalasScreen(_: PropsTela) {
                               <li key={p.id} className={`flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-xs ${p.usuarioId === user?.id ? 'bg-marca text-white' : 'bg-gray-100 text-gray-800'}`}>
                                 <span className="truncate" title={`${p.usuarioNome}${p.funcao ? ` · ${p.funcao}` : ''}`}>{p.usuarioNome.split(' ')[0]}{p.funcao && ` · ${p.funcao}`}</span>
                                 {edita && (
-                                  <button type="button" onClick={async () => { if (tenantId && await executar(() => tirarDaEscala(tenantId, p.id))) recarregar(); }} aria-label={`Tirar ${p.usuarioNome} do turno`} className="shrink-0 rounded opacity-70 hover:opacity-100"><X className="h-3 w-3" /></button>
+                                  <button type="button" onClick={async () => { if (tenantId && await executar(() => tirarDaEscala(tenantId, p.id))) void recarregar(); }} aria-label={`Tirar ${p.usuarioNome} do turno`} className="shrink-0 rounded opacity-70 hover:opacity-100"><X className="h-3 w-3" /></button>
                                 )}
                               </li>
                             ))}
@@ -402,7 +402,7 @@ export function EscalasScreen(_: PropsTela) {
       </Painel>
       {adicionando && dados && (
         <JanelaEscalar data={adicionando.data} turno={adicionando.turno} equipe={dados.equipe} jaEscalados={doTurno(adicionando.data, adicionando.turno).map((t) => t.usuarioId)}
-          aoFechar={() => setAdicionando(null)} aoSalvar={() => { setAdicionando(null); recarregar(); }} />
+          aoFechar={() => setAdicionando(null)} aoSalvar={() => { setAdicionando(null); void recarregar(); }} />
       )}
     </Tela>
   );
@@ -465,7 +465,7 @@ export function ChecklistsScreen(_: PropsTela) {
         titulo="Checklists Operacionais"
         descricao="Rotinas que não podem ser esquecidas: passagem de plantão, ronda, conferência das câmeras. Cada execução fica registrada."
         acoes={<>
-          <BotaoAtualizar carregando={modelos.carregando} aoClicar={() => { modelos.recarregar(); execucoes.recarregar(); }} />
+          <BotaoAtualizar carregando={modelos.carregando} aoClicar={() => { void modelos.recarregar(); void execucoes.recarregar(); }} />
           {can('operations', 'edit') && <button type="button" onClick={() => setEditando('novo')} className={BOTAO_PRIMARIO}><Plus className="h-4 w-4" aria-hidden="true" /> Novo checklist</button>}
         </>}
       />
@@ -549,8 +549,8 @@ export function ChecklistsScreen(_: PropsTela) {
         </Painel>
       )}
 
-      {executando && <ExecutarChecklist modelo={executando} aoFechar={() => setExecutando(null)} aoConcluir={(f, t) => { setExecutando(null); setAviso(`Checklist registrado: ${f} de ${t} itens feitos.`); modelos.recarregar(); execucoes.recarregar(); }} />}
-      {editando && <FormularioChecklist modelo={editando === 'novo' ? null : editando} aoFechar={() => setEditando(null)} aoSalvar={(m) => { setEditando(null); setAviso(m); modelos.recarregar(); }} />}
+      {executando && <ExecutarChecklist modelo={executando} aoFechar={() => setExecutando(null)} aoConcluir={(f, t) => { setExecutando(null); setAviso(`Checklist registrado: ${f} de ${t} itens feitos.`); void modelos.recarregar(); void execucoes.recarregar(); }} />}
+      {editando && <FormularioChecklist modelo={editando === 'novo' ? null : editando} aoFechar={() => setEditando(null)} aoSalvar={(m) => { setEditando(null); setAviso(m); void modelos.recarregar(); }} />}
     </Tela>
   );
 }
