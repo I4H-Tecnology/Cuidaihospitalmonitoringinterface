@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { Printer, Trash2 } from 'lucide-react';
-import { useDados, useFinanceiro } from '../../contexto';
+import { useAcao, useDados, useFinanceiro } from '../../contexto';
 import type { Holerite, Rubrica } from '../../api/tipos';
 import { formatarBRL, paraCentavos, type Dinheiro, semZerosFinais } from '../../util/dinheiro';
 import { formatarCompetencia, formatarData } from '../../util/datas';
@@ -36,6 +36,14 @@ export function HoleriteModal({
     aoMudar();
   };
 
+  // Se a API recusar (folha já fechada, item de outro usuário), `executar` mostra
+  // o aviso de erro e devolve null: o holerite na tela continua como estava.
+  const { executar } = useAcao();
+  const removerLancamento = async (id: string) => {
+    const novo = await executar(() => api.removerLancamento(folhaId, id));
+    if (novo) atualizar(novo);
+  };
+
   if (!h) return <Janela titulo="Holerite" aoFechar={aoFechar}><Carregando /></Janela>;
 
   const proventos = h.itens.filter((i) => i.tipo === 'provento');
@@ -60,9 +68,9 @@ export function HoleriteModal({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ListaDeItens titulo="Proventos" itens={proventos} total={h.totalProventos} editavel={editavel}
-          aoRemover={async (id) => atualizar(await api.removerLancamento(folhaId, id))} />
+          aoRemover={removerLancamento} />
         <ListaDeItens titulo="Descontos" itens={descontos} total={h.totalDescontos} editavel={editavel}
-          aoRemover={async (id) => atualizar(await api.removerLancamento(folhaId, id))} />
+          aoRemover={removerLancamento} />
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-900/40">

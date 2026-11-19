@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { Lock, LockOpen, Plus, Trash2 } from 'lucide-react';
-import { useDados, useFinanceiro } from '../contexto';
+import { useAcao, useDados, useFinanceiro } from '../contexto';
 import type { Organizacao } from '../api/tipos';
 import { formatarBRL, type Dinheiro } from '../util/dinheiro';
 import { competenciaDe, formatarCompetencia, formatarData, formatarDataHora, hojeISO, somarMeses } from '../util/datas';
@@ -262,6 +262,7 @@ function NovaTabela({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: ()
 
 function Feriados() {
   const { api, pode, avisar } = useFinanceiro();
+  const { executar } = useAcao();
   const [ano, setAno] = useState(new Date().getFullYear());
   const feriados = useDados(() => api.feriados(ano), [api, ano]);
   const [data, setData] = useState('');
@@ -303,7 +304,11 @@ function Feriados() {
                   <td className={`${tabela.celula} text-right`}>
                     {!f.nacional && f.id && (pode('cadastros', 'excluir') || pode('configuracoes', 'editar')) && (
                       <button type="button" aria-label={`Remover ${f.nome}`} className="text-gray-400 hover:text-red-600"
-                        onClick={async () => { await api.removerFeriado(f.id!); feriados.recarregar(); }}>
+                        onClick={async () => {
+                          // Falha da API vira aviso de erro (executar não rejeita) e a lista não muda.
+                          const removido = await executar(async () => { await api.removerFeriado(f.id!); return true; });
+                          if (removido) void feriados.recarregar();
+                        }}>
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
