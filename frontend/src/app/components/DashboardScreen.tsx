@@ -84,7 +84,7 @@ export function DashboardScreen({ onNavigate }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
     const timer = window.setInterval(carregar, INTERVALO_MS);
     return () => window.clearInterval(timer);
   }, [carregar]);

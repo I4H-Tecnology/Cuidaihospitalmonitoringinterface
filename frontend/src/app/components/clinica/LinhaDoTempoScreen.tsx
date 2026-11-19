@@ -50,7 +50,7 @@ export function LinhaDoTempoScreen({ aoAbrirPaciente }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const eventos = useMemo(() => {

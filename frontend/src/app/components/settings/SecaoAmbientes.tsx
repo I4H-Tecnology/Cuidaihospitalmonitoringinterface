@@ -45,7 +45,7 @@ export function SecaoAmbientes({ aoIrPara, onNavigate }: {
     }
   }, [tenantId]);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { void carregar(); }, [carregar]);
 
   const tiposPresentes = useMemo(() => [...new Set(ambientes.map((a) => a.tipo))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [ambientes]);
   const visiveis = useMemo(() => {

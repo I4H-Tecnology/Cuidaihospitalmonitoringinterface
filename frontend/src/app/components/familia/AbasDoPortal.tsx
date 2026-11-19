@@ -73,7 +73,7 @@ function Mensagens({ sessao, aoLer }: { sessao: SessaoFamilia; aoLer: () => void
   const carregar = useCallback(async () => {
     try { setLista(await buscarMensagens(sessao.token)); aoLer(); } catch { /* a próxima volta tenta de novo */ }
   }, [sessao.token, aoLer]);
-  useEffect(() => { carregar(); const id = window.setInterval(carregar, 20_000); return () => window.clearInterval(id); }, [carregar]);
+  useEffect(() => { void carregar(); const id = window.setInterval(carregar, 20_000); return () => window.clearInterval(id); }, [carregar]);
   useEffect(() => { fim.current?.scrollIntoView({ block: 'end' }); }, [lista?.length]);
 
   const enviar = async (e: React.FormEvent) => {

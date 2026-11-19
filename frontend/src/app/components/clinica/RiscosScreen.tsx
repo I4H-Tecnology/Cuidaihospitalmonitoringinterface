@@ -54,7 +54,7 @@ export function RiscosScreen({ aoAbrirPaciente }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const porId = useMemo(() => new Map(pacientes.map((p) => [p.id, p])), [pacientes]);

@@ -53,7 +53,7 @@ export function PatientListScreen({ onSelectPatient }: Props) {
   }, [tenantId, mostrarSaidas]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const reinternar = async (id: string) => {

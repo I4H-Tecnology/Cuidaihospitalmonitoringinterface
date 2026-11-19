@@ -47,7 +47,7 @@ export function PatientsScreen({ aoAbrirPaciente }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const contagem = useMemo(() => {
@@ -154,7 +154,7 @@ export function PatientsScreen({ aoAbrirPaciente }: Props) {
           aoFechar={() => setModalNovo(false)}
           aoSalvar={() => {
             setModalNovo(false);
-            carregar();
+            void carregar();
           }}
         />
       )}

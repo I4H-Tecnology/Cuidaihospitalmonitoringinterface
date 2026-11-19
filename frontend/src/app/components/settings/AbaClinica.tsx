@@ -45,7 +45,7 @@ export function AbaClinica() {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   return (

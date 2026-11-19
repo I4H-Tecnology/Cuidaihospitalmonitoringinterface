@@ -46,7 +46,7 @@ export function AbaCameras() {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
     const timer = window.setInterval(carregar, INTERVALO_MS);
     return () => window.clearInterval(timer);
   }, [carregar]);
@@ -159,7 +159,7 @@ export function AbaCameras() {
           aoSalvar={(salva, nova) => {
             setModal(null);
             setAviso(nova ? `Câmera ${salva.identificador} cadastrada.` : `Câmera ${salva.identificador} atualizada.`);
-            carregar();
+            void carregar();
           }}
         />
       )}

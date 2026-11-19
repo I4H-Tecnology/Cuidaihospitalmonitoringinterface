@@ -72,7 +72,7 @@ export function ContratosScreen() {
     }
   }, [tenantId]);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { void carregar(); }, [carregar]);
 
   const ativos = contratos.filter(ativo);
   const vencendo = contratos.filter((c) => c.situacao === 'vencendo');
@@ -231,7 +231,7 @@ export function ContratosScreen() {
             await encerrarContrato(tenantId, encerrando.id, motivo);
             setEncerrando(null);
             setAviso(`Contrato "${encerrando.objeto}" encerrado.`);
-            carregar();
+            void carregar();
           }}
         />
       )}

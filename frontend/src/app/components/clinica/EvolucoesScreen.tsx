@@ -48,7 +48,7 @@ export function EvolucoesScreen({ aoAbrirPaciente }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const internados = pacientes.filter((p) => p.status === 'internado');

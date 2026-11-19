@@ -94,7 +94,7 @@ export function MonitoringScreen({ aoAbrirPaciente }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
     const timer = window.setInterval(carregar, INTERVALO_ATUALIZACAO_MS);
     return () => window.clearInterval(timer);
   }, [carregar]);

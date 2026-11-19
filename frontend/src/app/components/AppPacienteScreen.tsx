@@ -54,7 +54,7 @@ export function AppPacienteScreen() {
     }
   }, [tenantId]);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { void carregar(); }, [carregar]);
 
   const ativos = acessos.filter(vale);
   const venceLogo = ativos.filter((a) => new Date(a.expiraEm).getTime() - Date.now() < 24 * 3600_000);
@@ -199,7 +199,7 @@ export function AppPacienteScreen() {
             await revogarAcompanhante(tenantId, revogando.id);
             setAviso(`Acesso de ${revogando.nome} revogado. O vídeo dele para em até 30 segundos.`);
             setRevogando(null);
-            carregar();
+            void carregar();
           }}
         />
       )}
@@ -214,7 +214,7 @@ export function AppPacienteScreen() {
       {pacienteDoNovoAcesso && (
         <ModalAcompanhante
           paciente={pacienteDoNovoAcesso}
-          aoFechar={() => { setPacienteDoNovoAcesso(null); carregar(); }}
+          aoFechar={() => { setPacienteDoNovoAcesso(null); void carregar(); }}
           aoCriar={() => undefined}
         />
       )}
