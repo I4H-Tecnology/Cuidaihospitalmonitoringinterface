@@ -43,9 +43,12 @@ MedSignal/
 │   ├── init/               schema (12 entidades do DER) e seed
 │   └── scripts/            scripts avulsos, rodados sob demanda
 │
-├── docs/         RFC do projeto e documentos de apoio
+├── scripts/      scripts do repositório (ajuste da cobertura para o SonarQube)
+│
+├── docs/         RFC, planos e páginas da Wiki — fora do Git (ver Documentação)
 │
 ├── docker-compose.yml
+├── sonar-project.properties   configuração da análise no SonarQube
 └── .env
 ```
 
@@ -209,8 +212,10 @@ O frontend já roda direto no Windows, com Node 22+ (ver
 A documentação de referência está na **[Wiki do repositório](https://github.com/lucasmm13/Cuidaihospitalmonitoringinterface/wiki)**:
 arquitetura, modelo de dados, serviço de visão, validação do modelo, segurança e
 LGPD, como rodar, observabilidade e as decisões técnicas com a seção da RFC que
-as motiva. As páginas ficam versionadas em [`docs/wiki/`](docs/wiki/README.md) e
-são publicadas de lá.
+as motiva. As páginas-fonte ficam em `docs/wiki/` e são publicadas de lá. A pasta
+`docs/` (a RFC, os planos e a Wiki) está no `.gitignore` por decisão de 13/09/2026
+e não vai para o repositório: o que está no GitHub é a Wiki publicada, não os
+arquivos.
 
 A análise estática de código e segurança roda dentro do CI, no job `seguranca`,
 a cada push: **Semgrep** (regras de segurança para Python e TypeScript, mais
@@ -218,6 +223,34 @@ detecção de segredos), **Bandit** (vulnerabilidades em Python), **pip-audit** 
 **npm audit** (dependências com CVE conhecida). Os relatórios ficam como artefato
 de cada execução. Sem serviço externo, sem conta e sem token: o repositório é
 privado por decisão aprovada com o orientador, e nada aqui depende de visibilidade.
+
+## Monitoramento e análise de qualidade
+
+**Logs ao vivo (Dozzle).** Sobe junto com o resto (`docker compose up -d`, ou
+`docker compose run --rm dev`) e mostra o log e o consumo de CPU e memória de cada
+contêiner em <http://localhost:8888>. Os logs da API saem em JSON, uma linha por
+evento, formato que o Dozzle sabe expandir por campo. A porta só abre em
+`127.0.0.1`, porque o log pode ter
+dado de paciente. O serviço de visão com webcam roda nativo no Windows, fora do
+Docker, e por isso o log dele fica no terminal em que foi iniciado; o estado dele
+está em `GET :8001/health` e na tela Saúde do Sistema.
+
+**Análise de código (SonarQube Community).** Sobe à parte, no perfil `qualidade`,
+porque pede ~2 GB de RAM. O roteiro completo, com o token e a cobertura, está
+no comentário do serviço `sonarqube` em `docker-compose.yml`. Em resumo:
+
+```bash
+docker compose up -d sonarqube          # http://localhost:9000, admin/admin na 1ª vez
+cd frontend && npx vitest run --coverage --coverage.thresholds.autoUpdate=false && cd ..
+node scripts/sonar-cobertura.mjs        # ajusta os caminhos do lcov para a raiz
+docker compose run --rm sonar-scanner   # precisa de SONAR_TOKEN no .env
+```
+
+O `--coverage.thresholds.autoUpdate=false` evita que o Vitest reescreva os pisos de
+cobertura no `vite.config.ts` durante a medição. O que analisar e o que ignorar
+está em `sonar-project.properties`. O Sonar roda na máquina e não no CI: o servidor
+é local e o SonarCloud gratuito exige repositório público. A cobertura vem só do
+frontend, porque os testes de Python são `unittest` e não geram o relatório.
 
 ## Qualidade
 
@@ -236,7 +269,14 @@ análise estática e de segurança.
 
 ```bash
 visao/.venv/Scripts/python.exe -m unittest discover -s visao/testes -t .   # testes da visão
+python -m unittest discover -s backend/testes -t backend                    # login, token e permissões da API
 ```
+
+Os testes da API (`backend/testes/`) rodam sem banco nem Docker, mas pedem as
+dependências do backend (`pip install -r backend/requirements.txt`, de preferência
+num venv). Eles cobrem o que a RFC chama de login (RF01 e RF02), a política de senha,
+o token e o isolamento entre clínicas; as consultas SQL em si e as rotas de
+ocorrência, alerta e família ainda não têm teste automatizado.
 
 O limiar de cobertura usa catraca: sobe sozinho conforme a cobertura melhora e nunca
 regride. A linha de projeto (IA) não exige percentual mínimo — o que se avalia é a
