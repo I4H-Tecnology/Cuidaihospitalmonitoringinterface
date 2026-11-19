@@ -208,7 +208,7 @@ function Tabelas() {
           </table>
         )}
       </div>
-      {nova && <NovaTabela aoFechar={() => setNova(false)} aoSalvar={() => { setNova(false); tabelas.recarregar(); }} />}
+      {nova && <NovaTabela aoFechar={() => setNova(false)} aoSalvar={() => { setNova(false); void tabelas.recarregar(); }} />}
     </div>
   );
 }
@@ -283,7 +283,7 @@ function Feriados() {
                   try {
                     await api.criarFeriado(data, nome);
                     setData(''); setNome('');
-                    feriados.recarregar();
+                    void feriados.recarregar();
                   } catch (e) {
                     avisar(e instanceof Error ? e.message : 'Não foi possível cadastrar.', 'erro');
                   }

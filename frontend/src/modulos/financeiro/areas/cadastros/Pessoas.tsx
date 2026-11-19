@@ -62,7 +62,7 @@ export function Pessoas() {
                 const externas = await pessoasExternas();
                 const r = await api.importarPessoas(externas);
                 avisar(`${r.criadas} cadastro(s) novo(s), ${r.atualizadas} atualizado(s).`);
-                pessoas.recarregar();
+                void pessoas.recarregar();
               } catch (e) {
                 avisar(e instanceof Error ? e.message : 'Não foi possível importar.', 'erro');
               } finally {
@@ -122,7 +122,7 @@ export function Pessoas() {
         <EditorPessoa
           pessoaId={editando === 'nova' ? null : editando.id}
           aoFechar={() => setEditando(null)}
-          aoSalvar={() => { setEditando(null); pessoas.recarregar(); }}
+          aoSalvar={() => { setEditando(null); void pessoas.recarregar(); }}
         />
       )}
     </div>

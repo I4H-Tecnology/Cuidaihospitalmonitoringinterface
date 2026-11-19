@@ -62,7 +62,7 @@ export function Emprestimos() {
           </table>
         )}
       </div>
-      {novo && <NovoEmprestimo aoFechar={() => setNovo(false)} aoSalvar={() => { setNovo(false); lista.recarregar(); }} />}
+      {novo && <NovoEmprestimo aoFechar={() => setNovo(false)} aoSalvar={() => { setNovo(false); void lista.recarregar(); }} />}
       {aberto && <DetalheEmprestimo id={aberto} aoFechar={() => setAberto(null)} aoMudar={() => lista.recarregar()} />}
     </div>
   );

@@ -60,7 +60,7 @@ export function Rubricas() {
         </table>
       )}
       {editando && (
-        <EditorRubrica rubrica={editando === 'nova' ? null : editando} aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); lista.recarregar(); }} />
+        <EditorRubrica rubrica={editando === 'nova' ? null : editando} aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); void lista.recarregar(); }} />
       )}
     </div>
   );

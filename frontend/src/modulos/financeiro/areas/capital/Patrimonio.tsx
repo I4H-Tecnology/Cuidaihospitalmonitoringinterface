@@ -69,8 +69,8 @@ export function Patrimonio() {
           </table>
         )}
       </div>
-      {novo && <NovoBem classes={d.classes} aoFechar={() => setNovo(false)} aoSalvar={() => { setNovo(false); ativos.recarregar(); }} />}
-      {baixando && <BaixarBem ativo={baixando} aoFechar={() => setBaixando(null)} aoSalvar={() => { setBaixando(null); ativos.recarregar(); }} />}
+      {novo && <NovoBem classes={d.classes} aoFechar={() => setNovo(false)} aoSalvar={() => { setNovo(false); void ativos.recarregar(); }} />}
+      {baixando && <BaixarBem ativo={baixando} aoFechar={() => setBaixando(null)} aoSalvar={() => { setBaixando(null); void ativos.recarregar(); }} />}
     </div>
   );
 }

@@ -65,8 +65,8 @@ export function Titulos({ tipo }: { tipo: TipoTitulo }) {
   }, [tipo, situacao, de, ate, categoriaId, buscaAplicada]);
 
   const recarregarTudo = () => {
-    lista.recarregar();
-    resumo.recarregar();
+    void lista.recarregar();
+    void resumo.recarregar();
     void cadastros.recarregar();
   };
 

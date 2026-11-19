@@ -47,9 +47,9 @@ export function Contas() {
           </tbody>
         </table>
       )}
-      {editando === 'nova' && <NovaConta aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); contas.recarregar(); }} />}
+      {editando === 'nova' && <NovaConta aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); void contas.recarregar(); }} />}
       {editando && editando !== 'nova' && (
-        <EditarConta conta={editando} aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); contas.recarregar(); }} />
+        <EditarConta conta={editando} aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); void contas.recarregar(); }} />
       )}
     </div>
   );
