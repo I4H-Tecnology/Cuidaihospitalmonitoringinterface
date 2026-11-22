@@ -62,7 +62,8 @@ export function fetchFalso(rotas: Rota[] = [], padrao: unknown = []) {
     const alvo = `${(init?.method ?? 'GET').toUpperCase()} ${url}`;
     for (const [padraoDaRota, corpo] of rotas) {
       if (padraoDaRota.test(alvo)) {
-        return resposta(typeof corpo === 'function' ? (corpo as (u: string, i?: RequestInit) => unknown)(url, init) : corpo);
+        const saida = typeof corpo === 'function' ? (corpo as (u: string, i?: RequestInit) => unknown)(url, init) : corpo;
+        return saida instanceof Response ? saida : resposta(saida);
       }
     }
     return resposta(padrao);
@@ -81,4 +82,9 @@ export function fetchComFalha(mensagem = 'Banco indisponível.', status = 500) {
 /** Quantas chamadas `fetch` casam com o padrão ("MÉTODO url"). */
 export function chamadas(mock: ReturnType<typeof fetchFalso>, padrao: RegExp): number {
   return mock.mock.calls.filter(([entrada, init]) => padrao.test(`${(init?.method ?? 'GET').toUpperCase()} ${String(entrada)}`)).length;
+}
+
+/** Resposta HTTP de erro para uma rota: `() => erroHttp(500, 'Falhou.')`. */
+export function erroHttp(status = 500, mensagem = 'Falhou.'): Response {
+  return resposta({ error: mensagem }, status);
 }
