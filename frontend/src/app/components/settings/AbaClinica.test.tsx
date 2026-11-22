@@ -45,6 +45,9 @@ describe('Configurações › Clínica: edição do cadastro', () => {
   it('salvar: manda os dados alterados, fecha a janela e avisa', async () => {
     const { api, janela } = await abrirEdicao([[/^PATCH .*\/api\/clinica/, { ...clinica, telefone: '(47) 3999-1111' }]]);
 
+    const endereco = within(janela).getByLabelText('Endereço');
+    await userEvent.clear(endereco);
+    await userEvent.type(endereco, 'Av. Central, 500');
     const telefone = within(janela).getByLabelText('Telefone');
     await userEvent.clear(telefone);
     await userEvent.type(telefone, '(47) 3999-1111');
@@ -53,7 +56,7 @@ describe('Configurações › Clínica: edição do cadastro', () => {
     expect(await screen.findByText('Cadastro da clínica atualizado.')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const envio = api.mock.calls.find(([, init]) => init?.method === 'PATCH');
-    expect(JSON.parse(String(envio?.[1]?.body))).toMatchObject({ nome: 'Clínica Teste', telefone: '(47) 3999-1111', email: 'contato@clinica.com' });
+    expect(JSON.parse(String(envio?.[1]?.body))).toMatchObject({ nome: 'Clínica Teste', endereco: 'Av. Central, 500', telefone: '(47) 3999-1111', email: 'contato@clinica.com' });
     expect(screen.getByText('(47) 3999-1111')).toBeInTheDocument(); // a tela já mostra o dado novo
   });
 

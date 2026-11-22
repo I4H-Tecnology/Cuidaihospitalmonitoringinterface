@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { chamadas, fetchFalso } from '@/test/telas';
 import { AbaCameras } from './AbaCameras';
@@ -16,9 +16,10 @@ const camera = {
   ultimoPing: null, ambienteId: 'a-1', ambienteNome: 'Quarto 101', ambienteTipo: 'quarto', pacienteId: null, pacienteNome: null,
   ocorrencias24h: 0, ultimaOcorrencia: null, visaoUrl: null,
 };
+const salaTv = { id: 'a-2', nome: 'Sala de TV', tipo: 'sala', cameras: 0, pacienteNome: null };
 const rotas: Array<[RegExp, unknown]> = [
   [/^GET .*\/api\/cameras/, [camera]],
-  [/^GET .*\/api\/ambientes/, [ambiente]],
+  [/^GET .*\/api\/ambientes/, [ambiente, salaTv]],
   [/^POST .*\/api\/cameras/, { ...camera, id: 'c-2', identificador: 'CAM-SALA-TV' }],
   [/^PATCH .*\/api\/cameras\/c-1/, { ...camera, identificador: 'CAM-QUARTO101-B' }],
 ];
@@ -50,6 +51,7 @@ describe('Câmeras: formulário', () => {
     const api = fetchFalso(rotas);
     const janela = await abrirModalNovo();
 
+    await userEvent.selectOptions(within(janela).getByLabelText('Localização (ambiente monitorado) *'), 'a-2');
     await userEvent.type(within(janela).getByLabelText('ID do Dispositivo *'), 'CAM-SALA-TV');
     await userEvent.type(within(janela).getByPlaceholderText(/rtsp:\/\//), 'rtsp://u:p@192.168.0.20:554/stream');
     await userEvent.click(within(janela).getByRole('button', { name: 'Adicionar Dispositivo' }));
@@ -57,7 +59,7 @@ describe('Câmeras: formulário', () => {
     expect(await screen.findByText('Câmera CAM-SALA-TV cadastrada.')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const envio = api.mock.calls.find(([url, init]) => init?.method === 'POST' && String(url).endsWith('/api/cameras'));
-    expect(JSON.parse(String(envio?.[1]?.body))).toMatchObject({ ambienteId: 'a-1', identificador: 'CAM-SALA-TV', urlStream: 'rtsp://u:p@192.168.0.20:554/stream' });
+    expect(JSON.parse(String(envio?.[1]?.body))).toMatchObject({ ambienteId: 'a-2', identificador: 'CAM-SALA-TV', urlStream: 'rtsp://u:p@192.168.0.20:554/stream' });
     await waitFor(() => expect(chamadas(api, /^GET .*\/api\/cameras/)).toBe(2));
   });
 
@@ -117,6 +119,18 @@ describe('Câmeras: formulário', () => {
     await userEvent.selectOptions(tipo, 'sensor'); // tentativa de escolher: o navegador não deixa
     expect(tipo.value).toBe('camera');
     expect(within(janela).getByRole('button', { name: 'Adicionar Dispositivo' })).toBeEnabled();
+  });
+
+  it('camada extra: se o tipo for forçado para fora do HTML (extensão, ferramenta), o envio continua travado', async () => {
+    const api = fetchFalso(rotas);
+    const janela = await abrirModalNovo();
+
+    fireEvent.change(within(janela).getByLabelText('Tipo *'), { target: { value: 'sensor' } });
+
+    const enviar = within(janela).getByRole('button', { name: 'Adicionar Dispositivo' });
+    expect(enviar).toBeDisabled();
+    expect(enviar).toHaveAttribute('title', 'Só câmeras podem ser cadastradas');
+    expect(chamadas(api, /^POST /)).toBe(0);
   });
 
   it('editando, o tipo fica travado', async () => {

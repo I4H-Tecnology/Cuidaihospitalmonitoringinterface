@@ -116,7 +116,10 @@ describe('Prontuário: medicações', () => {
     await userEvent.click(screen.getByRole('button', { name: /Nova prescrição/ }));
     const medicamento = screen.getByLabelText('Medicamento *');
     expect(medicamento).toHaveFocus();
-    expect(screen.getByLabelText('Médico que receitou')).toHaveValue('Dr. Paulo Reis');
+    const medico = screen.getByLabelText('Médico que receitou');
+    expect(medico).toHaveValue('Dr. Paulo Reis');
+    await userEvent.clear(medico);
+    await userEvent.type(medico, 'Dra. Lúcia Prado');
     await userEvent.type(medicamento, 'dipirona 500 mg');
     await userEvent.type(screen.getByLabelText('Posologia'), '1 comprimido, 6/6 h');
     await userEvent.type(screen.getByLabelText('Observação'), 'se dor ou febre');
@@ -124,7 +127,7 @@ describe('Prontuário: medicações', () => {
 
     await waitFor(() => expect(aoMudar).toHaveBeenCalledTimes(1));
     expect(postado(api, '/api/prescricoes')).toMatchObject({
-      pacienteId: 'p-1', medicamento: 'dipirona 500 mg', posologia: '1 comprimido, 6/6 h', medicoPrescritor: 'Dr. Paulo Reis', observacao: 'se dor ou febre',
+      pacienteId: 'p-1', medicamento: 'dipirona 500 mg', posologia: '1 comprimido, 6/6 h', medicoPrescritor: 'Dra. Lúcia Prado', observacao: 'se dor ou febre',
     });
     expect(screen.queryByLabelText('Medicamento *')).toBeNull();
   });
