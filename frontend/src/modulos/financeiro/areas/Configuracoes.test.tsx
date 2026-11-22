@@ -34,7 +34,7 @@ describe('Configurações › Fechamento de período', () => {
     const api = fabrica({ alterarFechamento: vi.fn().mockResolvedValue({ fechadoAte: '2026-10-31' }) });
     await abrir(api, 'Fechamento de período');
     await screen.findByText('Nenhum período fechado ainda.');
-    const sessoesAntes = api.sessao.mock.calls.length;
+    const sessoesAntes = vi.mocked(api.sessao).mock.calls.length;
 
     await userEvent.click(screen.getByRole('button', { name: 'Fechar período' }));
     const janela = await screen.findByRole('dialog');
@@ -45,7 +45,7 @@ describe('Configurações › Fechamento de período', () => {
     expect(await screen.findByText('Período fechado.')).toBeInTheDocument();
     expect(api.alterarFechamento).toHaveBeenCalledWith(expect.stringMatching(/^\d{4}-\d{2}$/), 'Mês conferido pela contabilidade');
     expect(await screen.findByText(/Período fechado até/)).toBeInTheDocument();
-    await waitFor(() => expect(api.sessao.mock.calls.length).toBeGreaterThan(sessoesAntes));
+    await waitFor(() => expect(vi.mocked(api.sessao).mock.calls.length).toBeGreaterThan(sessoesAntes));
   });
 
   it('reabrir tudo: manda null com o motivo, avisa e recarrega a sessão', async () => {
@@ -55,7 +55,7 @@ describe('Configurações › Fechamento de período', () => {
     });
     await abrir(api, 'Fechamento de período');
     await screen.findByText(/Período fechado até/);
-    const sessoesAntes = api.sessao.mock.calls.length;
+    const sessoesAntes = vi.mocked(api.sessao).mock.calls.length;
 
     await userEvent.click(screen.getByRole('button', { name: 'Reabrir tudo' }));
     const janela = await screen.findByRole('dialog');
@@ -65,7 +65,7 @@ describe('Configurações › Fechamento de período', () => {
     expect(await screen.findByText('Períodos reabertos.')).toBeInTheDocument();
     expect(api.alterarFechamento).toHaveBeenCalledWith(null, 'Ajuste de uma nota fiscal');
     expect(await screen.findByText('Nenhum período fechado ainda.')).toBeInTheDocument();
-    await waitFor(() => expect(api.sessao.mock.calls.length).toBeGreaterThan(sessoesAntes));
+    await waitFor(() => expect(vi.mocked(api.sessao).mock.calls.length).toBeGreaterThan(sessoesAntes));
   });
 });
 
