@@ -37,3 +37,8 @@ if (!('ResizeObserver' in window)) {
     disconnect() {}
   };
 }
+
+// A conversa rola até a última mensagem com scrollIntoView, que o jsdom não implementa.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
