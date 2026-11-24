@@ -120,8 +120,8 @@ export const screenModuleMap: Record<Exclude<Screen, TelaFinanceira>, string> = 
 export const TELAS_DE_TODOS: ReadonlySet<Screen> = new Set<Screen>(['settings']);
 
 /**
- * As telas que a RFC especifica (RF03 a RF08, RF15 a RF30). É o que o perfil
- * VISITOR, o da banca do TCC, abre — e nada além disso.
+ * As telas que a RFC especifica (RF03 a RF08, RF15 a RF30). É o que os perfis
+ * da banca do TCC abrem — VISITOR só lendo, TCC operando — e nada além disso.
  *
  * A permissão do backend é por módulo, e vários módulos da RFC abrigam telas
  * que vieram depois dela (Sensores IoT e Ausência no Quarto moram em
@@ -158,6 +158,7 @@ export const TELAS_DA_RFC: ReadonlySet<Screen> = new Set<Screen>([
 /** Perfis que abrem só um conjunto de telas. Perfil fora daqui vale o que o módulo diz. */
 const TELAS_DO_PERFIL: Partial<Record<Role, ReadonlySet<Screen>>> = {
   VISITOR: TELAS_DA_RFC,
+  TCC: TELAS_DA_RFC,
 };
 
 /**

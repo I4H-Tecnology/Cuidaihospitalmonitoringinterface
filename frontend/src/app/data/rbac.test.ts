@@ -139,15 +139,24 @@ describe('telas por perfil (VISITOR, a banca do TCC)', () => {
 
   it('reconhece o perfil que só vê o que a RFC especifica', () => {
     // Serve ao que não é tela, como o "Novo dashboard" (protótipo com números
-    // de exemplo): só o VISITOR deixa de recebê-lo.
+    // de exemplo) e o simulador do app: só os perfis da banca deixam de recebê-lo.
     expect(perfilSoDaRfc('VISITOR')).toBe(true);
+    expect(perfilSoDaRfc('TCC')).toBe(true);
     for (const role of ['ADMIN', 'MANAGER', 'NURSE', 'DOCTOR', 'SYSTEM'] as const) {
       expect(perfilSoDaRfc(role), role).toBe(false);
     }
     expect(perfilSoDaRfc(undefined)).toBe(false);
   });
 
-  it('só restringe o VISITOR: os outros perfis seguem pelo módulo', () => {
+  it('o TCC abre exatamente as mesmas telas do VISITOR', () => {
+    // A diferença entre os dois é a escrita, que vem do banco (02_perfis.sql),
+    // não o menu.
+    const doVisitor = TELAS.filter((t) => perfilAbreTela('VISITOR', t));
+    const doTcc = TELAS.filter((t) => perfilAbreTela('TCC', t));
+    expect(doTcc).toEqual(doVisitor);
+  });
+
+  it('só restringe os perfis da banca: os outros seguem pelo módulo', () => {
     for (const role of ['ADMIN', 'MANAGER', 'NURSE', 'DOCTOR', 'SYSTEM'] as const) {
       expect(perfilAbreTela(role, 'sensores')).toBe(true);
       expect(perfilAbreTela(role, 'financeiro:pagar')).toBe(true);

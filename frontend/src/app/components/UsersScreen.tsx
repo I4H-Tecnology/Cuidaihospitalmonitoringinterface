@@ -74,7 +74,8 @@ const profileOrder: Role[] = [
   'NURSE',
   'ADMINISTRATIVE',
   'PATIENT',
-  'VISITOR'
+  'VISITOR',
+  'TCC'
 ];
 
 const profileMeta: Record<Role, { title: string; description: string; color: string; icon: React.ReactNode }> = {
@@ -125,6 +126,12 @@ const profileMeta: Record<Role, { title: string; description: string; color: str
     description: 'Acompanhamento limitado',
     color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
     icon: <Eye className="w-5 h-5" />
+  },
+  TCC: {
+    title: 'TCC (banca)',
+    description: 'Telas da RFC, com alertas, pacientes, acompanhantes e câmeras',
+    color: 'bg-teal-50 border-teal-200 text-teal-700',
+    icon: <Monitor className="w-5 h-5" />
   }
 };
 

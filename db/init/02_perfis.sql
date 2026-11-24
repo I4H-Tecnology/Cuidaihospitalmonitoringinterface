@@ -14,7 +14,7 @@
 --
 --  1. O NOME do perfil tem de estar na união `Role` do frontend
 --     (authStore.ts): SYSTEM, ADMIN, MANAGER, DOCTOR, NURSE, ADMINISTRATIVE,
---     PATIENT e VISITOR. 'GESTOR' e 'ENFERMEIRO' não estão — por isso viram
+--     PATIENT, VISITOR e TCC. 'GESTOR' e 'ENFERMEIRO' não estão — por isso viram
 --     MANAGER e NURSE aqui.
 --
 --  2. O FORMATO é dicionário de módulo para ações em inglês, que é o que
@@ -81,7 +81,8 @@ perfis(nome, descricao) AS (
     ('ADMIN',   'Administra a clínica: usuários, pacientes, ambientes e câmeras (RN02, RN03)'),
     ('MANAGER', 'Acompanha indicadores e histórico de ocorrências; libera acesso de acompanhante (RN03)'),
     ('NURSE',   'Recebe o alerta, atende e encerra a ocorrência (RF17–RF20, RN13)'),
-    ('VISITOR', 'Somente leitura, limitada ao escopo da RFC; usado na apresentação do TCC')
+    ('VISITOR', 'Somente leitura, limitada ao escopo da RFC; usado na apresentação do TCC'),
+    ('TCC',     'Banca do TCC: as telas da RFC, com a escrita que a RFC pede (alertas, pacientes, acompanhantes, câmeras)')
 ),
 
 concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
@@ -166,7 +167,35 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('VISITOR', 'reports',    true, false, false, false, true, false),
     ('VISITOR', 'companions', true, false, false, false, true, false),
     ('VISITOR', 'users',      true, false, false, false, true, false),
-    ('VISITOR', 'settings',   true, false, false, false, true, false)
+    ('VISITOR', 'settings',   true, false, false, false, true, false),
+
+    -- TCC — a banca opera o sistema: as mesmas telas do VISITOR (TELAS_DA_RFC,
+    -- em rbac.ts), com escrita só onde a RFC pede. Só web: o painel esconde o
+    -- simulador do app para o perfil.
+    --   alerts:edit ......... ciência, atendimento e encerramento (RF17–RF20)
+    --   patients:create/edit  cadastrar, editar, vincular a ambiente e dar alta
+    --                         (RF05, RF08, RF28). A API também aceita
+    --                         transferir com edit, que não está na RFC.
+    --   companions:edit ..... gerar e revogar o acesso do acompanhante (RF25–
+    --                         RF28). `create` entra pela regra, mas nenhuma
+    --                         rota o confere: as duas pedem `edit`.
+    --   monitoring:edit ..... cadastrar câmera e vincular a ambiente (RF07). A
+    --                         mesma permissão abre, na API, cadastrar e
+    --                         desativar sensor (fora da RFC): limitação do TCC.
+    -- Sem monitoring:create (ocorrência nasce da IA, RF13), sem nada em
+    -- users além de ver (users:create aceita qualquer perfil, inclusive ADMIN;
+    -- RF03/RF04 se mostram com uma conta ADMIN) e sem settings:edit (reescreve
+    -- a matriz de qualquer perfil). settings:view fica pelo registro de acesso
+    -- (RF29, aba Histórico de Acessos em Usuários). Nenhuma exclusão.
+    ('TCC', 'dashboard',  true, false, false, false, true, false),
+    ('TCC', 'monitoring', true, false, true,  false, true, false),
+    ('TCC', 'alerts',     true, false, true,  false, true, false),
+    ('TCC', 'patients',   true, true,  true,  false, true, false),
+    ('TCC', 'beds',       true, false, false, false, true, false),
+    ('TCC', 'reports',    true, false, false, false, true, false),
+    ('TCC', 'companions', true, true,  true,  false, true, false),
+    ('TCC', 'users',      true, false, false, false, true, false),
+    ('TCC', 'settings',   true, false, false, false, true, false)
 ),
 
 montadas AS (

@@ -8,7 +8,8 @@ export type Role =
   | 'NURSE'
   | 'ADMINISTRATIVE'
   | 'PATIENT'
-  | 'VISITOR';
+  | 'VISITOR'
+  | 'TCC';
 
 export interface UserRecord {
   id: string;
@@ -119,7 +120,8 @@ const ROLE_LABELS: Record<Role, string> = {
   NURSE: 'Enfermeiro',
   ADMINISTRATIVE: 'Administrativo',
   PATIENT: 'Paciente',
-  VISITOR: 'Visitante'
+  VISITOR: 'Visitante',
+  TCC: 'TCC (banca)'
 };
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -285,6 +287,24 @@ export const getDefaultPermissions = (): Record<Role, Permission[]> => {
       viewOnly('Financeiro', false, false),
       viewOnly('Estoque', false, false),
       viewOnly('Recursos Humanos', false, false)
+    ],
+    // Só o rótulo de módulo antigo deste arquivo; quem vale é a matriz do
+    // banco (db/init/02_perfis.sql), que a API devolve.
+    TCC: [
+      viewOnly('Dashboard', true, false),
+      { ...viewOnly('Monitoramento IA', true, false), edit: true },
+      { ...viewOnly('Alertas Clinicos', true, false), edit: true },
+      { ...viewOnly('Prontuario (PEP)', false, false), view: false },
+      { ...viewOnly('Pacientes', true, false), create: true, edit: true },
+      viewOnly('Leitos e Quartos', true, false),
+      { ...viewOnly('Agendamentos', false, false), view: false },
+      viewOnly('Relatorios', true, false),
+      viewOnly('Configuracoes', true, false),
+      viewOnly('Usuarios', true, false),
+      { ...viewOnly('Gestao Hospitalar', false, false), view: false },
+      { ...viewOnly('Financeiro', false, false), view: false },
+      { ...viewOnly('Estoque', false, false), view: false },
+      { ...viewOnly('Recursos Humanos', false, false), view: false }
     ]
   };
 };
