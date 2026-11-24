@@ -340,8 +340,8 @@ def clipe_da_ocorrencia(
     token a dependência devolve 401; de outra clínica, 404 — a mesma resposta
     de "não existe", para não confirmar que a ocorrência existe em algum lugar.
 
-    Depois das 24 h de retenção o arquivo some e esta rota devolve 404, mas a
-    ocorrência continua no histórico (RNF18).
+    Depois do prazo de retenção (24 h; até 30 dias em modo de teste) o arquivo
+    some e esta rota devolve 404, mas a ocorrência continua no histórico (RNF18).
     """
     exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
@@ -349,7 +349,7 @@ def clipe_da_ocorrencia(
 
     caminho = clipes.caminho_do_clipe(ocorrencia_id)
     if not caminho.is_file():
-        raise HTTPException(404, "Clipe indisponível: ainda não foi gravado ou já foi expurgado (retenção de 24 h).")
+        raise HTTPException(404, f"Clipe indisponível: ainda não foi gravado ou já foi expurgado (retenção de {clipes.RETENCAO_HORAS:g} h).")
     return FileResponse(
         caminho,
         media_type="video/mp4",

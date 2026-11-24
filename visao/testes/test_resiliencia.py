@@ -375,10 +375,35 @@ class ClipeDeEvidencia(unittest.TestCase):
         self.assertEqual(clipes.nome_seguro("cam:1:../../x"), "cam-1-..-..-x")
         self.assertEqual(clipes.nome_seguro("///"), "clipe")
 
-    def test_retencao_acima_de_24h_e_recusada_na_config(self):
-        cfg = config_de_teste(clipes_retencao_horas=48.0)
+    @staticmethod
+    def _config(modo_teste: bool, horas: float) -> Config:
+        return Config(
+            modo_teste=modo_teste, fonte=Fonte.ARQUIVO, arquivo="x.mp4", camera_id="", api_login="",
+            api_senha="", clipes_ativos=False, clipes_retencao_horas=horas,
+        )
+
+    def test_fora_do_modo_de_teste_o_teto_continua_24h(self):
+        self._config(False, 24.0).validar()
+        for horas in (24.5, 48.0, 480.0):
+            with self.assertRaises(ValueError, msg=f"{horas} h deveria ser recusado"):
+                self._config(False, horas).validar()
+
+    def test_recusa_acima_de_24h_explica_a_excecao_do_modo_de_teste(self):
+        with self.assertRaises(ValueError) as erro:
+            self._config(False, 480.0).validar()
+        self.assertIn("MEDSIGNAL_MODO_TESTE", str(erro.exception))
+
+    def test_modo_de_teste_aceita_20_dias_e_tem_teto_de_30(self):
+        self._config(True, 480.0).validar()    # 20 dias
+        self._config(True, 720.0).validar()    # 30 dias: o teto
         with self.assertRaises(ValueError):
-            cfg.validar()
+            self._config(True, 721.0).validar()
+
+    def test_retencao_zero_ou_negativa_e_recusada_em_qualquer_modo(self):
+        for modo in (False, True):
+            for horas in (0.0, -1.0):
+                with self.assertRaises(ValueError):
+                    self._config(modo, horas).validar()
 
 
 if __name__ == "__main__":

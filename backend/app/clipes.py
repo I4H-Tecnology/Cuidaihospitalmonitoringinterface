@@ -3,8 +3,9 @@
 O serviço de visão grava `<id da ocorrência>.mp4` numa pasta que este
 backend enxerga (bind mount no compose: `./visao/dados/clipes`). A API só
 serve o arquivo — com autenticação e isolamento por clínica — e garante a
-retenção de 24 h (RNF05, RN09) mesmo que o serviço de visão esteja fora do
-ar: o expurgo roda aqui também, no boot e de hora em hora.
+retenção de 24 h (RNF05, RN09; até 30 dias em modo de teste) mesmo que o
+serviço de visão esteja fora do ar: o expurgo roda aqui também, no boot e de
+hora em hora.
 
 Este módulo não toca no banco: a ocorrência sobrevive ao clipe (RNF18).
 """
@@ -13,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import os
 import re
 import time
@@ -22,8 +24,35 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 PASTA = Path(os.environ.get("CLIPES_DIR", "dados/clipes"))
-# Teto da RFC. Não é configurável para cima de propósito.
-RETENCAO_HORAS = min(24.0, float(os.environ.get("CLIPES_RETENCAO_HORAS", "24")))
+
+# Teto da RFC (RNF05, RN08): 24 h. Em MODO DE TESTE (demonstração, sem paciente
+# real) sobe para 30 dias, para a banca poder rever o clipe do alerta. É uma
+# exceção deliberada do TCC: sem MEDSIGNAL_MODO_TESTE=true o teto é 24 h e não
+# há variável que o aumente. O serviço de visão aplica a mesma regra.
+RETENCAO_MAXIMA_HORAS = 24.0
+RETENCAO_MAXIMA_EM_TESTE_HORAS = 30 * 24.0
+
+
+def retencao_em_horas(modo_teste: bool, pedido: str | float | None) -> float:
+    """Retenção efetiva: o pedido (CLIPES_RETENCAO_HORAS), limitado ao teto do modo.
+
+    Valor ausente, inválido ou não positivo cai no teto da RFC, nunca acima do
+    teto do modo: um erro de digitação não pode virar retenção indefinida.
+    """
+    teto = RETENCAO_MAXIMA_EM_TESTE_HORAS if modo_teste else RETENCAO_MAXIMA_HORAS
+    try:
+        horas = float(pedido) if pedido is not None else RETENCAO_MAXIMA_HORAS
+    except (TypeError, ValueError):
+        return RETENCAO_MAXIMA_HORAS
+    # nan e inf passariam por min() e virariam retenção indefinida (o expurgo
+    # nunca apagaria nada): tratados como valor inválido.
+    if not math.isfinite(horas) or horas <= 0:
+        return RETENCAO_MAXIMA_HORAS
+    return min(horas, teto)
+
+
+MODO_TESTE = os.environ.get("MEDSIGNAL_MODO_TESTE", "").strip().lower() in {"1", "true", "t", "sim", "yes", "on"}
+RETENCAO_HORAS = retencao_em_horas(MODO_TESTE, os.environ.get("CLIPES_RETENCAO_HORAS", "24"))
 INTERVALO_DE_EXPURGO_S = 3600.0
 EXTENSAO = ".mp4"
 
