@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LayoutGrid, List, Loader2, RefreshCw, UserPlus } from 'lucide-react';
 import { StructureView } from './patients/StructureView';
 import { ListView } from './patients/ListView';
+import { FichaPaciente } from './patients/FichaPaciente';
 import { ModalPaciente } from './pep/ModalPaciente';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchAmbientes, fetchPacientes } from '../data/api';
@@ -31,6 +32,12 @@ export function PatientsScreen({ aoAbrirPaciente }: Props) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [modalNovo, setModalNovo] = useState(false);
+  const [ficha, setFicha] = useState<PacienteResumo | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  // Quem abre o prontuário vai para ele. Quem não abre, mas edita o cadastro
+  // (o perfil da banca do TCC), vê a ficha com editar e registrar saída.
+  const abrirPaciente = aoAbrirPaciente ?? (can('patients', 'edit') ? setFicha : undefined);
 
   const carregar = useCallback(async () => {
     if (!tenantId) return;
@@ -102,6 +109,15 @@ export function PatientsScreen({ aoAbrirPaciente }: Props) {
         </div>
       )}
 
+      {aviso && (
+        <div role="status" className="mb-6 flex items-start justify-between gap-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm text-green-800">{aviso}</p>
+          <button type="button" onClick={() => setAviso(null)} className="text-sm text-green-800 underline">
+            Ok
+          </button>
+        </div>
+      )}
+
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
         <Indicador rotulo="Internados" valor={contagem.total} borda="" />
         <Indicador rotulo="Estáveis" valor={contagem.estaveis} borda="border-l-4 border-l-green-500" />
@@ -144,9 +160,21 @@ export function PatientsScreen({ aoAbrirPaciente }: Props) {
           <span className="text-sm">Carregando pacientes…</span>
         </div>
       ) : visao === 'estrutura' ? (
-        <StructureView pacientes={pacientes} ambientes={ambientes} aoAbrir={aoAbrirPaciente} />
+        <StructureView pacientes={pacientes} ambientes={ambientes} aoAbrir={abrirPaciente} />
       ) : (
-        <ListView pacientes={pacientes} aoAbrir={aoAbrirPaciente} />
+        <ListView pacientes={pacientes} aoAbrir={abrirPaciente} />
+      )}
+
+      {ficha && (
+        <FichaPaciente
+          paciente={ficha}
+          aoFechar={() => setFicha(null)}
+          aoAtualizar={(mensagem) => {
+            setFicha(null);
+            setAviso(mensagem);
+            void carregar();
+          }}
+        />
       )}
 
       {modalNovo && (

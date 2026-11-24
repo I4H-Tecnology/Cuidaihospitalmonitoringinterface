@@ -50,3 +50,12 @@ describe('ModalAlta: motivo da saída, com nome acessível', () => {
     expect(screen.getByRole('radio', { name: /^Transferência\b/ })).toBeChecked();
   });
 });
+
+describe('ModalAlta: só a alta (ficha do perfil da banca)', () => {
+  it('com somenteAlta, a transferência para outra unidade não aparece', () => {
+    render(<ModalAlta paciente={paciente} somenteAlta aoFechar={() => {}} aoConcluir={() => {}} />);
+
+    expect(screen.getByRole('radio', { name: /^Alta\b/ })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: /^Transferência\b/ })).toBeNull();
+  });
+});
