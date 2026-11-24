@@ -613,6 +613,20 @@
 .dark :is([class~="bg-slate-50"], [class~="bg-slate-100"]) :is([class~="text-slate-900"], [class~="text-slate-950"]):not([class*="dark:text-"]),
 .dark :is([class~="bg-slate-50"], [class~="bg-slate-100"]):is([class~="text-slate-900"], [class~="text-slate-950"]):not([class*="dark:text-"]) { color: var(--texto-forte); }
 
+/* Faixa colorida à esquerda (`border-l-4 border-l-red-500` junto com
+   `border border-gray-200`, o padrão dos cartões de alerta e de evolução). As
+   regras acima repintam as quatro bordas de uma vez e apagavam a faixa, que é
+   justamente o que diz a gravidade do cartão. Aqui a borda esquerda volta para
+   o valor das utilitárias do Tailwind, onde a cor da faixa vence o cinza.
+   `:root` só sobe a especificidade para passar das regras de família acima. */
+:root.dark :is(
+  [class*="border-l-red-"], [class*="border-l-orange-"], [class*="border-l-amber-"], [class*="border-l-yellow-"],
+  [class*="border-l-green-"], [class*="border-l-emerald-"], [class*="border-l-blue-"], [class*="border-l-sky-"],
+  [class*="border-l-cyan-"], [class*="border-l-purple-"], [class*="border-l-indigo-"], [class*="border-l-marca"]
+) {
+  border-left-color: revert-layer;
+}
+
 /* Sombra de cartão claro não aparece sobre fundo escuro; um anel sutil faz o
    papel de separar o cartão do fundo. */
 .dark [class~="shadow-sm"]:not([class~="rounded-full"]),

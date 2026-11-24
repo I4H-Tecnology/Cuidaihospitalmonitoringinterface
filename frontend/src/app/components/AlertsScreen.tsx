@@ -128,13 +128,13 @@ export function AlertsScreen() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <Indicador rotulo="Total" valor={contagem.total} cor="border-gray-300" />
-        <Indicador rotulo="Pendentes" valor={contagem.pendente} cor="border-red-500" />
-        <Indicador rotulo="Em atendimento" valor={contagem.atendendo} cor="border-blue-500" />
-        <Indicador rotulo="Quedas confirmadas" valor={contagem.confirmadas} cor="border-red-700" />
+        <Indicador rotulo="Total" valor={contagem.total} cor="border-l-gray-300" />
+        <Indicador rotulo="Pendentes" valor={contagem.pendente} cor="border-l-red-500" />
+        <Indicador rotulo="Em atendimento" valor={contagem.atendendo} cor="border-l-blue-500" />
+        <Indicador rotulo="Quedas confirmadas" valor={contagem.confirmadas} cor="border-l-red-700" />
         {/* Falso positivo aparece no painel porque e insumo da RN14: e o unico
             rotulo que vem da operacao real e alimenta a recalibragem. */}
-        <Indicador rotulo="Falsos positivos" valor={contagem.falsos} cor="border-gray-400" />
+        <Indicador rotulo="Falsos positivos" valor={contagem.falsos} cor="border-l-gray-400" />
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
