@@ -1,0 +1,186 @@
+# MedSignal na VPS: painel, API e banco atrás de um proxy com HTTPS.
+#
+# Diferenças em relação ao docker-compose.yml da raiz (que é de desenvolvimento):
+#   - SÓ o Caddy publica porta (80 e 443). Banco, API e painel ficam na rede interna.
+#   - Sem Adminer, Dozzle, SonarQube, scanner nem contêiner "dev".
+#   - Painel e API no MESMO endereço: o proxy manda /api para a API e o resto para o painel.
+#     Por isso o CORS é de uma origem só (https://$DOMINIO).
+#   - Tudo que é segredo vem do .env desta pasta; nenhum tem valor padrão.
+#
+# Uso: ver deploy/LEIA-ME.md.
+
+name: medsignal-prod
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMINIO: ${DOMINIO:?defina DOMINIO no .env desta pasta}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        # O Dockerfile traz, como padrão, o endereço de uma API de outro deploy.
+        # Aqui ele é SEMPRE sobrescrito pelo endereço público desta instalação.
+        VITE_API_URL: https://${DOMINIO:?defina DOMINIO no .env desta pasta}
+        VITE_MODE: production
+    restart: unless-stopped
+    expose:
+      - '80'
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - '8000'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-medsignal}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-medsignal}
+      CORS_ORIGINS: https://${DOMINIO}
+      SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY}
+      TOKEN_HORAS: ${TOKEN_HORAS:-8}
+      # Qualquer valor diferente de "dev" faz a recuperação de senha NÃO devolver o código na resposta.
+      MEDSIGNAL_AMBIENTE: producao
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMATO: ${LOG_FORMATO:-json}
+      CLIPES_DIR: /app/dados/clipes
+      # Demonstração (sem paciente real): libera reter o clipe por mais de 24 h, até 30 dias.
+      # Sem esta variável o teto é 24 h (RNF05). O prazo vem de CLIPES_RETENCAO_HORAS no .env.
+      MEDSIGNAL_MODO_TESTE: 'true'
+      CLIPES_RETENCAO_HORAS: ${CLIPES_RETENCAO_HORAS:-24}
+      FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
+    volumes:
+      - clipes:/app/dados/clipes
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Serviço de visão com VÍDEO GRAVADO em laço (demonstração). OPCIONAL: só sobe com
+  #   docker compose -f docker-compose.prod.yml --env-file .env --profile visao up -d --build visao
+  # Sem GPU e sem webcam. O vídeo vem de ./videos (você coloca o arquivo; ele não vai para o git).
+  visao:
+    profiles: ['visao']
+    build:
+      context: ..
+      dockerfile: deploy/visao.Dockerfile
+    restart: unless-stopped
+    expose:
+      - '8001'
+    # A VPS tem 1 vCPU: sem teto, a inferência (CPU) disputaria o processador com a API e o banco.
+    cpus: ${VISAO_CPUS:-0.7}
+    mem_limit: ${VISAO_MEMORIA:-1536m}
+    environment:
+      # Marca o serviço como de teste/demonstração (aparece em /health e /estado).
+      MEDSIGNAL_MODO_TESTE: 'true'
+      VISAO_FONTE: arquivo
+      VISAO_ARQUIVO: /srv/videos/${VISAO_VIDEO:-demo.mp4}
+      VISAO_ARQUIVO_TEMPO_REAL: 'true'
+      VISAO_FPS_ALVO: ${VISAO_FPS_ALVO:-5}
+      VISAO_API_URL: http://backend:8000
+      VISAO_TENANT: clinica-demo
+      # Vazio = o serviço roda e mostra o vídeo, mas NÃO registra ocorrência nem ping.
+      VISAO_CAMERA_ID: ${VISAO_CAMERA_ID:-}
+      VISAO_API_LOGIN: ${VISAO_API_LOGIN:-servico-visao}
+      VISAO_API_SENHA: ${VISAO_API_SENHA:-}
+      VISAO_CLIPES_PASTA: /clipes
+      # Mesmo prazo do backend (os dois expurgam a mesma pasta): um valor só, no .env.
+      VISAO_CLIPES_RETENCAO_HORAS: ${CLIPES_RETENCAO_HORAS:-24}
+      CORS_ORIGINS: https://${DOMINIO}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMATO: ${LOG_FORMATO:-json}
+    volumes:
+      - ./videos:/srv/videos:ro
+      - clipes:/clipes
+      # Fila das ocorrências não enviadas: sobrevive a reinício do contêiner.
+      - visao_fila:/srv/visao/dados/fila
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Dozzle: logs e consumo de CPU/memória dos contêineres, em tempo real, em https://$DOMINIO/logs.
+  # OPCIONAL: só sobe com
+  #   docker compose -f docker-compose.prod.yml --env-file .env --profile logs up -d dozzle
+  # SEMPRE com login: os usuários vêm de ./dozzle/users.yml, gerado NA VPS (ver LEIA-ME).
+  # Sem esse arquivo o Dozzle não sobe (não existe modo "sem login" aqui).
+  # O socket do Docker dá ao Dozzle leitura de tudo o que roda na máquina; por isso:
+  #   - só os contêineres DESTE projeto aparecem (DOZZLE_FILTER);
+  #   - ações (parar/reiniciar), shell e MCP ficam desligados (padrão do Dozzle; não ligar);
+  #   - sem assistente de primeira configuração e sem consultas a registros externos.
+  dozzle:
+    profiles: ['logs']
+    image: amir20/dozzle:v11.4.3
+    restart: unless-stopped
+    expose:
+      - '8080'
+    cpus: 0.2
+    mem_limit: 128m
+    environment:
+      DOZZLE_BASE: /logs
+      DOZZLE_AUTH_PROVIDER: simple
+      DOZZLE_AUTH_TTL: 8h
+      DOZZLE_FILTER: label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
+      DOZZLE_ENABLE_ACTIONS: 'false'
+      DOZZLE_ENABLE_SHELL: 'false'
+      DOZZLE_ENABLE_MCP: 'false'
+      DOZZLE_DISABLE_SETUP_WIZARD: 'true'
+      DOZZLE_NO_ANALYTICS: 'true'
+      DOZZLE_RELEASE_CHECK_MODE: manual
+      DOZZLE_IMAGE_CHECK_MODE: 'off'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./dozzle/users.yml:/data/users.yml:ro
+    healthcheck:
+      test: ['CMD', '/dozzle', 'healthcheck']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    # Sem "ports": o banco só é alcançável por quem está dentro desta rede do Docker.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medsignal}
+      POSTGRES_USER: ${POSTGRES_USER:-medsignal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      LANG: pt_BR.utf8
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Rodam UMA vez, quando o volume é criado. O seed NÃO cria usuários.
+      - ../db/init:/docker-entrypoint-initdb.d:ro
+      # Scripts avulsos (criar-admin.sql etc.), rodados sob demanda com psql -f /scripts/<arquivo>.sql
+      - ../db/scripts:/scripts:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-medsignal} -d ${POSTGRES_DB:-medsignal}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  pgdata:
+  clipes:
+  visao_fila:
+  caddy_data:
+  caddy_config:

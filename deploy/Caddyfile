@@ -1,0 +1,50 @@
+# HTTPS automático (Let's Encrypt) para o endereço em $DOMINIO.
+# Com DOMINIO=localhost o Caddy usa um certificado local (só para ensaio).
+#
+# /api/* (inclui o WebSocket de alertas em /api/ws/alertas) vai para a API;
+# todo o resto vai para o painel. A documentação da API (/docs) NÃO é publicada.
+
+{$DOMINIO} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	@api path /api/*
+	handle @api {
+		reverse_proxy backend:8000
+	}
+
+	# Serviço de visão (vídeo gravado em laço; opcional, profile "visao").
+	# Só o vídeo e o estado ficam públicos. /visao/health e o resto dão 404.
+	# flush_interval -1: o vídeo é MJPEG contínuo e precisa sair quadro a quadro.
+	@visao path /visao/stream /visao/estado
+	handle @visao {
+		uri strip_prefix /visao
+		reverse_proxy visao:8001 {
+			flush_interval -1
+		}
+	}
+	@visao_resto path /visao /visao/*
+	handle @visao_resto {
+		respond "Not found" 404
+	}
+
+	# Dozzle (logs em tempo real; opcional, profile "logs"). O login é o do próprio
+	# Dozzle (users.yml). DOZZLE_BASE=/logs, então o caminho vai inteiro, sem strip.
+	# flush_interval -1: os logs chegam por SSE e precisam sair linha a linha.
+	@logs path /logs /logs/*
+	handle @logs {
+		reverse_proxy dozzle:8080 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}
