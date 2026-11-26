@@ -613,6 +613,17 @@
 .dark :is([class~="bg-slate-50"], [class~="bg-slate-100"]) :is([class~="text-slate-900"], [class~="text-slate-950"]):not([class*="dark:text-"]),
 .dark :is([class~="bg-slate-50"], [class~="bg-slate-100"]):is([class~="text-slate-900"], [class~="text-slate-950"]):not([class*="dark:text-"]) { color: var(--texto-forte); }
 
+/* Cartões de destaque em degradê claro (`bg-gradient-to-* from-<cor>-50 to-<cor>-50`).
+   As regras acima traduzem `bg-<cor>-50`, mas não o degradê: o texto cinza já
+   clareava e o fundo continuava quase branco, então o texto sumia (cartão
+   "Detecção de quedas" do Dashboard e os indicadores de Usuários e de
+   Configurações › Câmeras, 26/11/2026). O degradê vira o mesmo tingido de
+   `bg-<cor>-50`; borda e ícone já são traduzidos pelas regras de família. */
+.dark [class~="from-purple-50"]:not([class*="dark:from-"]):not([class*="dark:bg-"]) { background-image: none; background-color: color-mix(in oklab, #a855f7 14%, var(--superficie)); }
+.dark [class~="from-blue-50"]:not([class*="dark:from-"]):not([class*="dark:bg-"]) { background-image: none; background-color: color-mix(in oklab, #3b82f6 14%, var(--superficie)); }
+.dark [class~="from-green-50"]:not([class*="dark:from-"]):not([class*="dark:bg-"]) { background-image: none; background-color: color-mix(in oklab, #22c55e 14%, var(--superficie)); }
+.dark [class~="from-orange-50"]:not([class*="dark:from-"]):not([class*="dark:bg-"]) { background-image: none; background-color: color-mix(in oklab, #f97316 14%, var(--superficie)); }
+
 /* Faixa colorida à esquerda (`border-l-4 border-l-red-500` junto com
    `border border-gray-200`, o padrão dos cartões de alerta e de evolução). As
    regras acima repintam as quatro bordas de uma vez e apagavam a faixa, que é
