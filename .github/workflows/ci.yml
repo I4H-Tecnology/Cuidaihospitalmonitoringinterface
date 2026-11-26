@@ -327,7 +327,8 @@ jobs:
             "$VPS_HOST" "$VPS_USER" > ~/.ssh/config
 
       # Sem --delete de propósito: o que só existe na VPS (deploy/.env, vídeo de demonstração,
-      # pesos do YOLO, usuários do Dozzle) não pode ser apagado por uma publicação.
+      # pesos do YOLO, usuários do Dozzle, clipes e manifesto dos registros de ensaio) não pode
+      # ser apagado por uma publicação.
       - name: Enviar o código testado
         run: |
           set -euo pipefail
@@ -335,7 +336,7 @@ jobs:
               --exclude='./node_modules' --exclude='./frontend/node_modules' \
               --exclude='./docs' --exclude='./visao/dados' --exclude='./visao/.venv' \
               --exclude='./visao/pesos' --exclude='./deploy/.env' --exclude='./deploy/videos' \
-              --exclude='./deploy/dozzle' \
+              --exclude='./deploy/dozzle' --exclude='./deploy/clipes-ensaio' \
               -czf - . | ssh vps 'mkdir -p ~/medsignal && tar -xzf - -C ~/medsignal --no-same-owner'
 
       - name: Atualizar a pilha (com rollback automático)

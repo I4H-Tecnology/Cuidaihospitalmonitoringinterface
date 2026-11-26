@@ -196,6 +196,9 @@ class OcorrenciaResumo(BaseModel):
     # Há clipe de evidência em disco agora? False também quando já foi
     # expurgado (24 h): a ocorrência continua, o vídeo não (RN09, RNF18).
     temClipe: bool = False
+    # Registro de ENSAIO CONTROLADO (ensaio.py): teste do autor com a webcam, trazido à demonstração.
+    # Não é detecção ao vivo em produção e não houve atendimento real. A tela o marca como tal.
+    ensaio: bool = False
 
 
 class AmbienteResumo(BaseModel):

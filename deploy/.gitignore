@@ -2,3 +2,7 @@
 !.env.prod.example
 videos/
 dozzle/
+# Vídeos e manifesto do autor (registros de ensaio): vão por scp, nunca pelo Git.
+clipes-ensaio/
+manifesto*.json
+*.mp4

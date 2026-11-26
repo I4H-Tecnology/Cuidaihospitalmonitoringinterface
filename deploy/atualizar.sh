@@ -11,7 +11,9 @@
 #   3. recria o Caddy só se o Caddyfile mudou (arquivo único montado: sem isso o
 #      contêiner continuaria vendo a versão velha);
 #   4. espera ficarem saudáveis; se não ficarem, volta à imagem anterior e sai com erro;
-#   5. grava o commit publicado em ~/medsignal/VERSAO.
+#   5. grava o commit publicado em ~/medsignal/VERSAO;
+#   6. importa os registros de ensaio controlado, se houver manifesto na VPS (ver LEIA-ME).
+#      Esta etapa NÃO reverte a publicação: se falhar, avisa em destaque e sai com 0.
 #
 # Migração de banco NÃO é automática de propósito: db/init só roda na criação do volume e
 # db/scripts/02_perfis.sql reaplicado sobrescreveria permissões editadas pela tela.
@@ -123,4 +125,34 @@ fi
 # 5. Registro do que está no ar + limpeza só do que ficou sem nome.
 printf '%s\n' "$SHA" > ../VERSAO
 docker image prune -f >/dev/null 2>&1 || true
-log "OK: commit $SHA publicado."
+
+# 6. Registros de ENSAIO CONTROLADO (dados de demonstração do autor; vídeos e manifesto ficam na
+#    VPS, fora do Git). É a ÚNICA etapa que não derruba nem reverte a publicação: a aplicação já
+#    está no ar e saudável. Se falhar, o aviso é alto e claro, e o banco fica como estava (o
+#    importador valida tudo antes e grava numa transação só). Sem manifesto.json, não faz nada.
+#    É seguro repetir a cada publicação: ids fixos, nunca duplica nem altera o que já existe.
+ENSAIO_FALHOU=0
+log "registros de ensaio controlado: validando e importando (se houver manifesto)..."
+CODIGO=0
+SAIDA="$("${COMPOSE[@]}" exec -T backend python -m app.registros_de_ensaio 2>&1)" || CODIGO=$?
+printf '%s\n' "$SAIDA" | sed 's/^/    /'
+case "$CODIGO" in
+  0) ;;
+  2) MOTIVO="o manifesto, um clipe ou o banco não bate com o pedido (ver as linhas acima). Nada foi gravado." ;;
+  3) MOTIVO="falha ao gravar no banco. A transação foi desfeita: nada foi gravado, não há registro pela metade." ;;
+  4) MOTIVO="o modo de teste está desligado ou CLIPES_ENSAIO_DIR não está configurada; nada foi importado." ;;
+  *) MOTIVO="não consegui executar o importador (código $CODIGO). Confira 'docker compose ps' e os logs do backend." ;;
+esac
+if [ "$CODIGO" != 0 ]; then
+  ENSAIO_FALHOU=1
+  # "::warning" vira anotação amarela na execução do GitHub Actions; a mensagem fica numa linha só.
+  printf '::warning title=Registros de ensaio NAO importados::A publicacao do commit %s deu certo e NAO foi revertida, mas %s\n' "$SHA" "$MOTIVO"
+  log "AVISO: os registros de ensaio controlado NÃO foram importados: $MOTIVO"
+  log "A aplicação segue no ar na versão nova. Corrija o manifesto/clipes na VPS e rode de novo: bash deploy/atualizar.sh $SHA"
+fi
+
+if [ "$ENSAIO_FALHOU" = 1 ]; then
+  log "OK COM AVISO: commit $SHA publicado e saudável; a importação dos registros de ensaio FALHOU (acima)."
+else
+  log "OK: commit $SHA publicado."
+fi

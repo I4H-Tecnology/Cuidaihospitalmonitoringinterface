@@ -76,5 +76,89 @@ class ExpurgoUsaARetencaoEfetiva(unittest.TestCase):
             self.assertFalse(dois_dias.exists())
 
 
+class PastaDeEnsaio(unittest.TestCase):
+    """Os clipes de ensaio controlado ficam FORA do expurgo sem mexer na retenção dos demais."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        base = Path(self._t.name)
+        self.normal = base / "normal"
+        self.ensaio = base / "ensaio"
+        self.normal.mkdir()
+        self.ensaio.mkdir()
+        self.addCleanup(self._t.cleanup)
+
+    def _arquivo(self, pasta: Path, nome: str, horas_atras: float = 0.0) -> Path:
+        caminho = pasta / f"{nome}.mp4"
+        caminho.write_bytes(b"x")
+        quando = time.time() - horas_atras * 3600
+        os.utime(caminho, (quando, quando))
+        return caminho
+
+    def test_a_pasta_so_vale_em_modo_de_teste_e_se_configurada(self):
+        self.assertIsNone(clipes.pasta_de_ensaio(False, "/dados/ensaio"))
+        self.assertIsNone(clipes.pasta_de_ensaio(True, None))
+        self.assertIsNone(clipes.pasta_de_ensaio(True, "   "))
+        self.assertEqual(clipes.pasta_de_ensaio(True, "/dados/ensaio"), Path("/dados/ensaio"))
+
+    def test_sem_a_pasta_o_clipe_de_ensaio_nao_e_servido(self):
+        self._arquivo(self.ensaio, "oc-1")
+        with mock.patch.object(clipes, "PASTA", self.normal), mock.patch.object(clipes, "PASTA_ENSAIO", None):
+            self.assertFalse(clipes.tem_clipe("oc-1"))
+            self.assertEqual(clipes.caminho_do_clipe("oc-1"), self.normal / "oc-1.mp4")
+
+    def test_com_a_pasta_o_clipe_de_ensaio_e_servido(self):
+        de_ensaio = self._arquivo(self.ensaio, "oc-1")
+        with mock.patch.object(clipes, "PASTA", self.normal), mock.patch.object(clipes, "PASTA_ENSAIO", self.ensaio):
+            self.assertTrue(clipes.tem_clipe("oc-1"))
+            self.assertEqual(clipes.caminho_do_clipe("oc-1"), de_ensaio)
+
+    def test_a_pasta_normal_tem_prioridade(self):
+        normal = self._arquivo(self.normal, "oc-1")
+        self._arquivo(self.ensaio, "oc-1")
+        with mock.patch.object(clipes, "PASTA", self.normal), mock.patch.object(clipes, "PASTA_ENSAIO", self.ensaio):
+            self.assertEqual(clipes.caminho_do_clipe("oc-1"), normal)
+
+    def test_sem_clipe_em_lugar_nenhum_devolve_o_caminho_normal(self):
+        with mock.patch.object(clipes, "PASTA", self.normal), mock.patch.object(clipes, "PASTA_ENSAIO", self.ensaio):
+            self.assertEqual(clipes.caminho_do_clipe("oc-9"), self.normal / "oc-9.mp4")
+            self.assertFalse(clipes.tem_clipe("oc-9"))
+
+    def test_nome_com_tentativa_de_sair_da_pasta_continua_barrado(self):
+        with mock.patch.object(clipes, "PASTA", self.normal), mock.patch.object(clipes, "PASTA_ENSAIO", self.ensaio):
+            caminho = clipes.caminho_do_clipe("../../etc/passwd")
+            self.assertEqual(caminho.parent, self.normal)
+
+    def test_o_expurgo_nunca_toca_a_pasta_de_ensaio(self):
+        velho_ensaio = self._arquivo(self.ensaio, "oc-ensaio", horas_atras=24 * 400)
+        velho_normal = self._arquivo(self.normal, "oc-normal", horas_atras=48)
+        recente_normal = self._arquivo(self.normal, "oc-recente", horas_atras=1)
+        with mock.patch.object(clipes, "PASTA", self.normal), \
+                mock.patch.object(clipes, "PASTA_ENSAIO", self.ensaio), \
+                mock.patch.object(clipes, "RETENCAO_HORAS", 24.0):
+            removidos = clipes.expurgar()
+        self.assertEqual(removidos, ["oc-normal.mp4"])
+        self.assertTrue(velho_ensaio.exists(), "o clipe de ensaio foi expurgado")
+        self.assertFalse(velho_normal.exists(), "a retencao dos clipes comuns deixou de valer")
+        self.assertTrue(recente_normal.exists())
+
+    def test_a_retencao_dos_demais_nao_muda_com_a_pasta_de_ensaio(self):
+        # Com 20 dias configurados (modo de teste), a pasta normal segue a regra dela.
+        self.assertEqual(clipes.retencao_em_horas(True, "480"), 480.0)
+        self.assertEqual(clipes.retencao_em_horas(False, "480"), 24.0)
+        self.assertEqual(clipes.retencao_em_horas(True, "24"), 24.0)
+        self.assertEqual(clipes.retencao_em_horas(True, None), 24.0)
+
+    def test_estado_informa_a_pasta_de_ensaio(self):
+        self._arquivo(self.ensaio, "a")
+        self._arquivo(self.ensaio, "b")
+        with mock.patch.object(clipes, "PASTA", self.normal), mock.patch.object(clipes, "PASTA_ENSAIO", self.ensaio):
+            e = clipes.estado()
+        self.assertEqual(e["ensaio"], {"ativo": True, "pasta": str(self.ensaio), "clipes": 2})
+        self.assertEqual(e["clipes_em_disco"], 0)  # os de ensaio não entram na conta dos comuns
+        with mock.patch.object(clipes, "PASTA", self.normal), mock.patch.object(clipes, "PASTA_ENSAIO", None):
+            self.assertEqual(clipes.estado()["ensaio"], {"ativo": False, "pasta": None, "clipes": 0})
+
+
 if __name__ == "__main__":
     unittest.main()

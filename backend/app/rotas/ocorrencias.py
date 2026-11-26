@@ -2,9 +2,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
+from psycopg import sql
 
 from .. import clipes, db
 from ..comum import agora_iso, clinica_por_slug, iso, logger
+from ..ensaio import eh_ensaio
 from ..seguranca import (
     UsuarioAutenticado,
     exigir_permissao,
@@ -262,7 +264,7 @@ def listar_ocorrencias(
     exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
 
-    condicoes = ["o.clinica_id = %(cid)s"]
+    condicoes: list[sql.Composable] = [sql.SQL("o.clinica_id = %(cid)s")]
     params: dict = {"cid": clinica["id"], "limite": max(1, min(limite, 500))}
 
     recebidos = {
@@ -273,34 +275,35 @@ def listar_ocorrencias(
     }
     for nome, valor in recebidos.items():
         if valor:
-            condicoes.append(f"{FILTROS_OCORRENCIA[nome]} = %({nome})s")
+            condicoes.append(sql.SQL("{} = {}").format(sql.SQL(FILTROS_OCORRENCIA[nome]), sql.Placeholder(nome)))
             params[nome] = valor
     if desde:
-        condicoes.append("o.data_hora >= %(desde)s")
+        condicoes.append(sql.SQL("o.data_hora >= %(desde)s"))
         params["desde"] = desde
     if ate:
-        condicoes.append("o.data_hora <= %(ate)s")
+        condicoes.append(sql.SQL("o.data_hora <= %(ate)s"))
         params["ate"] = ate
 
-    # Só nomes de coluna do mapa FILTROS_OCORRENCIA entram na string; os
-    # valores do cliente vão sempre por parâmetro nomeado.
-    linhas = db.buscar_todos(  # nosec B608
-        f"""
+    # Só nomes de coluna do mapa FILTROS_OCORRENCIA entram no SQL (como `sql.SQL`); os valores
+    # do cliente vão sempre por marcador nomeado.
+    linhas = db.buscar_todos(
+        sql.SQL("""
         SELECT o.id, o.tipo_evento, o.status, o.confianca, o.data_hora,
                o.encerrada_em, o.observacao,
                amb.id AS ambiente_id, amb.nome AS ambiente_nome,
                pac.id AS paciente_id, pac.nome AS paciente_nome,
                cam.id AS camera_id, cam.identificador AS camera_identificador,
-               a.nivel AS alerta_nivel, a.status AS alerta_status
+               a.nivel AS alerta_nivel, a.status AS alerta_status,
+               {ensaio} AS ensaio
         FROM ocorrencia o
         JOIN ambiente amb ON amb.id = o.ambiente_id
         LEFT JOIN paciente pac ON pac.id = o.paciente_id
         LEFT JOIN camera   cam ON cam.id = o.camera_id
         LEFT JOIN alerta   a   ON a.ocorrencia_id = o.id
-        WHERE {' AND '.join(condicoes)}
+        WHERE {condicoes}
         ORDER BY o.data_hora DESC
         LIMIT %(limite)s
-        """,
+        """).format(ensaio=eh_ensaio("o"), condicoes=sql.SQL(" AND ").join(condicoes)),
         params,
     )
 
@@ -322,6 +325,7 @@ def listar_ocorrencias(
             alertaNivel=l["alerta_nivel"],
             alertaStatus=l["alerta_status"],
             temClipe=clipes.tem_clipe(str(l["id"])),
+            ensaio=bool(l["ensaio"]),
         )
         for l in linhas
     ]

@@ -1,9 +1,11 @@
 """Saúde da aplicação, tenants e visão operacional do painel."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from psycopg import sql
 
 from .. import clipes, db
 from ..comum import agora_iso, clinica_por_slug, iso, logger
+from ..ensaio import sem_ensaio
 from ..seguranca import (
     UsuarioAutenticado,
     exigir_permissao,
@@ -62,23 +64,26 @@ def visao_operacional(tenantId: str, usuario: UsuarioAutenticado = Depends(exigi
     clinica = clinica_por_slug(tenantId)
     cid = clinica["id"]
 
+    # Registros de ensaio controlado (ensaio.py) ficam fora destas contagens: o alerta deles já
+    # nasce `ciente` e a ocorrência `encerrada`, então só a janela de 24 h precisa do filtro.
     numeros = db.buscar_um(
-        """
+        sql.SQL("""
         SELECT
           (SELECT count(*) FROM alerta a
              JOIN ocorrencia o ON o.id = a.ocorrencia_id
             WHERE o.clinica_id = %(cid)s AND a.nivel = 'critico' AND a.status <> 'ciente') AS alertas_criticos,
           (SELECT count(*) FROM ocorrencia
             WHERE clinica_id = %(cid)s AND status IN ('pendente', 'em_atendimento')) AS casos_abertos,
-          (SELECT count(*) FROM ocorrencia
-            WHERE clinica_id = %(cid)s AND data_hora > now() - interval '24 hours') AS incidentes_24h,
+          (SELECT count(*) FROM ocorrencia o
+            WHERE o.clinica_id = %(cid)s AND o.data_hora > now() - interval '24 hours'
+              AND {sem}) AS incidentes_24h,
           (SELECT count(*) FROM paciente WHERE clinica_id = %(cid)s AND status = 'internado') AS internados,
           (SELECT count(*) FROM ambiente WHERE clinica_id = %(cid)s) AS ambientes,
           (SELECT COALESCE(avg(EXTRACT(EPOCH FROM (at.finalizado_em - at.iniciado_em)) / 60), 0)
              FROM atendimento at
              JOIN ocorrencia o ON o.id = at.ocorrencia_id
             WHERE o.clinica_id = %(cid)s AND at.finalizado_em IS NOT NULL) AS media_resposta
-        """,
+        """).format(sem=sem_ensaio("o")),
         {"cid": cid},
     )
 

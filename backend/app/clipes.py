@@ -51,8 +51,22 @@ def retencao_em_horas(modo_teste: bool, pedido: str | float | None) -> float:
     return min(horas, teto)
 
 
+def pasta_de_ensaio(modo_teste: bool, pedido: str | None) -> Path | None:
+    """Pasta SOMENTE DE LEITURA com os clipes de ensaio controlado, ou None.
+
+    Só existe em modo de teste: fora dele o pedido é ignorado e nenhum clipe fora da pasta normal é
+    servido. Fica de fora do expurgo (ele só varre PASTA), e é por isso que os clipes de ensaio
+    não expiram sem mexer na retenção dos clipes comuns. Ver ensaio.py.
+    """
+    texto = (pedido or "").strip()
+    if not modo_teste or not texto:
+        return None
+    return Path(texto)
+
+
 MODO_TESTE = os.environ.get("MEDSIGNAL_MODO_TESTE", "").strip().lower() in {"1", "true", "t", "sim", "yes", "on"}
 RETENCAO_HORAS = retencao_em_horas(MODO_TESTE, os.environ.get("CLIPES_RETENCAO_HORAS", "24"))
+PASTA_ENSAIO = pasta_de_ensaio(MODO_TESTE, os.environ.get("CLIPES_ENSAIO_DIR"))
 INTERVALO_DE_EXPURGO_S = 3600.0
 EXTENSAO = ".mp4"
 
@@ -65,7 +79,18 @@ def nome_seguro(texto: str) -> str:
 
 
 def caminho_do_clipe(ocorrencia_id: str) -> Path:
-    return PASTA / f"{nome_seguro(str(ocorrencia_id))}{EXTENSAO}"
+    """Onde está o clipe da ocorrência.
+
+    Primeiro a pasta normal, onde a retenção vale. Só se o clipe não estiver lá, e só em modo de
+    teste, a pasta de ensaio (somente leitura, sem expurgo). Se nenhum existe, devolve o caminho
+    da pasta normal: quem chama decide pelo `is_file()`, como sempre.
+    """
+    nome = f"{nome_seguro(str(ocorrencia_id))}{EXTENSAO}"
+    normal = PASTA / nome
+    if normal.is_file() or PASTA_ENSAIO is None:
+        return normal
+    de_ensaio = PASTA_ENSAIO / nome
+    return de_ensaio if de_ensaio.is_file() else normal
 
 
 def tem_clipe(ocorrencia_id: str) -> bool:
@@ -105,7 +130,13 @@ async def laco_de_expurgo() -> None:
 
 def estado() -> dict:
     arquivos = list(PASTA.glob(f"*{EXTENSAO}")) if PASTA.exists() else []
+    de_ensaio = list(PASTA_ENSAIO.glob(f"*{EXTENSAO}")) if PASTA_ENSAIO is not None and PASTA_ENSAIO.exists() else []
     return {
+        "ensaio": {
+            "ativo": PASTA_ENSAIO is not None,
+            "pasta": str(PASTA_ENSAIO) if PASTA_ENSAIO is not None else None,
+            "clipes": len(de_ensaio),
+        },
         "pasta": str(PASTA),
         "pasta_existe": PASTA.exists(),
         "clipes_em_disco": len(arquivos),

@@ -302,8 +302,13 @@ export interface OcorrenciaResumo {
   cameraIdentificador?: string | null;
   alertaNivel?: string | null;
   alertaStatus?: string | null;
-  /** Clipe de evidência em disco agora. Some após 24 h; a ocorrência fica. */
+  /** Clipe de evidência em disco agora. Some após o prazo de retenção; a ocorrência fica. */
   temClipe?: boolean;
+  /**
+   * Registro de ENSAIO CONTROLADO: teste do autor com a webcam, trazido à demonstração.
+   * Aparece nas listas, com selo, e fica fora de toda contagem e estatística.
+   */
+  ensaio?: boolean;
 }
 
 export const fetchAmbientes = (tenantId: string) =>

@@ -65,9 +65,14 @@ services:
       # variável só para a VPS inteira, com padrão ligado porque esta instalação é demonstração.
       MEDSIGNAL_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-true}
       CLIPES_RETENCAO_HORAS: ${CLIPES_RETENCAO_HORAS:-24}
+      # Registros de ENSAIO CONTROLADO (clipes do autor, fora do Git): pasta só de leitura, que o
+      # expurgo de 24 h/20 dias não toca. Só vale em modo de teste e só se houver manifesto.json nela.
+      CLIPES_ENSAIO_DIR: /app/dados/clipes-ensaio
       FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
     volumes:
       - clipes:/app/dados/clipes
+      # Somente leitura: o backend serve os clipes e importa o manifesto, nunca grava aqui.
+      - ${CLIPES_ENSAIO_PASTA:-./clipes-ensaio}:/app/dados/clipes-ensaio:ro
     healthcheck:
       test: ['CMD', 'python', '-c', "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else 1)"]
       interval: 15s

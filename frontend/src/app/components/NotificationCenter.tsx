@@ -35,7 +35,9 @@ function tipoDe(o: OcorrenciaResumo): Tipo {
 
 function tituloDe(o: OcorrenciaResumo): string {
   const quem = o.pacienteNome ?? o.ambienteNome;
-  return `${rotuloDoEvento(o.tipoEvento)} · ${quem}`;
+  const base = `${rotuloDoEvento(o.tipoEvento)} · ${quem}`;
+  // Ensaio controlado: registro de teste do autor, não detecção ao vivo.
+  return o.ensaio ? `${base} · ENSAIO CONTROLADO` : base;
 }
 
 function mensagemDe(o: OcorrenciaResumo): string {

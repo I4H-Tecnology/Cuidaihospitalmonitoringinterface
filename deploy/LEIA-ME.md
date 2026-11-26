@@ -179,6 +179,61 @@ curl -s https://SEU_DOMINIO/api/modo-de-teste        # esperado nesta instalaç�
 
 e abrir `https://SEU_DOMINIO` num navegador: a faixa amarela tem de estar no topo, **antes do login**. Com o modo desligado, o `curl` devolve `{"modoTeste":false}` e a faixa não aparece.
 
+## Registros de ensaio controlado (vídeos do autor, fora do Git)
+
+A VPS não tem câmera. Para a banca ver, em **Alertas Clínicos**, o que o detector registrou nos testes do autor com a webcam do notebook, as ocorrências e os clipes de 10 s são trazidos para cá **sem passar pelo GitHub nem pelo histórico do Git**: ficam numa pasta da VPS (`deploy/clipes-ensaio/`, ignorada pelo Git) enviada por `scp`. O repositório só tem o código que lê essa pasta; nenhum dado do autor.
+
+**O que a banca vê:** cada registro tem o selo **ENSAIO CONTROLADO**, o texto "DADOS DE DEMONSTRAÇÃO … NÃO é detecção ao vivo … NÃO houve atendimento real", nenhum paciente vinculado, status *encerrada* e o alerta já com ciência **pré-marcada, sem usuário** (dito no próprio texto), para não aparecer como "sem ciência" nem como pendente.
+
+**Não entram em nenhum número:** nem nos indicadores e gráficos de Alertas Clínicos e do Dashboard, nem em Analytics (tempos, taxas, conformidade), painel, saúde, câmeras e sino de alertas críticos. Aparecem só nas listas, com o selo.
+
+**Retenção:** os clipes de ensaio ficam numa pasta própria, montada **só para leitura**, e **não expiram**. Todos os outros clipes continuam com a retenção de sempre (`CLIPES_RETENCAO_HORAS`). É um segundo desvio do RNF05, restrito ao modo de teste e a dados do próprio autor, sem paciente.
+
+**1. No seu computador**, gere o pacote (lê o banco local **só para leitura** e confere tudo com o mesmo código da VPS). O texto das condições de cada registro é seu: o script não inventa nenhum, e para se faltar algum.
+
+```powershell
+python scripts/gerar-pacote-ensaio.py --clipes docs/evidencias/PASTA/clipes --saida pacote-ensaio `
+  --configuracao-de ID8="condições deste registro" --configuracao-de ID8="condições deste registro"
+```
+
+`ID8` são os 8 primeiros caracteres do id (o nome do `.mp4`). A pasta `pacote-ensaio/` já é ignorada pelo Git; o script recusa qualquer pasta dentro do repositório que o Git não ignore.
+
+**2. Envie por scp** (substitua `USUARIO@IP_DA_VPS`; os nomes dos arquivos são os que o script imprimiu):
+
+```powershell
+ssh USUARIO@IP_DA_VPS "mkdir -p ~/medsignal/deploy/clipes-ensaio"
+scp pacote-ensaio/manifesto.json pacote-ensaio/ID-COMPLETO-1.mp4 pacote-ensaio/ID-COMPLETO-2.mp4 USUARIO@IP_DA_VPS:~/medsignal/deploy/clipes-ensaio/
+```
+
+**3. Na VPS**, confira os arquivos contra os hashes que o script imprimiu e importe (o importador valida o pacote inteiro antes de abrir o banco):
+
+```bash
+cd ~/medsignal/deploy
+sha256sum clipes-ensaio/*.mp4
+docker compose -f docker-compose.prod.yml --env-file .env exec -T backend python -m app.registros_de_ensaio --validar-apenas
+docker compose -f docker-compose.prod.yml --env-file .env exec -T backend python -m app.registros_de_ensaio
+```
+
+O último comando termina com `RESULTADO: importados=N ja_existiam=M`. **É seguro repetir:** os ids são fixos, nada é duplicado e nenhuma linha existente é alterada ou apagada. Se um id do manifesto já pertencer a uma ocorrência que **não** é de ensaio, o lote inteiro é recusado.
+
+**Gravação tudo-ou-nada:** ocorrência, alerta e marca de ensaio são gravados numa **única transação**. Se qualquer passo falhar, nada fica: nem ocorrência sem alerta, nem registro pela metade, nem alguns registros de um lote que falhou.
+
+**No pipeline:** `deploy/atualizar.sh` roda essa importação no fim de toda publicação (sem manifesto na VPS, não faz nada). É a **única etapa que não reverte a publicação**: a aplicação já está no ar e saudável. Se a importação falhar, a execução do GitHub Actions termina verde, **com um aviso amarelo "Registros de ensaio NAO importados"** e a linha final `OK COM AVISO`, dizendo o motivo (manifesto ou clipe inválido, falha de banco com transação desfeita, ou modo de teste desligado). Corrija os arquivos na VPS e rode de novo o comando do passo 3.
+
+**Para tirar os registros de ensaio** (só eles, identificados pela chave `ensaio:`; as ocorrências reais não são tocadas; testado num banco descartável, e importar de novo depois funciona):
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env exec -T db psql -U medsignal -d medsignal -v ON_ERROR_STOP=1 -c "
+BEGIN;
+DELETE FROM alerta WHERE ocorrencia_id IN (SELECT ocorrencia_id FROM stub_evento_publicado WHERE starts_with(chave, 'ensaio:'));
+DELETE FROM ocorrencia WHERE id IN (SELECT ocorrencia_id FROM stub_evento_publicado WHERE starts_with(chave, 'ensaio:'));
+COMMIT;"
+```
+
+Com o manifesto ainda na pasta, a próxima publicação importaria tudo de novo: para tirar de vez, mova `manifesto.json` para fora de `clipes-ensaio/`.
+
+**Códigos do importador:** 0 ok (ou nada a importar) · 2 manifesto/clipe inválido ou recusado (nada gravado) · 3 falha no banco (transação desfeita) · 4 modo de teste desligado ou `CLIPES_ENSAIO_DIR` sem configurar.
+
 ## O que esta pasta NÃO faz
 
 - **Visão com webcam.** A VPS roda a visão só com **vídeo gravado em laço** (profile `visao`, ver `visao.Dockerfile`), em modo de teste e identificada como demonstração. Webcam em nuvem não existe: os clipes usam pasta compartilhada e não há envio de vídeo ao vivo de outro lugar.

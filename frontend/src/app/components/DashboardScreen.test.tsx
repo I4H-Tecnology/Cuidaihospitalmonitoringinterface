@@ -34,4 +34,19 @@ describe('Visão geral (painel)', () => {
 
     expect(await screen.findByText('Não foi possível carregar os dados do painel.')).toBeInTheDocument();
   });
+
+  it('um registro de ensaio controlado aparece em "Últimas ocorrências" com o aviso e sem paciente', async () => {
+    fetchFalso([
+      [/^GET .*\/api\/pacientes/, []],
+      [/^GET .*\/api\/cameras/, []],
+      [/^GET .*\/api\/ocorrencias/, [{
+        id: 'o-ensaio', tipoEvento: 'permanencia_solo', status: 'encerrada', dataHora: new Date().toISOString(),
+        ambienteId: 'a1', ambienteNome: 'Quarto 101', cameraIdentificador: 'CAM-QUARTO101', ensaio: true,
+      }]],
+    ]);
+    render(<DashboardScreen onNavigate={() => {}} />);
+
+    expect(await screen.findByText('Permanência no chão · ENSAIO CONTROLADO')).toBeInTheDocument();
+    expect(screen.getByText('Registro de demonstração (sem paciente)')).toBeInTheDocument();
+  });
 });

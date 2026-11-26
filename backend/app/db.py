@@ -7,6 +7,7 @@ tem ambição de produção. O backend definitivo usa SQLAlchemy, conforme a RFC
 import os
 from contextlib import contextmanager
 
+from psycopg.abc import Query
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
@@ -42,19 +43,19 @@ def cursor():
             yield cur
 
 
-def buscar_um(sql: str, params: tuple = ()) -> dict | None:
+def buscar_um(sql: Query, params: tuple | dict = ()) -> dict | None:
     with cursor() as cur:
         cur.execute(sql, params)
         return cur.fetchone()
 
 
-def buscar_todos(sql: str, params: tuple = ()) -> list[dict]:
+def buscar_todos(sql: Query, params: tuple | dict = ()) -> list[dict]:
     with cursor() as cur:
         cur.execute(sql, params)
         return cur.fetchall()
 
 
-def executar(sql: str, params: tuple = ()) -> int:
+def executar(sql: Query, params: tuple | dict = ()) -> int:
     with cursor() as cur:
         cur.execute(sql, params)
         return cur.rowcount

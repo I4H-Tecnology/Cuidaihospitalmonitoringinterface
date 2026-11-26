@@ -387,9 +387,11 @@ function paraEvento(o: OcorrenciaResumo) {
   return {
     id: o.id,
     type: gravidadeDe(o),
-    title: rotuloDoEvento(o.tipoEvento),
+    // Ensaio controlado: registro de teste do autor, não detecção ao vivo e sem paciente. O painel não tem
+    // lugar para um selo neste cartão, então o aviso vai no título e no lugar do paciente.
+    title: o.ensaio ? `${rotuloDoEvento(o.tipoEvento)} · ENSAIO CONTROLADO` : rotuloDoEvento(o.tipoEvento),
     location: o.cameraIdentificador ? `${o.ambienteNome} · ${o.cameraIdentificador}` : o.ambienteNome,
-    patient: o.pacienteNome ?? 'Paciente não identificado',
+    patient: o.ensaio ? 'Registro de demonstração (sem paciente)' : o.pacienteNome ?? 'Paciente não identificado',
     time: quandoFoi(o.dataHora),
   };
 }

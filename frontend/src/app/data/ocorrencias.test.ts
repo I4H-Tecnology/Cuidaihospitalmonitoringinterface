@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { OcorrenciaResumo } from './api';
-import { estaAberta, gravidadeDe, nasUltimasHoras, porHoraNasUltimas24h, porTipo, rotuloDoEvento } from './ocorrencias';
+import { estaAberta, gravidadeDe, nasUltimasHoras, porHoraNasUltimas24h, porTipo, rotuloDoEvento, semEnsaio } from './ocorrencias';
 import { horasDesde, quandoFoi } from './tempo';
 
 const AGORA = new Date('2026-09-13T15:30:00Z').getTime();
@@ -76,5 +76,28 @@ describe('leituras derivadas das ocorrências', () => {
     expect(faixas[23].total).toBe(2);
     expect(faixas[21].total).toBe(1);
     expect(faixas.reduce((s, f) => s + f.total, 0)).toBe(3);
+  });
+});
+
+describe('registros de ensaio controlado ficam fora de toda contagem', () => {
+  const real = ocorrencia({ id: 'real', tipoEvento: 'queda', dataHora: new Date(AGORA - 60 * 60000).toISOString() });
+  const ensaio = ocorrencia({ id: 'ensaio', tipoEvento: 'permanencia_solo', ensaio: true, dataHora: new Date(AGORA - 30 * 60000).toISOString() });
+
+  it('semEnsaio tira só os de ensaio e mantém a ordem', () => {
+    expect(semEnsaio([real, ensaio, ocorrencia({ id: 'outra' })]).map((o) => o.id)).toEqual(['real', 'outra']);
+  });
+
+  it('a janela de horas não os conta, mesmo recentes', () => {
+    expect(nasUltimasHoras([real, ensaio], 24, AGORA).map((o) => o.id)).toEqual(['real']);
+  });
+
+  it('o gráfico por tipo e o por hora não os contam', () => {
+    expect(porTipo([real, ensaio])).toEqual([{ tipo: 'Queda', total: 1 }]);
+    const faixas = porHoraNasUltimas24h([real, ensaio], AGORA);
+    expect(faixas.reduce((s, f) => s + f.total, 0)).toBe(1);
+  });
+
+  it('ensaio ausente ou falso conta normalmente', () => {
+    expect(nasUltimasHoras([real, ocorrencia({ id: 'f', ensaio: false })], 24, AGORA)).toHaveLength(2);
   });
 });
