@@ -425,7 +425,7 @@ function App() {
         <SystemToastProvider>
           {/* Acima de tudo, inclusive da tela de login: em modo de teste a
               marcacao precisa aparecer antes mesmo de alguem entrar. */}
-          <TarjaModoTeste />
+          {import.meta.env.DEV && <TarjaModoTeste />}
           <AppContent />
         </SystemToastProvider>
       </ThemeProvider>
