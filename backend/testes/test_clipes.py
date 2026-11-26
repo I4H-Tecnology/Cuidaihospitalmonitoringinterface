@@ -46,6 +46,19 @@ class RetencaoDoClipe(unittest.TestCase):
         self.assertEqual(retencao_em_horas(False, 480), 24.0)
 
 
+class ComposeDeDesenvolvimentoPassaARetencao(unittest.TestCase):
+    """Sem a variável no compose local, a API ficaria em 24 h e apagaria o clipe que a visão guarda por mais tempo."""
+
+    def test_o_backend_recebe_clipes_retencao_horas_com_padrao_de_24h(self):
+        import re
+
+        raiz = Path(__file__).resolve().parents[2]
+        texto = (raiz / "docker-compose.yml").read_text(encoding="utf-8")
+        backend = re.search(r"^  backend:\n(.*?)^  \S", texto, re.S | re.M)
+        self.assertIsNotNone(backend)
+        self.assertIn("CLIPES_RETENCAO_HORAS: ${CLIPES_RETENCAO_HORAS:-24}", backend.group(1))
+
+
 class ExpurgoUsaARetencaoEfetiva(unittest.TestCase):
     """O expurgo do backend apaga pelo teto vigente, não por um 24 fixo."""
 

@@ -174,8 +174,12 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMATO: ${LOG_FORMATO:-json}
       # Clipes de evidencia gravados pelo servico de visao. A API so serve e
-      # expurga (24 h); a pasta e a mesma do host, montada abaixo.
+      # expurga; a pasta e a mesma do host, montada abaixo.
       CLIPES_DIR: /app/dados/clipes
+      # Prazo do expurgo, em horas: 24 pela RFC; ate 720 (30 dias) so em modo
+      # de teste. Tem de ser o mesmo VISAO_CLIPES_RETENCAO_HORAS do servico de
+      # visao, porque os dois apagam a mesma pasta.
+      CLIPES_RETENCAO_HORAS: ${CLIPES_RETENCAO_HORAS:-24}
       # Fuso do "hoje" do módulo financeiro (vencido, vence hoje).
       FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
       # Portal da família: a API repassa o vídeo da câmera do paciente, então
