@@ -120,8 +120,9 @@ export const screenModuleMap: Record<Exclude<Screen, TelaFinanceira>, string> = 
 export const TELAS_DE_TODOS: ReadonlySet<Screen> = new Set<Screen>(['settings']);
 
 /**
- * As telas que a RFC especifica (RF03 a RF08, RF15 a RF30). É o que os perfis
- * da banca do TCC abrem — VISITOR só lendo, TCC operando — e nada além disso.
+ * As telas que a RFC especifica (RF03 a RF08, RF15 a RF30). É o que o VISITOR
+ * (banca só lendo) abre, e nada além disso. O TCC (banca operando) abre estas
+ * e mais a Saúde do Sistema: ver TELAS_DO_TCC.
  *
  * A permissão do backend é por módulo, e vários módulos da RFC abrigam telas
  * que vieram depois dela (Sensores IoT e Ausência no Quarto moram em
@@ -155,19 +156,29 @@ export const TELAS_DA_RFC: ReadonlySet<Screen> = new Set<Screen>([
   'kpis',
 ]);
 
+/**
+ * O que o TCC abre: as telas da RFC e a Saúde do Sistema. A Saúde não é
+ * requisito da RFC; é o monitoramento do núcleo comum de engenharia do
+ * Playbook, que a banca avalia operando o sistema. Ela só LÊ o estado da API,
+ * do banco e do serviço de visão, pelo módulo `monitoring`, que o TCC já
+ * recebe no banco (02_perfis.sql): nenhuma permissão nova.
+ */
+export const TELAS_DO_TCC: ReadonlySet<Screen> = new Set<Screen>([...TELAS_DA_RFC, 'saude']);
+
 /** Perfis que abrem só um conjunto de telas. Perfil fora daqui vale o que o módulo diz. */
 const TELAS_DO_PERFIL: Partial<Record<Role, ReadonlySet<Screen>>> = {
   VISITOR: TELAS_DA_RFC,
-  TCC: TELAS_DA_RFC,
+  TCC: TELAS_DO_TCC,
 };
 
 /**
- * O perfil só enxerga o que a RFC especifica? Serve para o que não é tela, como
- * o "Novo dashboard": um editor de protótipo, com números de exemplo, que não
- * está na RFC.
+ * O perfil é da banca (VISITOR ou TCC)? Os dois enxergam o escopo da RFC (o TCC
+ * também a Saúde do Sistema). Serve para o que não é tela, como o "Novo
+ * dashboard": um editor de protótipo, com números de exemplo, que não está na
+ * RFC, e o simulador do app.
  */
 export const perfilSoDaRfc = (role: Role | undefined): boolean =>
-  !!role && TELAS_DO_PERFIL[role] === TELAS_DA_RFC;
+  role === 'VISITOR' || role === 'TCC';
 
 /** O perfil pode abrir esta tela, além da permissão do módulo? */
 export const perfilAbreTela = (role: Role | undefined, screen: Screen): boolean => {

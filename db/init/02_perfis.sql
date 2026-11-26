@@ -169,7 +169,7 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('VISITOR', 'users',      true, false, false, false, true, false),
     ('VISITOR', 'settings',   true, false, false, false, true, false),
 
-    -- TCC — a banca opera o sistema: as mesmas telas do VISITOR (TELAS_DA_RFC,
+    -- TCC — a banca opera o sistema: as telas do VISITOR e a Saúde do Sistema (TELAS_DO_TCC,
     -- em rbac.ts), com escrita só onde a RFC pede. Só web: o painel esconde o
     -- simulador do app para o perfil.
     --   alerts:edit ......... ciência, atendimento e encerramento (RF17–RF20)

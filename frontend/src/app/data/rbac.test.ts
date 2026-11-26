@@ -6,6 +6,7 @@ import {
   defaultPlatform,
   ehTelaFinanceira,
   TELAS_DA_RFC,
+  TELAS_DO_TCC,
   getModuleForScreen,
   perfilAbreTela,
   perfilSoDaRfc,
@@ -148,12 +149,30 @@ describe('telas por perfil (VISITOR, a banca do TCC)', () => {
     expect(perfilSoDaRfc(undefined)).toBe(false);
   });
 
-  it('o TCC abre exatamente as mesmas telas do VISITOR', () => {
-    // A diferença entre os dois é a escrita, que vem do banco (02_perfis.sql),
-    // não o menu.
+  it('o TCC abre as telas do VISITOR e mais só a Saúde do Sistema', () => {
+    // Fora a Saúde (monitoramento do núcleo comum do Playbook), a diferença
+    // entre os dois é a escrita, que vem do banco (02_perfis.sql), não o menu.
     const doVisitor = TELAS.filter((t) => perfilAbreTela('VISITOR', t));
     const doTcc = TELAS.filter((t) => perfilAbreTela('TCC', t));
-    expect(doTcc).toEqual(doVisitor);
+    expect(doTcc.sort()).toEqual([...doVisitor, 'saude'].sort());
+    expect(perfilAbreTela('TCC', 'saude')).toBe(true);
+    expect(perfilAbreTela('VISITOR', 'saude')).toBe(false);
+  });
+
+  it('o TCC continua sem o que a RFC deixa de fora, nem o que veio depois', () => {
+    for (const tela of [
+      'pep', 'evolucoes', 'score-risco', 'sensores', 'ausencia-quarto', 'linha-eventos',
+      'internacoes', 'escalas', 'agenda', 'compras', 'contratos',
+      'previsao', 'insights', 'indicadores-chave', 'financeiro:pagar', 'financeiro:pessoal',
+    ] as Screen[]) {
+      expect(perfilAbreTela('TCC', tela), tela).toBe(false);
+    }
+  });
+
+  it('a Saúde do TCC usa um módulo que ele já recebe no banco (nenhuma permissão nova)', () => {
+    const modulos = new Set([...TELAS_DO_TCC].map((t) => getModuleForScreen(t)));
+    expect([...modulos].sort()).toEqual([...MODULOS_DO_VISITOR].sort());
+    expect(getModuleForScreen('saude')).toBe('monitoring');
   });
 
   it('só restringe os perfis da banca: os outros seguem pelo módulo', () => {
