@@ -8,8 +8,10 @@ import {
   ApiError, darCiencia, encerrarOcorrencia, iniciarAtendimento,
 } from '../data/api';
 import type { ClassificacaoOcorrencia, OcorrenciaResumo } from '../data/api';
+import { semEnsaio } from '../data/ocorrencias';
 import { ClipeDaOcorrencia } from './ClipeDaOcorrencia';
 import { ModalEncerrarOcorrencia } from './ModalEncerrarOcorrencia';
+import { SeloEnsaio } from './SeloEnsaio';
 import { quandoFoi } from '../data/tempo';
 
 /**
@@ -83,10 +85,13 @@ export function AlertsScreen() {
     });
   }, [ocorrencias, busca, filtro]);
 
+  // Os indicadores contam a operação: registros de ensaio controlado aparecem na lista (com
+  // selo), mas não entram em nenhum número.
   const contagem = useMemo(() => {
-    const de = (s: string) => ocorrencias.filter((o) => o.status === s).length;
+    const operacao = semEnsaio(ocorrencias);
+    const de = (s: string) => operacao.filter((o) => o.status === s).length;
     return {
-      total: ocorrencias.length,
+      total: operacao.length,
       pendente: de('pendente'),
       atendendo: de('em_atendimento'),
       confirmadas: de('queda_confirmada'),
@@ -128,13 +133,13 @@ export function AlertsScreen() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <Indicador rotulo="Total" valor={contagem.total} cor="border-gray-300" />
-        <Indicador rotulo="Pendentes" valor={contagem.pendente} cor="border-red-500" />
-        <Indicador rotulo="Em atendimento" valor={contagem.atendendo} cor="border-blue-500" />
-        <Indicador rotulo="Quedas confirmadas" valor={contagem.confirmadas} cor="border-red-700" />
+        <Indicador rotulo="Total" valor={contagem.total} cor="border-l-gray-300" />
+        <Indicador rotulo="Pendentes" valor={contagem.pendente} cor="border-l-red-500" />
+        <Indicador rotulo="Em atendimento" valor={contagem.atendendo} cor="border-l-blue-500" />
+        <Indicador rotulo="Quedas confirmadas" valor={contagem.confirmadas} cor="border-l-red-700" />
         {/* Falso positivo aparece no painel porque e insumo da RN14: e o unico
             rotulo que vem da operacao real e alimenta a recalibragem. */}
-        <Indicador rotulo="Falsos positivos" valor={contagem.falsos} cor="border-gray-400" />
+        <Indicador rotulo="Falsos positivos" valor={contagem.falsos} cor="border-l-gray-400" />
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -274,6 +279,7 @@ export function CartaoAlerta({
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-gray-600" />
           <span className="text-gray-800">{ROTULO_EVENTO[o.tipoEvento] ?? o.tipoEvento}</span>
+          {o.ensaio && <SeloEnsaio />}
           {semCiencia && (
             <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700">
               sem ciência

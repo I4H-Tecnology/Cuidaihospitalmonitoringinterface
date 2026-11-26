@@ -1,3 +1,4 @@
+import { focarAoAparecer } from '../../foco';
 import { useState } from 'react';
 import { AlertCircle, FileText, Loader2, Send, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -64,7 +65,7 @@ export function EvolutionsTab({ paciente, evolucoes, carregando, aoRegistrar, fo
           <label htmlFor="nova-evolucao" className="mb-2 block text-sm text-gray-700">Nova evolução</label>
           <textarea
             id="nova-evolucao"
-            autoFocus={focarFormulario}
+            ref={focarFormulario ? focarAoAparecer : undefined}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             maxLength={4000}

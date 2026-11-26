@@ -1,3 +1,5 @@
+import { semBarraFinal } from './texto';
+
 const rawApiBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
@@ -6,7 +8,7 @@ const rawApiBaseUrl =
 if (!rawApiBaseUrl) {
   console.error('[api] VITE_API_URL is not set. Falling back to same-origin requests.');
 }
-export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
+export const API_BASE_URL = semBarraFinal(rawApiBaseUrl);
 
 /* ---------------------------------------------------------------------------
  * Token de sessão
@@ -160,6 +162,9 @@ export interface OperationalOverviewResponse {
 
 export const fetchTenants = () => request<TenantInfo[]>('/api/tenants');
 
+/** O modo de teste EFETIVO do backend. Pública: a faixa aparece antes do login. */
+export const fetchModoDeTeste = () => request<{ modoTeste: boolean }>('/api/modo-de-teste');
+
 export const loginRequest = (payload: { tenant: string; username: string; password: string }) =>
   request<LoginResponse>('/api/auth/login', {
     method: 'POST',
@@ -235,10 +240,15 @@ export const deleteUserRequest = (tenantId: string, userId: string) =>
 export const fetchAccessLogs = (tenantId: string) =>
   request<any[]>(`/api/access-logs?tenantId=${encodeURIComponent(tenantId)}`);
 
+// Melhor esforço: quem chama não espera o registro e uma falha dele não pode
+// virar rejeição sem tratamento (nem derrubar a ação do usuário).
 export const recordAccessLog = (tenantId: string, log: any) =>
   request<{ ok: boolean }>('/api/access-logs', {
     method: 'POST',
     body: JSON.stringify({ tenantId, log })
+  }).catch((erro: unknown) => {
+    console.warn('Não foi possível registrar o log de acesso.', erro);
+    return { ok: false };
   });
 
 export const fetchOperationalOverview = (tenantId: string) =>
@@ -292,8 +302,13 @@ export interface OcorrenciaResumo {
   cameraIdentificador?: string | null;
   alertaNivel?: string | null;
   alertaStatus?: string | null;
-  /** Clipe de evidência em disco agora. Some após 24 h; a ocorrência fica. */
+  /** Clipe de evidência em disco agora. Some após o prazo de retenção; a ocorrência fica. */
   temClipe?: boolean;
+  /**
+   * Registro de ENSAIO CONTROLADO: teste do autor com a webcam, trazido à demonstração.
+   * Aparece nas listas, com selo, e fica fora de toda contagem e estatística.
+   */
+  ensaio?: boolean;
 }
 
 export const fetchAmbientes = (tenantId: string) =>
@@ -708,20 +723,6 @@ export const inativarPrescricao = (tenantId: string, prescricaoId: string) =>
     `/api/prescricoes/${prescricaoId}/inativar?tenantId=${encodeURIComponent(tenantId)}`,
     { method: 'POST' }
   );
-
-/* ---------------------------------------------------------------------------
- * App Paciente: todos os acessos de família da clínica (25/10/2026)
- * -------------------------------------------------------------------------- */
-
-export interface AcompanhanteDaClinica extends AcompanhanteResumo {
-  pacienteNome: string;
-  ambienteNome: string | null;
-  termoAceitoEm: string | null;
-  ultimoAcessoEm: string | null;
-}
-
-export const fetchAcompanhantesDaClinica = (tenantId: string) =>
-  request<AcompanhanteDaClinica[]>(`/api/acompanhantes?tenantId=${encodeURIComponent(tenantId)}`);
 
 /* ---------------------------------------------------------------------------
  * Contratos (Administração → Contratos, 25/10/2026)

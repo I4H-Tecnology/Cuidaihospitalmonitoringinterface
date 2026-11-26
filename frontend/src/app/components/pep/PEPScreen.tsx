@@ -64,7 +64,7 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
   }, [tenantId, paciente.id]);
 
   useEffect(() => {
-    carregarProntuario();
+    void carregarProntuario();
   }, [carregarProntuario]);
 
   const alergiasGraves = riscos.filter((r) => r.ativo && r.tipo === 'alergia' && r.gravidade === 'grave');
@@ -261,7 +261,7 @@ export function PEPScreen({ patient, onBack }: PEPScreenProps) {
           aoSalvar={(atualizado, avisos) => {
             setPaciente(atualizado);
             setModalEditar(false);
-            carregarProntuario();
+            void carregarProntuario();
             setAviso(avisos.length ? avisos.join(' ') : 'Cadastro atualizado.');
           }}
         />

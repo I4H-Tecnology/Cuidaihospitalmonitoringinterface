@@ -1,3 +1,4 @@
+import { emailValido } from '../data/texto';
 import React, { useState } from 'react';
 import { ArrowLeft, Loader2, Mail } from 'lucide-react';
 import logoImage from '@/assets/logo.png';
@@ -29,7 +30,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
       return;
     }
     const email = identifier.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!emailValido(email)) {
       showToast({ message: 'Informe um e-mail válido.' });
       return;
     }
@@ -92,10 +93,10 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
           </p>
 
           <div className="space-y-4">
-            <label className="block text-[#304A6E]">E-mail</label>
+            <label htmlFor="forgotpasswordscreen-e-mail" className="block text-[#304A6E]">E-mail</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#5F7697]" />
-              <input
+              <input id="forgotpasswordscreen-e-mail"
                 type="email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}

@@ -62,7 +62,7 @@ export function DetalheTitulo({
 
   const atualizar = (novo?: Titulo) => {
     if (novo) setDados(novo);
-    else recarregar();
+    else void recarregar();
     aoMudar();
   };
 

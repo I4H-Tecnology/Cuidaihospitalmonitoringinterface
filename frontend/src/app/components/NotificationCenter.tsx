@@ -35,7 +35,9 @@ function tipoDe(o: OcorrenciaResumo): Tipo {
 
 function tituloDe(o: OcorrenciaResumo): string {
   const quem = o.pacienteNome ?? o.ambienteNome;
-  return `${rotuloDoEvento(o.tipoEvento)} · ${quem}`;
+  const base = `${rotuloDoEvento(o.tipoEvento)} · ${quem}`;
+  // Ensaio controlado: registro de teste do autor, não detecção ao vivo.
+  return o.ensaio ? `${base} · ENSAIO CONTROLADO` : base;
 }
 
 function mensagemDe(o: OcorrenciaResumo): string {
@@ -89,7 +91,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" role="presentation" aria-hidden="true" onClick={onClose} />
 
       <div className={`fixed right-0 top-0 h-full w-full max-w-[450px] shadow-2xl z-50 ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         <div className={`px-6 py-4 border-b ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>

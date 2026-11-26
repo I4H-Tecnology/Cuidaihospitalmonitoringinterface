@@ -3,7 +3,7 @@ import { AlertCircle, Bell, Camera, DoorOpen, Loader2, RotateCcw, Search, User }
 import { useAuth } from '../contexts/AuthContext';
 import { fetchAmbientes, fetchCameras } from '../data/api';
 import type { AmbienteResumo, CameraResumo } from '../data/api';
-import { quandoFoi } from '../data/tempo';
+import { maisRecente, quandoFoi } from '../data/tempo';
 
 /**
  * Ambientes monitorados: o que o produto sabe sobre cada lugar da clínica.
@@ -49,7 +49,7 @@ export function BedsRoomsScreen() {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
     const timer = window.setInterval(carregar, INTERVALO_MS);
     return () => window.clearInterval(timer);
   }, [carregar]);
@@ -127,11 +127,7 @@ export function BedsRoomsScreen() {
           {visiveis.map((a) => {
             const cams = camerasPorAmbiente.get(a.id) ?? [];
             const ocorrencias24h = cams.reduce((s, c) => s + c.ocorrencias24h, 0);
-            const ultima = cams
-              .map((c) => c.ultimaOcorrencia)
-              .filter((u): u is string => !!u)
-              .sort()
-              .at(-1);
+            const ultima = maisRecente(cams.map((c) => c.ultimaOcorrencia).filter((u): u is string => !!u));
             const semSinal = cams.filter((c) => !c.conectada).length;
             return (
               <section key={a.id} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">

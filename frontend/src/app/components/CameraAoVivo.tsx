@@ -98,7 +98,7 @@ export function CameraAoVivo({ url = VISAO_URL, compacto = false }: { url?: stri
       }
     };
 
-    consultar();
+    void consultar();
     // 1s é suficiente: o pipeline produz a 8 fps, e o texto não precisa
     // acompanhar quadro a quadro — quem faz isso é a imagem.
     const timer = window.setInterval(consultar, compacto ? 3000 : 1000);
@@ -170,13 +170,6 @@ export function CameraAoVivo({ url = VISAO_URL, compacto = false }: { url?: stri
               <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               <span className="text-sm">Pessoa no chão detectada</span>
             </div>
-          )}
-          {/* A tarja global já marca o modo de teste; repetir em cada quadro
-              do mosaico só polui. */}
-          {!compacto && estado?.modo_teste && (
-            <span className="absolute right-3 top-3 rounded bg-amber-500 px-2 py-1 text-xs text-amber-950">
-              MODO DE TESTE
-            </span>
           )}
         </>
       )}

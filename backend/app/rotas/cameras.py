@@ -1,9 +1,11 @@
 """Cadastro de câmeras e ambientes monitorados (RF06, RF07, RF30)."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from psycopg import sql
 
 from .. import db
 from ..comum import clinica_por_slug, iso, logger, mascarar_credencial
+from ..ensaio import sem_ensaio
 from ..seguranca import (
     UsuarioAutenticado,
     exigir_permissao,
@@ -41,22 +43,24 @@ JANELA_DE_PING = "90 seconds"
 def consultar_cameras(clinica_id, camera_id: str | None = None) -> list[dict]:
     """Parque de câmeras da clínica, com "conectada" derivada do último ping.
 
-    A única interpolação é JANELA_DE_PING, constante deste módulo; o que vem
-    do cliente entra por parâmetro.
+    O SQL é composto com `psycopg.sql` (JANELA_DE_PING, constante deste módulo, e o filtro de
+    ensaio); o que vem do cliente entra por parâmetro.
     """
-    filtro_camera = " AND cam.id = %(cam)s" if camera_id else ""
-    return db.buscar_todos(  # nosec B608
-        f"""
+    filtro_camera = sql.SQL(" AND cam.id = %(cam)s") if camera_id else sql.SQL("")
+    return db.buscar_todos(
+        sql.SQL("""
         SELECT cam.id, cam.identificador, cam.url_stream, cam.status, cam.ultimo_ping,
                cam.visao_url,
                amb.id AS ambiente_id, amb.nome AS ambiente_nome, amb.tipo AS ambiente_tipo,
                pac.id AS paciente_id, pac.nome AS paciente_nome,
                (cam.ultimo_ping IS NOT NULL
-                AND cam.ultimo_ping > now() - interval '{JANELA_DE_PING}') AS conectada,
+                AND cam.ultimo_ping > now() - interval '{janela}') AS conectada,
                (SELECT count(*) FROM ocorrencia o
                  WHERE o.camera_id = cam.id
-                   AND o.data_hora > now() - interval '24 hours') AS ocorrencias_24h,
-               (SELECT max(o.data_hora) FROM ocorrencia o WHERE o.camera_id = cam.id)
+                   AND o.data_hora > now() - interval '24 hours'
+                   AND {sem}) AS ocorrencias_24h,
+               (SELECT max(o.data_hora) FROM ocorrencia o
+                 WHERE o.camera_id = cam.id AND {sem})
                  AS ultima_ocorrencia
         FROM camera cam
         JOIN ambiente amb ON amb.id = cam.ambiente_id
@@ -65,9 +69,9 @@ def consultar_cameras(clinica_id, camera_id: str | None = None) -> list[dict]:
            WHERE p.ambiente_id = amb.id AND p.status = 'internado'
            ORDER BY p.data_admissao DESC LIMIT 1
         ) pac ON true
-        WHERE amb.clinica_id = %(cid)s{filtro_camera}
+        WHERE amb.clinica_id = %(cid)s{filtro}
         ORDER BY conectada DESC, amb.nome, cam.identificador
-        """,
+        """).format(janela=sql.SQL(JANELA_DE_PING), sem=sem_ensaio("o"), filtro=filtro_camera),
         {"cid": clinica_id, "cam": camera_id},
     )
 
@@ -139,8 +143,6 @@ def listar_cameras(
     exigir_tenant(usuario, tenantId)
     clinica = clinica_por_slug(tenantId)
 
-    # A única interpolação é JANELA_DE_PING, constante deste módulo; o que vem
-    # do cliente entra por parâmetro.
     linhas = consultar_cameras(clinica["id"])
     if somenteConectadas:
         linhas = [l for l in linhas if l["conectada"]]

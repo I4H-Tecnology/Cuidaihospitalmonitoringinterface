@@ -443,7 +443,7 @@ export function ScoreRiscoScreen(_: PropsTela) {
         )}
       </Painel>
       <p className="text-xs text-gray-600">Escala de Morse (Morse, 1989), versão adaptada para o Brasil. Os fatores do sistema são contexto e não entram na soma, para não alterar a escala validada.</p>
-      {avaliando && <AvaliacaoMorseForm paciente={avaliando} aoFechar={() => setAvaliando(null)} aoSalvar={(total) => { setAvaliando(null); setAviso(`Avaliação registrada: ${total} pontos.`); recarregar(); }} />}
+      {avaliando && <AvaliacaoMorseForm paciente={avaliando} aoFechar={() => setAvaliando(null)} aoSalvar={(total) => { setAvaliando(null); setAviso(`Avaliação registrada: ${total} pontos.`); void recarregar(); }} />}
       {historico && <HistoricoMorse paciente={historico} aoFechar={() => setHistorico(null)} />}
     </Tela>
   );
@@ -548,7 +548,7 @@ export function SensoresScreen(_: PropsTela) {
         titulo="Sensores IoT"
         descricao="Tudo o que manda sinal para o sistema: as câmeras e qualquer outro dispositivo (cama, porta, botão de chamada) integrado pela API."
         acoes={<>
-          <BotaoAtualizar carregando={cameras.carregando || sensores.carregando} aoClicar={() => { cameras.recarregar(); sensores.recarregar(); }} />
+          <BotaoAtualizar carregando={cameras.carregando || sensores.carregando} aoClicar={() => { void cameras.recarregar(); void sensores.recarregar(); }} />
           {can('monitoring', 'edit') && <button type="button" onClick={() => setNovo(true)} className={BOTAO_PRIMARIO}><Plus className="h-4 w-4" aria-hidden="true" /> Cadastrar sensor</button>}
         </>}
       />
@@ -594,7 +594,7 @@ export function SensoresScreen(_: PropsTela) {
                 {s.alertas24h > 0 && <Etiqueta classe="bg-red-100 text-red-700">{s.alertas24h} alerta(s) em 24 h</Etiqueta>}
                 <button type="button" onClick={() => setLeituras(s)} className="rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100">Leituras</button>
                 {s.ativo && can('monitoring', 'edit') && (
-                  <button type="button" onClick={async () => { if (tenantId && await executar(() => desativarSensor(tenantId, s.id))) { setAviso(`Sensor ${s.nome} desativado.`); sensores.recarregar(); } }} className="rounded-lg px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">Desativar</button>
+                  <button type="button" onClick={async () => { if (tenantId && await executar(() => desativarSensor(tenantId, s.id))) { setAviso(`Sensor ${s.nome} desativado.`); void sensores.recarregar(); } }} className="rounded-lg px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">Desativar</button>
                 )}
               </li>
             ))}
@@ -602,7 +602,7 @@ export function SensoresScreen(_: PropsTela) {
         )}
       </Painel>
 
-      {novo && <NovoSensor aoFechar={() => setNovo(false)} aoCriar={(s) => { setNovo(false); setCriado(s); sensores.recarregar(); }} />}
+      {novo && <NovoSensor aoFechar={() => setNovo(false)} aoCriar={(s) => { setNovo(false); setCriado(s); void sensores.recarregar(); }} />}
       {criado && <TokenDoSensor sensor={criado} aoFechar={() => setCriado(null)} />}
       {leituras && <LeiturasDoSensor sensor={leituras} aoFechar={() => setLeituras(null)} />}
     </Tela>

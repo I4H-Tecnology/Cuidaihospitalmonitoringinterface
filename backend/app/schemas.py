@@ -196,6 +196,9 @@ class OcorrenciaResumo(BaseModel):
     # Há clipe de evidência em disco agora? False também quando já foi
     # expurgado (24 h): a ocorrência continua, o vídeo não (RN09, RNF18).
     temClipe: bool = False
+    # Registro de ENSAIO CONTROLADO (ensaio.py): teste do autor com a webcam, trazido à demonstração.
+    # Não é detecção ao vivo em produção e não houve atendimento real. A tela o marca como tal.
+    ensaio: bool = False
 
 
 class AmbienteResumo(BaseModel):
@@ -469,17 +472,8 @@ class PacienteEdicaoPayload(BaseModel):
 
 
 # -----------------------------------------------------------------------------
-# App Paciente: visão da equipe e portal da família (25/10/2026)
+# Portal da família (25/10/2026)
 # -----------------------------------------------------------------------------
-
-class AcompanhanteDaClinica(AcompanhanteResumo):
-    """Acompanhante na lista geral da clínica (tela App Paciente)."""
-
-    pacienteNome: str
-    ambienteNome: str | None = None
-    termoAceitoEm: str | None = None
-    ultimoAcessoEm: str | None = None
-
 
 class FamiliaEntrada(BaseModel):
     # "<id do acompanhante>.<token>", exatamente o que o QR Code carrega.

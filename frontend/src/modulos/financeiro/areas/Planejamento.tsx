@@ -18,7 +18,7 @@ type Linha = { categoriaId: string; nome: string; grupoRotulo: string; natureza:
 export function Planejamento() {
   const [aba, setAba] = useState<'orcamento' | 'comparativo'>('orcamento');
   const [ano, setAno] = useState(new Date().getFullYear());
-  const anos = [0, 1, -1, -2].map((d) => new Date().getFullYear() + d).sort();
+  const anos = [0, 1, -1, -2].map((d) => new Date().getFullYear() + d).sort((a, b) => a - b);
   return (
     <div>
       <CabecalhoDaArea

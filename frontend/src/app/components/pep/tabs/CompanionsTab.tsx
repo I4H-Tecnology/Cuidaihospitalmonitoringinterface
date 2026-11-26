@@ -63,7 +63,7 @@ export function CompanionsTab({ paciente }: Props) {
   }, [tenantId, paciente.id]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const revogar = async (a: AcompanhanteResumo) => {
@@ -190,7 +190,7 @@ export function CompanionsTab({ paciente }: Props) {
         <ModalAcompanhante
           paciente={paciente}
           aoFechar={() => setModal(false)}
-          aoCriar={() => { carregar(); }}
+          aoCriar={() => { void carregar(); }}
         />
       )}
     </div>

@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Lock, Pencil, Plus } from 'lucide-react';
 import { useDados, useFinanceiro } from '../../contexto';
 import type { Rubrica } from '../../api/tipos';
+import { semZerosFinais } from '../../util/dinheiro';
 import { Botao, Campo, Carregando, Etiqueta, Janela, Marcador, Seletor, cartao, tabela, texto } from '../../ui/base';
 
 const CALCULOS: Record<string, string> = {
@@ -46,7 +47,7 @@ export function Rubricas() {
                   {r.sistema && <Lock className="ml-1 inline h-3 w-3 text-gray-400" aria-label="Rubrica do sistema" />}
                 </td>
                 <td className={tabela.celula}><Etiqueta tom={r.tipo === 'provento' ? 'info' : r.tipo === 'desconto' ? 'neutro' : 'atencao'}>{r.tipo}</Etiqueta></td>
-                <td className={tabela.celula}>{CALCULOS[r.calculo]}{r.percentual ? ` (${r.percentual.replace(/\.?0+$/, '').replace('.', ',')}%)` : ''}</td>
+                <td className={tabela.celula}>{CALCULOS[r.calculo]}{r.percentual ? ` (${semZerosFinais(r.percentual).replace('.', ',')}%)` : ''}</td>
                 <td className={`${tabela.celula} text-xs`}>
                   {[r.incideInss && 'INSS', r.incideIrrf && 'IRRF', r.incideFgts && 'FGTS', r.deduzIrrf && 'deduz do IR', r.entraDsr && 'DSR'].filter(Boolean).join(' · ') || '—'}
                 </td>
@@ -59,7 +60,7 @@ export function Rubricas() {
         </table>
       )}
       {editando && (
-        <EditorRubrica rubrica={editando === 'nova' ? null : editando} aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); lista.recarregar(); }} />
+        <EditorRubrica rubrica={editando === 'nova' ? null : editando} aoFechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); void lista.recarregar(); }} />
       )}
     </div>
   );

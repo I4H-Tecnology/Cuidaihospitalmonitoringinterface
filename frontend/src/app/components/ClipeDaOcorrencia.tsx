@@ -21,7 +21,7 @@ export function ClipeDaOcorrencia({ ocorrencia }: { ocorrencia: OcorrenciaResumo
 
   if (situacao !== 'disponivel') {
     const texto =
-      situacao === 'expurgado' ? 'Vídeo expurgado após 24 h (RNF05). O registro permanece.'
+      situacao === 'expurgado' ? 'Vídeo expurgado após o prazo de retenção (RNF05). O registro permanece.'
         : situacao === 'gravando' ? 'Clipe em gravação…'
           : 'Sem vídeo disponível para esta ocorrência.';
     return <p className="mt-3 text-xs text-gray-400">{texto}</p>;

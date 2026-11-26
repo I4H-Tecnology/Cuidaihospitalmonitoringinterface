@@ -119,8 +119,8 @@ export function AgendaScreen(_: PropsTela) {
       )}
       {dados && dados.length === 0 && <p className="text-center text-sm text-gray-600">Nenhum compromisso nesta semana.</p>}
 
-      {aberto && <DetalheAgendamento agendamento={aberto} aoFechar={() => setAberto(null)} aoMudar={(m) => { setAberto(null); setAviso(m); recarregar(); }} />}
-      {novo && <NovoAgendamento dia={novo} pacienteInicial={paciente} aoFechar={() => setNovo(null)} aoCriar={() => { setNovo(null); setAviso('Compromisso agendado.'); recarregar(); }} />}
+      {aberto && <DetalheAgendamento agendamento={aberto} aoFechar={() => setAberto(null)} aoMudar={(m) => { setAberto(null); setAviso(m); void recarregar(); }} />}
+      {novo && <NovoAgendamento dia={novo} pacienteInicial={paciente} aoFechar={() => setNovo(null)} aoCriar={() => { setNovo(null); setAviso('Compromisso agendado.'); void recarregar(); }} />}
     </Tela>
   );
 }
@@ -237,11 +237,11 @@ export function LembretesScreen(_: PropsTela) {
   const concluir = async (l: Lembrete) => {
     if (!tenantId) return;
     const r = await executar(() => concluirLembrete(tenantId, l.id));
-    if (r) { setAviso(l.recorrencia === 'nenhuma' ? `"${l.titulo}" concluído.` : `"${l.titulo}" concluído. Próximo: ${new Date(r.proximaEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`); recarregar(); }
+    if (r) { setAviso(l.recorrencia === 'nenhuma' ? `"${l.titulo}" concluído.` : `"${l.titulo}" concluído. Próximo: ${new Date(r.proximaEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`); void recarregar(); }
   };
   const desativar = async (l: Lembrete) => {
     if (!tenantId) return;
-    if (await executar(() => desativarLembrete(tenantId, l.id))) { setAviso(`"${l.titulo}" desativado.`); recarregar(); }
+    if (await executar(() => desativarLembrete(tenantId, l.id))) { setAviso(`"${l.titulo}" desativado.`); void recarregar(); }
   };
 
   return (
@@ -302,7 +302,7 @@ export function LembretesScreen(_: PropsTela) {
         </details>
       )}
 
-      {novo && <NovoLembrete aoFechar={() => setNovo(false)} aoCriar={() => { setNovo(false); setAviso('Lembrete criado.'); recarregar(); }} />}
+      {novo && <NovoLembrete aoFechar={() => setNovo(false)} aoCriar={() => { setNovo(false); setAviso('Lembrete criado.'); void recarregar(); }} />}
     </Tela>
   );
 }
@@ -402,7 +402,7 @@ export function ExamesScreen(_: PropsTela) {
           </ul>
         )}
       </Painel>
-      {novo && <NovoExame aoFechar={() => setNovo(false)} aoCriar={(canal) => { setNovo(false); setAviso(canal === 'portal' ? 'Exame enviado ao portal. A família verá na próxima vez que entrar.' : 'Comunicação registrada.'); recarregar(); }} />}
+      {novo && <NovoExame aoFechar={() => setNovo(false)} aoCriar={(canal) => { setNovo(false); setAviso(canal === 'portal' ? 'Exame enviado ao portal. A família verá na próxima vez que entrar.' : 'Comunicação registrada.'); void recarregar(); }} />}
     </Tela>
   );
 }
@@ -502,8 +502,8 @@ export function CampanhasScreen(_: PropsTela) {
         </ul>
       )}
       {ativas.length > 0 && <p className="text-xs text-gray-600">{ativas.length} campanha(s) ativa(s). Encerre a campanha quando terminar: ela sai da lista de ativas e o resultado fica guardado.</p>}
-      {aberta && <DetalheCampanha campanha={aberta} aoFechar={() => setAberta(null)} aoMudar={(c, m) => { setAberta(c); setAviso(m); recarregar(); }} />}
-      {nova && <NovaCampanha aoFechar={() => setNova(false)} aoCriar={(c) => { setNova(false); setAviso(`Campanha "${c.titulo}" criada.`); recarregar(); setAberta(c); }} />}
+      {aberta && <DetalheCampanha campanha={aberta} aoFechar={() => setAberta(null)} aoMudar={(c, m) => { setAberta(c); setAviso(m); void recarregar(); }} />}
+      {nova && <NovaCampanha aoFechar={() => setNova(false)} aoCriar={(c) => { setNova(false); setAviso(`Campanha "${c.titulo}" criada.`); void recarregar(); setAberta(c); }} />}
     </Tela>
   );
 }

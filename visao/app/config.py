@@ -34,6 +34,15 @@ def _float(nome: str, padrao: float) -> float:
         return padrao
 
 
+# Retenção máxima do clipe de evidência (RNF05, RN08): 24 h em operação real.
+# Em MODO DE TESTE (demonstração, sem paciente real) o teto sobe para 30 dias,
+# para a banca poder rever o clipe do alerta. É uma exceção deliberada do TCC,
+# por isso só existe com MEDSIGNAL_MODO_TESTE=true: sem ele, 24 h continua sendo
+# o limite. O backend aplica a mesma regra (backend/app/clipes.py).
+RETENCAO_MAXIMA_HORAS = 24.0
+RETENCAO_MAXIMA_EM_TESTE_HORAS = 30 * 24.0
+
+
 class Fonte(str, Enum):
     """De onde os frames vêm."""
 
@@ -72,8 +81,9 @@ class Config:
     largura: int = field(default_factory=lambda: _int("VISAO_LARGURA", 640))
 
     # --- clipe de evidência (RNF05, RN08, RN09) --------------------------
-    # 5 s antes + 5 s depois da ocorrência, apagado após 24 h. A pasta é a
-    # mesma que o backend monta para servir o clipe ao painel.
+    # 5 s antes + 5 s depois da ocorrência, apagado após 24 h (até 30 dias em
+    # modo de teste, ver RETENCAO_MAXIMA_EM_TESTE_HORAS). A pasta é a mesma
+    # que o backend monta para servir o clipe ao painel.
     clipes_ativos: bool = field(default_factory=lambda: _bool("VISAO_CLIPES", True))
     clipes_pasta: str = field(default_factory=lambda: os.environ.get("VISAO_CLIPES_PASTA", "").strip())
     clipes_segundos_antes: float = field(default_factory=lambda: _float("VISAO_CLIPES_SEGUNDOS_ANTES", 5.0))
@@ -117,8 +127,14 @@ class Config:
             raise ValueError("VISAO_FPS_ALVO precisa ser maior que zero")
         # A RFC fixa o teto em 24 h (RNF05). Guardar mais seria descumprir a
         # própria regra que o sistema promete — falha na subida, não em auditoria.
-        if not 0 < self.clipes_retencao_horas <= 24:
-            raise ValueError("VISAO_CLIPES_RETENCAO_HORAS precisa estar entre 0 e 24 (RNF05)")
+        # Exceção: em modo de teste o teto é de 30 dias (ver RETENCAO_MAXIMA_EM_TESTE_HORAS).
+        teto = RETENCAO_MAXIMA_EM_TESTE_HORAS if self.modo_teste else RETENCAO_MAXIMA_HORAS
+        if not 0 < self.clipes_retencao_horas <= teto:
+            raise ValueError(
+                f"VISAO_CLIPES_RETENCAO_HORAS precisa estar entre 0 e {teto:g} (RNF05)"
+                + ("" if self.modo_teste else
+                   "; acima de 24 h só com MEDSIGNAL_MODO_TESTE=true (demonstração, até 30 dias)")
+            )
         # Câmera configurada sem credencial publicaria em silêncio no vazio: o
         # pipeline detectaria, tentaria enviar, tomaria 401 a cada evento e o
         # banco ficaria vazio. Melhor não subir.

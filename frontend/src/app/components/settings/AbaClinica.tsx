@@ -45,7 +45,7 @@ export function AbaClinica() {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   return (
@@ -200,35 +200,35 @@ function ModalClinica({
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm text-gray-700 mb-2">Nome da Unidade *</label>
-              <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={120} className={campo} />
+              <label htmlFor="abaclinica-nome-da-unidade" className="block text-sm text-gray-700 mb-2">Nome da Unidade *</label>
+              <input id="abaclinica-nome-da-unidade" type="text" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={120} className={campo} />
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Tipo *</label>
-              <select disabled title={MOTIVO_TIPO} value="clinica" className={travado}>
+              <label htmlFor="abaclinica-tipo" className="block text-sm text-gray-700 mb-2">Tipo *</label>
+              <select id="abaclinica-tipo" disabled title={MOTIVO_TIPO} value="clinica" className={travado}>
                 <option value="clinica">Clínica</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">{MOTIVO_TIPO}</p>
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Status</label>
-              <select disabled title={MOTIVO_STATUS} value={clinica.ativa ? 'ativa' : 'inativa'} className={travado}>
+              <label htmlFor="abaclinica-status" className="block text-sm text-gray-700 mb-2">Status</label>
+              <select id="abaclinica-status" disabled title={MOTIVO_STATUS} value={clinica.ativa ? 'ativa' : 'inativa'} className={travado}>
                 <option value="ativa">Ativa</option>
                 <option value="inativa">Inativa</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">{MOTIVO_STATUS}</p>
             </div>
             <div className="col-span-2">
-              <label className="block text-sm text-gray-700 mb-2">Endereço</label>
-              <input type="text" value={endereco} onChange={(e) => setEndereco(e.target.value)} maxLength={300} placeholder="Rua, número - Bairro" className={campo} />
+              <label htmlFor="abaclinica-endereco" className="block text-sm text-gray-700 mb-2">Endereço</label>
+              <input id="abaclinica-endereco" type="text" value={endereco} onChange={(e) => setEndereco(e.target.value)} maxLength={300} placeholder="Rua, número - Bairro" className={campo} />
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Telefone</label>
-              <input type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} maxLength={30} placeholder="(47) 3000-0000" className={campo} />
+              <label htmlFor="abaclinica-telefone" className="block text-sm text-gray-700 mb-2">Telefone</label>
+              <input id="abaclinica-telefone" type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} maxLength={30} placeholder="(47) 3000-0000" className={campo} />
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-2">E-mail</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} placeholder="contato@clinica.com.br" className={campo} />
+              <label htmlFor="abaclinica-e-mail" className="block text-sm text-gray-700 mb-2">E-mail</label>
+              <input id="abaclinica-e-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} placeholder="contato@clinica.com.br" className={campo} />
             </div>
           </div>
           {erro && (

@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from .. import db
 from ..comum import clinica_por_slug, iso, logger
-from ..schemas import AcompanhanteCriado, AcompanhanteDaClinica, AcompanhantePayload, AcompanhanteResumo, Ok
+from ..schemas import AcompanhanteCriado, AcompanhantePayload, AcompanhanteResumo, Ok
 from ..seguranca import UsuarioAutenticado, exigir_permissao, exigir_tenant
 
 router = APIRouter()
@@ -76,45 +76,6 @@ def listar_acompanhantes(
         (paciente_id,),
     )
     return [montar(l) for l in linhas]
-
-
-@router.get("/api/acompanhantes", response_model=list[AcompanhanteDaClinica])
-def listar_acompanhantes_da_clinica(
-    tenantId: str,
-    usuario: UsuarioAutenticado = Depends(exigir_permissao("companions", "view")),
-):
-    """Todos os acessos de família da clínica (tela App Paciente).
-
-    Ativos primeiro, depois os encerrados mais recentes. Os encerrados ficam
-    pelo mesmo motivo da lista por paciente: é auditoria. Os últimos 300
-    bastam para a tela; a trilha completa está em log_acesso.
-    """
-    exigir_tenant(usuario, tenantId)
-    clinica = clinica_por_slug(tenantId)
-    linhas = db.buscar_todos(
-        """
-        SELECT a.id, a.paciente_id, a.nome, a.documento, a.ativo, a.expira_em, a.revogado_em,
-               a.created_at, a.ultimo_acesso_em, p.nome AS paciente_nome, amb.nome AS ambiente_nome,
-               (SELECT max(t.aceito_em) FROM termo_confidencialidade t WHERE t.acompanhante_id = a.id) AS termo_aceito_em
-          FROM acompanhante a
-          JOIN paciente p ON p.id = a.paciente_id
-          LEFT JOIN ambiente amb ON amb.id = p.ambiente_id
-         WHERE p.clinica_id = %s
-         ORDER BY (a.ativo AND a.expira_em > now()) DESC, a.created_at DESC
-         LIMIT 300
-        """,
-        (clinica["id"],),
-    )
-    return [
-        AcompanhanteDaClinica(
-            **montar(l).model_dump(),
-            pacienteNome=l["paciente_nome"],
-            ambienteNome=l["ambiente_nome"],
-            termoAceitoEm=iso(l["termo_aceito_em"]),
-            ultimoAcessoEm=iso(l["ultimo_acesso_em"]),
-        )
-        for l in linhas
-    ]
 
 
 @router.post("/api/acompanhantes", response_model=AcompanhanteCriado, status_code=201)

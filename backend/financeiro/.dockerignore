@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 testes/
 .venv/
+.env
+.env.*
+*.pem
+*.key

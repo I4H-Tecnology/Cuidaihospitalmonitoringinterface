@@ -7,8 +7,11 @@
 #    cd frontend && npm run dev        # frontend dev, direto no Windows
 #    docker compose up -d adminer      # cliente web do banco, à parte (opcional)
 #    docker compose --profile prod up        # testa a imagem de produção (nginx)
+#    docker compose up -d sonarqube          # análise de qualidade (SonarQube), à parte
+#    docker compose run --rm sonar-scanner   # envia o código para o SonarQube
 #
 #  Portas:  5173 frontend dev · 8080 frontend prod · 8000 API · 5432 db · 8081 Adminer
+#           8888 Dozzle (logs ao vivo) · 9000 SonarQube
 #
 #  A câmera não sobe por aqui: container no Windows não enxerga webcam. Ver
 #  `visao/servir.py`, fora do Docker.
@@ -63,6 +66,35 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
+  # Monitoramento — logs ao vivo e consumo de CPU/memória de cada contêiner,
+  # no navegador: http://localhost:8888. Sobe junto com o resto (sem profile).
+  #
+  # Mostra os contêineres do Docker; o serviço de visão com webcam roda nativo
+  # no Windows (ver o aviso no topo) e por isso NÃO aparece aqui: o log dele
+  # fica no terminal em que `visao/servir.py` foi iniciado.
+  #
+  # O socket do Docker dá ao Dozzle acesso de leitura a tudo o que roda na
+  # máquina, e os logs podem conter dados de paciente (LGPD). Por isso a porta
+  # só abre em 127.0.0.1. Em servidor, ponha autenticação do Dozzle antes de
+  # expor (DOZZLE_AUTH_PROVIDER=simple) em vez de abrir a porta para a rede.
+  # ---------------------------------------------------------------------------
+  dozzle:
+    image: amir20/dozzle:v11.4.3
+    container_name: medsignal-dozzle
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${DOZZLE_PORT:-8888}:8080'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      DOZZLE_NO_ANALYTICS: 'true'
+    healthcheck:
+      test: ['CMD', '/dozzle', 'healthcheck']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
   # Frontend em desenvolvimento DENTRO do Docker — opcional, fora da subida
   # padrão. No dia a dia o Vite roda direto no Windows (`npm run dev` em
   # frontend/, ver README): lendo o código por esta pasta montada, cada arquivo
@@ -84,9 +116,6 @@ services:
     environment:
       # No navegador do host, a API é localhost — não o hostname da rede Docker.
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-      # O Vite só expõe variáveis com prefixo VITE_. Derivar aqui evita ter a
-      # mesma flag escrita duas vezes no .env, com risco de dessincronizar.
-      VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
       # Servico de visao. Roda fora do compose quando a fonte e webcam, porque
       # container no Windows nao enxerga dispositivo de video.
       VITE_VISAO_URL: ${VITE_VISAO_URL:-http://localhost:8001}
@@ -107,7 +136,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-        VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
         VITE_MODE: production
     container_name: medsignal-frontend
     restart: unless-stopped
@@ -139,12 +167,19 @@ services:
       # "dev" devolve o codigo de recuperacao de senha na resposta da API
       # (nao ha envio de e-mail). Qualquer outro valor, inclusive vazio, nao devolve.
       MEDSIGNAL_AMBIENTE: ${MEDSIGNAL_AMBIENTE:-producao}
+      # O painel mostra a faixa "MODO DE TESTE" a partir do que o BACKEND diz (GET /api/modo-de-teste),
+      # então o backend precisa receber a mesma flag do .env que o serviço de visão lê.
+      MEDSIGNAL_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
       # Log estruturado (json|texto) e nivel, iguais aos do servico de visao.
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMATO: ${LOG_FORMATO:-json}
       # Clipes de evidencia gravados pelo servico de visao. A API so serve e
-      # expurga (24 h); a pasta e a mesma do host, montada abaixo.
+      # expurga; a pasta e a mesma do host, montada abaixo.
       CLIPES_DIR: /app/dados/clipes
+      # Prazo do expurgo, em horas: 24 pela RFC; ate 720 (30 dias) so em modo
+      # de teste. Tem de ser o mesmo VISAO_CLIPES_RETENCAO_HORAS do servico de
+      # visao, porque os dois apagam a mesma pasta.
+      CLIPES_RETENCAO_HORAS: ${CLIPES_RETENCAO_HORAS:-24}
       # Fuso do "hoje" do módulo financeiro (vencido, vence hoje).
       FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
       # Portal da família: a API repassa o vídeo da câmera do paciente, então
@@ -226,6 +261,115 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
+  # Análise de qualidade — SonarQube Community, à parte do dia a dia: pede ~2 GB
+  # de RAM e uns 2 min para subir. Roteiro, na primeira vez:
+  #
+  #   1. docker compose up -d sonarqube          (espere o http://localhost:9000)
+  #   2. entre com admin / admin; ele pede para trocar a senha
+  #   3. Minha conta > Segurança > gere um token e ponha SONAR_TOKEN no .env
+  #   4. cd frontend && npx vitest run --coverage --coverage.thresholds.autoUpdate=false
+  #   5. node scripts/sonar-cobertura.mjs        (ajusta os caminhos do lcov)
+  #   6. docker compose run --rm sonar-scanner   (o resultado aparece em :9000)
+  #
+  # O CI não envia nada para cá: o servidor mora na sua máquina e o repositório
+  # é privado (o SonarCloud gratuito exige repositório público). A análise
+  # estática e de segurança do pipeline continua sendo o job `seguranca`.
+  #
+  # Banco do próprio Sonar: PostgreSQL à parte, sem porta publicada. O banco
+  # embutido (H2) é vedado pelas directions e o do MedSignal não deve receber
+  # tabelas de uma ferramenta.
+  # ---------------------------------------------------------------------------
+  sonar-db:
+    profiles: ['qualidade']
+    image: postgres:16-alpine
+    container_name: medsignal-sonar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      # Só existe dentro da rede do compose; vale o padrão, o .env pode trocar.
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+    volumes:
+      - sonar-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sonar -d sonar']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  sonarqube:
+    profiles: ['qualidade']
+    image: sonarqube:26.11.0.134175-community
+    container_name: medsignal-sonarqube
+    restart: unless-stopped
+    depends_on:
+      sonar-db:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${SONAR_PORT:-9000}:9000'
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+      # O Elasticsearch embutido exige vm.max_map_count >= 262144 no Linux do
+      # Docker. Sem isto, se a máquina não tiver, o contêiner sai na subida.
+      SONAR_SEARCH_JAVAADDITIONALOPTS: -Dnode.store.allow_mmap=false
+    volumes:
+      - sonar-data:/opt/sonarqube/data
+      - sonar-extensions:/opt/sonarqube/extensions
+      - sonar-logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fs http://localhost:9000/api/system/status | grep -q "\"status\":\"UP\""']
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  # O scanner é de execução única: `run --rm`, nunca `up`. Lê o repositório
+  # montado só para leitura e escreve o que precisa em /tmp (ver
+  # sonar.working.directory em sonar-project.properties). O que analisar, o que
+  # ignorar e onde está a cobertura vem do sonar-project.properties, na raiz.
+  sonar-scanner:
+    profiles: ['sonar-scan']
+    image: sonarsource/sonar-scanner-cli:12.4.0.4321_8.4.0
+    container_name: medsignal-sonar-scanner
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+      # Vazio, o servidor responde "Not authorized"; ver o roteiro acima.
+      SONAR_TOKEN: ${SONAR_TOKEN:-}
+    # Não monte o repositório inteiro. O sensor de Python percorre a árvore a
+    # partir da raiz do projeto (/usr/src) atrás de arquivos de build
+    # (PackageRootResolver.findBuildConfigFiles) e essa varredura não respeita
+    # `exclusions`. Medido num bind mount do Windows: uma passada por
+    # frontend/node_modules (68 mil arquivos) leva ~170 s e por visao/.venv
+    # (36 mil) ~120 s; com as duas dentro de /usr/src o sensor de Python passou
+    # de 9 minutos (a análise foi interrompida; o dump de threads mostrava a
+    # varredura). Monte só o que está em sonar.sources, sonar.tests e no
+    # relatório de cobertura; pasta nova no sonar-project.properties entra aqui.
+    #
+    # node_modules vai para /node_modules, FORA de /usr/src: o TypeScript o acha
+    # subindo as pastas, e os tipos das bibliotecas resolvem (a documentação do
+    # SonarQube recomenda as dependências instaladas) sem o sensor de Python
+    # vê-lo (~12 s). Rode `npm ci` em frontend/ antes; sem ele a pasta fica
+    # vazia e a análise volta a ficar sem os tipos das bibliotecas.
+    volumes:
+      - ./sonar-project.properties:/usr/src/sonar-project.properties:ro
+      - ./backend:/usr/src/backend:ro
+      - ./visao/app:/usr/src/visao/app:ro
+      - ./visao/testes:/usr/src/visao/testes:ro
+      - ./visao/avaliar.py:/usr/src/visao/avaliar.py:ro
+      - ./visao/calibrar.py:/usr/src/visao/calibrar.py:ro
+      - ./visao/detectar.py:/usr/src/visao/detectar.py:ro
+      - ./visao/preparar_urfall.py:/usr/src/visao/preparar_urfall.py:ro
+      - ./visao/servir.py:/usr/src/visao/servir.py:ro
+      - ./visao/verificar_camera.py:/usr/src/visao/verificar_camera.py:ro
+      - ./frontend/src:/usr/src/frontend/src:ro
+      - ./frontend/tsconfig.json:/usr/src/frontend/tsconfig.json:ro
+      - ./frontend/node_modules:/node_modules:ro
+      - ./frontend/coverage:/usr/src/frontend/coverage:ro
+
+  # ---------------------------------------------------------------------------
   # Atalho do dia a dia: `docker compose run --rm dev` sobe db + backend (na
   # ordem certa, esperando o banco ficar saudável) e mostra os endereços no
   # terminal. O frontend roda fora daqui, com `npm run dev` em frontend/.
@@ -241,6 +385,7 @@ services:
       echo 'MedSignal no ar:' &&
       echo '  API        http://localhost:8000/docs' &&
       echo '  Banco      localhost:5432' &&
+      echo '  Logs       http://localhost:8888  (Dozzle)' &&
       echo '' &&
       echo 'Frontend: em outro terminal, cd frontend && npm run dev  (http://localhost:5173)' &&
       echo '' &&
@@ -253,7 +398,18 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
+      # Para os logs já estarem no ar quando o aviso aparece.
+      dozzle:
+        condition: service_started
 
 volumes:
   pgdata:
     name: medsignal-pgdata
+  sonar-db-data:
+    name: medsignal-sonar-db
+  sonar-data:
+    name: medsignal-sonar-data
+  sonar-extensions:
+    name: medsignal-sonar-extensions
+  sonar-logs:
+    name: medsignal-sonar-logs

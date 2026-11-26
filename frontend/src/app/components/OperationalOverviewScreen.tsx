@@ -96,7 +96,7 @@ export function OperationalOverviewScreen() {
   }, [tenantId]);
 
   useEffect(() => {
-    loadOverview();
+    void loadOverview();
     const interval = window.setInterval(loadOverview, REFRESH_INTERVAL_MS);
     return () => window.clearInterval(interval);
   }, [loadOverview]);

@@ -216,6 +216,7 @@ export function Janela({ titulo, descricao, aoFechar, children, rodape, largura 
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget && !bloqueada) aoFechar(); }}
     >

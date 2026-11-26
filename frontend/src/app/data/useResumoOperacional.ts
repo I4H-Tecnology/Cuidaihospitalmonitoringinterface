@@ -43,7 +43,7 @@ export function useResumoOperacional(tenantId: string | null): Resumo & { recarr
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
     const timer = window.setInterval(carregar, INTERVALO_MS);
     return () => window.clearInterval(timer);
   }, [carregar]);

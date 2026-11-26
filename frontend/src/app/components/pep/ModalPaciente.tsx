@@ -26,12 +26,18 @@ interface Props {
   paciente?: PacienteResumo;
   aoFechar: () => void;
   aoSalvar: (paciente: PacienteResumo, avisos: string[]) => void;
+  /**
+   * Esconde o histórico médico e não o envia (o que está gravado fica como
+   * está). Usado pela ficha do paciente do perfil da banca do TCC, que edita
+   * só cadastro e ambiente.
+   */
+  ocultarHistorico?: boolean;
 }
 
 interface NovaAlergia { descricao: string; gravidade: RiscoResumo['gravidade'] }
 interface NovaMedicacao { medicamento: string; posologia: string; medico: string }
 
-export function ModalPaciente({ paciente, aoFechar, aoSalvar }: Props) {
+export function ModalPaciente({ paciente, aoFechar, aoSalvar, ocultarHistorico = false }: Props) {
   const { tenantId, can } = useAuth();
   const editando = Boolean(paciente);
   const podeClinico = can('clinical_logs', 'create');
@@ -84,7 +90,8 @@ export function ModalPaciente({ paciente, aoFechar, aoSalvar }: Props) {
         dataNascimento: nascimento || null,
         ambienteId: ambienteId || null,
         medicoResponsavel: medicoResponsavel.trim(),
-        historicoMedico: historico.trim(),
+        // Campo escondido não vai no corpo: a API só mexe no que recebe.
+        ...(ocultarHistorico ? {} : { historicoMedico: historico.trim() }),
       };
       const salvo = paciente
         ? await editarPaciente(paciente.id, dados)
@@ -193,10 +200,12 @@ export function ModalPaciente({ paciente, aoFechar, aoSalvar }: Props) {
                 <label htmlFor="medico-responsavel" className="mb-1.5 block text-sm text-gray-700">Médico responsável</label>
                 <input id="medico-responsavel" type="text" value={medicoResponsavel} onChange={(e) => setMedicoResponsavel(e.target.value)} maxLength={120} placeholder="Nome e CRM" className={campo} />
               </div>
-              <div className="md:col-span-2">
-                <label htmlFor="historico-medico" className="mb-1.5 block text-sm text-gray-700">Histórico médico</label>
-                <textarea id="historico-medico" value={historico} onChange={(e) => setHistorico(e.target.value)} rows={3} maxLength={4000} placeholder="Diagnósticos, cirurgias, condições relevantes para o cuidado." className={campo} />
-              </div>
+              {!ocultarHistorico && (
+                <div className="md:col-span-2">
+                  <label htmlFor="historico-medico" className="mb-1.5 block text-sm text-gray-700">Histórico médico</label>
+                  <textarea id="historico-medico" value={historico} onChange={(e) => setHistorico(e.target.value)} rows={3} maxLength={4000} placeholder="Diagnósticos, cirurgias, condições relevantes para o cuidado." className={campo} />
+                </div>
+              )}
             </section>
 
             {podeClinico ? (

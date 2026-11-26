@@ -53,7 +53,7 @@ export function PatientListScreen({ onSelectPatient }: Props) {
   }, [tenantId, mostrarSaidas]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const reinternar = async (id: string) => {
@@ -211,10 +211,10 @@ export function PatientListScreen({ onSelectPatient }: Props) {
                     <span
                       role="button"
                       tabIndex={0}
-                      onClick={(e) => { e.stopPropagation(); reinternar(p.id); }}
+                      onClick={(e) => { e.stopPropagation(); void reinternar(p.id); }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault(); e.stopPropagation(); reinternar(p.id);
+                          e.preventDefault(); e.stopPropagation(); void reinternar(p.id);
                         }
                       }}
                       className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-gray-300

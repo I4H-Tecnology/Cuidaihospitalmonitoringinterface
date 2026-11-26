@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Pencil, Plus } from 'lucide-react';
 import { useDados, useFinanceiro } from '../../contexto';
 import type { Socios as TSocios } from '../../api/tipos';
-import { formatarBRL, type Dinheiro } from '../../util/dinheiro';
+import { formatarBRL, type Dinheiro, semZerosFinais } from '../../util/dinheiro';
 import { formatarData, hojeISO } from '../../util/datas';
 import { Aviso, Botao, Campo, CampoDinheiro, Carregando, Janela, Numero, Seletor, Vazio, cartao, tabela, texto } from '../../ui/base';
 import { SeletorConta, SeletorPessoa, useCadastrosBasicos, type PessoaEscolhida } from '../../ui/seletores';
@@ -57,7 +57,7 @@ export function Socios() {
                     <p className={socio.dataSaida ? 'text-gray-400 line-through' : texto.titulo}>{socio.nome}</p>
                     <p className={`text-xs ${texto.suave}`}>desde {formatarData(socio.dataEntrada)}{socio.dataSaida && ` até ${formatarData(socio.dataSaida)}`}</p>
                   </td>
-                  <td className={tabela.numero}>{socio.participacao.replace(/\.?0+$/, '').replace('.', ',')}%</td>
+                  <td className={tabela.numero}>{semZerosFinais(socio.participacao).replace('.', ',')}%</td>
                   <td className={tabela.numero}>{formatarBRL(socio.capitalSubscrito)}</td>
                   <td className={tabela.numero}>{formatarBRL(socio.integralizado)}</td>
                   <td className={tabela.numero}>{formatarBRL(socio.aportes)}</td>

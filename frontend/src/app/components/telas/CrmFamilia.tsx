@@ -155,7 +155,7 @@ function Conversa({ pacienteId, titulo, subtitulo, podeEscrever, aoVoltar, aoMud
               <textarea
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar(); } }}
                 rows={2}
                 maxLength={2000}
                 placeholder="Escreva para a família. Enter envia, Shift+Enter quebra a linha."
@@ -258,7 +258,7 @@ export function ChatbotScreen(_: PropsTela) {
           resposta={typeof editando === 'object' && 'id' in editando ? editando : null}
           perguntaInicial={typeof editando === 'object' && !('id' in editando) ? editando.pergunta : ''}
           aoFechar={() => setEditando(null)}
-          aoSalvar={(m) => { setEditando(null); setAviso(m); respostas.recarregar(); }}
+          aoSalvar={(m) => { setEditando(null); setAviso(m); void respostas.recarregar(); }}
         />
       )}
     </Tela>
@@ -532,7 +532,7 @@ export function NpsScreen(_: PropsTela) {
           </Painel>
         </>
       ))}
-      {registrar && <RegistrarResposta aoFechar={() => setRegistrar(false)} aoSalvar={() => { setRegistrar(false); setAviso('Resposta registrada.'); recarregar(); }} />}
+      {registrar && <RegistrarResposta aoFechar={() => setRegistrar(false)} aoSalvar={() => { setRegistrar(false); setAviso('Resposta registrada.'); void recarregar(); }} />}
     </Tela>
   );
 }

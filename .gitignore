@@ -41,3 +41,14 @@ visao/dados/fila/
 visao/dados/videos/
 visao/dados/clipes/
 visao/dados/cache/
+
+# Pacote de registros de ensaio (scripts/gerar-pacote-ensaio.py): videos e manifesto do autor,
+# dados de imagem. Vao para a VPS por scp, nunca para o GitHub nem para o historico do Git.
+pacote-ensaio/
+clipes-ensaio/
+manifesto*.json
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi

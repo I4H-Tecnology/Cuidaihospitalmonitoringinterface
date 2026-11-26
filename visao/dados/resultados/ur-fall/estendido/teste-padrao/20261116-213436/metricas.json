@@ -1,0 +1,751 @@
+{
+  "contexto": {
+    "gerado_em": "2026-11-16T21:34:36.202343+00:00",
+    "conjunto": "teste",
+    "divisao": "visao\\dados\\resultados\\ur-fall\\estendido\\calibracao-20261116-212838\\divisao.csv",
+    "anotacoes": "visao\\dados\\anotacoes-urfall-ext.csv",
+    "semente": 42,
+    "tolerancia_s": 5.0,
+    "minimo_quadros_classificados": 8,
+    "limiares": {
+      "angulo_caido": 55.0,
+      "razao_aspecto_caido": 0.9,
+      "razao_altura_caido": 0.55,
+      "velocidade_queda": 0.8,
+      "quadros_para_confirmar": 6,
+      "quadros_para_recuperar": 10,
+      "segundos_para_ocorrencia": 3.0
+    },
+    "origem_limiares": "padrões de regras.py",
+    "fps_alvo": 8.0,
+    "largura": 640,
+    "duracao_s": 3.8,
+    "peso_yolo": "yolov8n.pt",
+    "peso_yolo_sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+    "versao_ultralytics": "8.3.55",
+    "versao_mediapipe": "0.10.20",
+    "versao_cv2": "4.11.0",
+    "versao_numpy": "1.26.4",
+    "versao_torch": "2.5.1+cu124",
+    "git_commit": "f64c1b2"
+  },
+  "metricas": {
+    "tp": 0,
+    "fn": 15,
+    "fp": 0,
+    "tn": 19,
+    "nao_avaliaveis": 1,
+    "alertas_fora_da_janela": 0,
+    "acuracia": 0.5588235294117647,
+    "precisao": null,
+    "recall": 0.0,
+    "f1": null,
+    "taxa_fp": 0.0,
+    "latencia_media_s": null,
+    "latencia_p95_s": null,
+    "latencia_max_s": null,
+    "latencias_medidas": 0,
+    "ms_por_quadro_medio": 48.738148209095144,
+    "ms_por_quadro_p95": 77.56914179104477
+  },
+  "alvos_rfc": {
+    "recall": 0.9,
+    "precisao": 0.8,
+    "taxa_fp": 0.15,
+    "latencia_s": 5.0
+  },
+  "clipes": [
+    {
+      "arquivo": "adl-02-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 60,
+      "quadros_com_pessoa": 31,
+      "quadros_classificados": 19,
+      "impedimentos": {
+        "pose não detectada no recorte": 3,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 9
+      },
+      "ms_medio": 88.78333333333333,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.6129032258064516,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-05-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 60,
+      "quadros_com_pessoa": 60,
+      "quadros_classificados": 35,
+      "impedimentos": {
+        "pose não detectada no recorte": 18,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 77.85,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.5833333333333334,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-06-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 73,
+      "quadros_com_pessoa": 52,
+      "quadros_classificados": 38,
+      "impedimentos": {
+        "pose não detectada no recorte": 7,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 55.23287671232877,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.7307692307692307,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-07-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 60,
+      "quadros_com_pessoa": 43,
+      "quadros_classificados": 35,
+      "impedimentos": {
+        "pose não detectada no recorte": 1,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 59.65,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.813953488372093,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-08-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 60,
+      "quadros_com_pessoa": 39,
+      "quadros_classificados": 32,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 51.833333333333336,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.8205128205128205,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-15-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 84,
+      "quadros_com_pessoa": 40,
+      "quadros_classificados": 25,
+      "impedimentos": {
+        "pose não detectada no recorte": 1,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 14
+      },
+      "ms_medio": 43.726190476190474,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.625,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-16-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 75,
+      "quadros_com_pessoa": 21,
+      "quadros_classificados": 10,
+      "impedimentos": {
+        "pose não detectada no recorte": 1,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 10
+      },
+      "ms_medio": 35.24,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.47619047619047616,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-17-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 73,
+      "quadros_com_pessoa": 39,
+      "quadros_classificados": 14,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 13,
+        "pose não detectada no recorte": 12
+      },
+      "ms_medio": 45.16438356164384,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.358974358974359,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-19-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "NAO_AVALIAVEL",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 78,
+      "quadros_com_pessoa": 27,
+      "quadros_classificados": 6,
+      "impedimentos": {
+        "pose não detectada no recorte": 4,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 10,
+        "ombros e quadris fora de vista — a câmera precisa enquadrar o corpo inteiro para medir a verticalidade do tronco": 7
+      },
+      "ms_medio": 42.07692307692308,
+      "observacao": "aprendendo a altura de pé desta pessoa (aguarde alguns quadros) | UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.2222222222222222,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-21-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 85,
+      "quadros_com_pessoa": 23,
+      "quadros_classificados": 13,
+      "impedimentos": {
+        "pose não detectada no recorte": 1,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 9
+      },
+      "ms_medio": 34.55294117647059,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.5652173913043478,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-23-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 70,
+      "quadros_com_pessoa": 21,
+      "quadros_classificados": 12,
+      "impedimentos": {
+        "pose não detectada no recorte": 1,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 8
+      },
+      "ms_medio": 36.628571428571426,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.5714285714285714,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-26-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 39,
+      "quadros_com_pessoa": 39,
+      "quadros_classificados": 32,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 71.71794871794872,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.8205128205128205,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-27-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 40,
+      "quadros_com_pessoa": 40,
+      "quadros_classificados": 33,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 76.55,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.825,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-29-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 47,
+      "quadros_com_pessoa": 47,
+      "quadros_classificados": 40,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 70.46808510638297,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.851063829787234,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-30-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 115,
+      "quadros_com_pessoa": 48,
+      "quadros_classificados": 11,
+      "impedimentos": {
+        "pose não detectada no recorte": 30,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 37.243478260869566,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.22916666666666666,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-32-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 65,
+      "quadros_com_pessoa": 43,
+      "quadros_classificados": 31,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 10,
+        "pose não detectada no recorte": 2
+      },
+      "ms_medio": 67.55384615384615,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.7209302325581395,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-33-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 65,
+      "quadros_com_pessoa": 49,
+      "quadros_classificados": 32,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 17
+      },
+      "ms_medio": 63.69230769230769,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.6530612244897959,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-34-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 63,
+      "quadros_com_pessoa": 37,
+      "quadros_classificados": 23,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 13,
+        "pose não detectada no recorte": 1
+      },
+      "ms_medio": 61.01587301587302,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.6216216216216216,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-35-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 85,
+      "quadros_com_pessoa": 59,
+      "quadros_classificados": 35,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 14,
+        "quadris fora de vista — a câmera precisa enquadrar o corpo inteiro para medir a verticalidade do tronco": 10
+      },
+      "ms_medio": 57.16470588235294,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.5932203389830508,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "adl-40-cam0.mp4",
+      "tem_queda": false,
+      "cenario": "adl_ur_fall",
+      "veredito": "TN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 98,
+      "quadros_com_pessoa": 40,
+      "quadros_classificados": 8,
+      "impedimentos": {
+        "pose não detectada no recorte": 19,
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 13
+      },
+      "ms_medio": 45.734693877551024,
+      "observacao": "UR Fall cam0; atividade normal; +2 s no inicio: SINTETICO",
+      "cobertura": 0.2,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-06-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 70,
+      "quadros_com_pessoa": 69,
+      "quadros_classificados": 55,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 14
+      },
+      "ms_medio": 51.785714285714285,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7971014492753623,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-07-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 84,
+      "quadros_com_pessoa": 46,
+      "quadros_classificados": 35,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7,
+        "pose não detectada no recorte": 4
+      },
+      "ms_medio": 33.29761904761905,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7608695652173914,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-10-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 78,
+      "quadros_com_pessoa": 73,
+      "quadros_classificados": 51,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 15,
+        "pose não detectada no recorte": 7
+      },
+      "ms_medio": 37.47435897435897,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.6986301369863014,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-11-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 78,
+      "quadros_com_pessoa": 76,
+      "quadros_classificados": 59,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 14,
+        "pose não detectada no recorte": 3
+      },
+      "ms_medio": 38.69230769230769,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7763157894736842,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-12-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 73,
+      "quadros_com_pessoa": 70,
+      "quadros_classificados": 54,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 16
+      },
+      "ms_medio": 36.16438356164384,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7714285714285715,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-13-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 67,
+      "quadros_com_pessoa": 66,
+      "quadros_classificados": 50,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 30,
+        "quadris fora de vista — a câmera precisa enquadrar o corpo inteiro para medir a verticalidade do tronco": 43,
+        "pose não detectada no recorte": 32
+      },
+      "ms_medio": 77.41791044776119,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7575757575757576,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-15-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 63,
+      "quadros_com_pessoa": 60,
+      "quadros_classificados": 43,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 16,
+        "pose não detectada no recorte": 1
+      },
+      "ms_medio": 39.666666666666664,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7166666666666667,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-16-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 59,
+      "quadros_com_pessoa": 54,
+      "quadros_classificados": 19,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7,
+        "pose não detectada no recorte": 28
+      },
+      "ms_medio": 36.54237288135593,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.35185185185185186,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-17-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 69,
+      "quadros_com_pessoa": 66,
+      "quadros_classificados": 27,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7,
+        "pose não detectada no recorte": 32
+      },
+      "ms_medio": 37.57971014492754,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.4090909090909091,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-20-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 73,
+      "quadros_com_pessoa": 67,
+      "quadros_classificados": 52,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 15
+      },
+      "ms_medio": 40.02739726027397,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7761194029850746,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-22-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 59,
+      "quadros_com_pessoa": 51,
+      "quadros_classificados": 13,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7,
+        "pose não detectada no recorte": 29,
+        "quadris fora de vista — a câmera precisa enquadrar o corpo inteiro para medir a verticalidade do tronco": 2
+      },
+      "ms_medio": 41.57627118644068,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.2549019607843137,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-23-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 64,
+      "quadros_com_pessoa": 27,
+      "quadros_classificados": 20,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 25.625,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7407407407407407,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-26-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 61,
+      "quadros_com_pessoa": 24,
+      "quadros_classificados": 17,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 21.524590163934427,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7083333333333334,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-27-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 68,
+      "quadros_com_pessoa": 33,
+      "quadros_classificados": 26,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7
+      },
+      "ms_medio": 23.205882352941178,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.7878787878787878,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    },
+    {
+      "arquivo": "fall-30-cam0.mp4",
+      "tem_queda": true,
+      "cenario": "queda_ur_fall",
+      "veredito": "FN",
+      "latencia_s": null,
+      "tempo_ate_chao_s": null,
+      "quadros": 63,
+      "quadros_com_pessoa": 60,
+      "quadros_classificados": 20,
+      "impedimentos": {
+        "aprendendo a altura de pé desta pessoa (aguarde alguns quadros)": 7,
+        "pose não detectada no recorte": 33
+      },
+      "ms_medio": 36.714285714285715,
+      "observacao": "UR Fall cam0; inicio=1o quadro 'caindo', fim=1o quadro 'deitado' (rotulos oficiais); clipe estendido (+2 s no inicio, +4 s no fim): SINTETICO",
+      "cobertura": 0.3333333333333333,
+      "eventos": [],
+      "eventos_fora_da_janela": []
+    }
+  ]
+}

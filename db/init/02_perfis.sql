@@ -14,7 +14,7 @@
 --
 --  1. O NOME do perfil tem de estar na união `Role` do frontend
 --     (authStore.ts): SYSTEM, ADMIN, MANAGER, DOCTOR, NURSE, ADMINISTRATIVE,
---     PATIENT e VISITOR. 'GESTOR' e 'ENFERMEIRO' não estão — por isso viram
+--     PATIENT, VISITOR e TCC. 'GESTOR' e 'ENFERMEIRO' não estão — por isso viram
 --     MANAGER e NURSE aqui.
 --
 --  2. O FORMATO é dicionário de módulo para ações em inglês, que é o que
@@ -80,7 +80,9 @@ perfis(nome, descricao) AS (
   VALUES
     ('ADMIN',   'Administra a clínica: usuários, pacientes, ambientes e câmeras (RN02, RN03)'),
     ('MANAGER', 'Acompanha indicadores e histórico de ocorrências; libera acesso de acompanhante (RN03)'),
-    ('NURSE',   'Recebe o alerta, atende e encerra a ocorrência (RF17–RF20, RN13)')
+    ('NURSE',   'Recebe o alerta, atende e encerra a ocorrência (RF17–RF20, RN13)'),
+    ('VISITOR', 'Somente leitura, limitada ao escopo da RFC; usado na apresentação do TCC'),
+    ('TCC',     'Banca do TCC: as telas da RFC, com a escrita que a RFC pede (alertas, pacientes, câmeras)')
 ),
 
 concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
@@ -144,7 +146,53 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     -- Enfermagem agenda, responde a família e conclui lembretes; executa
     -- checklists e vê a escala, sem editá-la.
     ('NURSE', 'crm',           true, true,  true,  false, true, true),
-    ('NURSE', 'operations',    true, true,  false, false, true, true)
+    ('NURSE', 'operations',    true, true,  false, false, true, true),
+
+    -- VISITOR — o perfil da banca do TCC (criar-usuario-tcc.sql): só LÊ, e só
+    -- o que a RFC especifica. Nenhuma ação de escrita em módulo nenhum.
+    --   dentro: painel, monitoramento, alertas, pacientes, leitos/quartos,
+    --           relatórios, usuários e perfis (RF04, RN02) e configurações
+    --           (ambientes e câmeras, RN02).
+    --   fora:   `clinical_logs` (as rotas que sobraram nele são o prontuário
+    --           — evolução, riscos, prescrição, Morse —, fora do MVP pela
+    --           seção 2.6) e tudo o que veio depois da entrega: financeiro,
+    --           folha, capital, compras, contratos, CRM e operações.
+    --           `companions` também fica fora: a única tela da banca que o
+    --           usava era a App Paciente, retirada do projeto em 26/11/2026.
+    -- Só web: a banca vê o painel, não o aplicativo da enfermagem. A coluna
+    -- `app` fica toda falsa, e o painel esconde o simulador do app para o perfil.
+    ('VISITOR', 'dashboard',  true, false, false, false, true, false),
+    ('VISITOR', 'monitoring', true, false, false, false, true, false),
+    ('VISITOR', 'alerts',     true, false, false, false, true, false),
+    ('VISITOR', 'patients',   true, false, false, false, true, false),
+    ('VISITOR', 'beds',       true, false, false, false, true, false),
+    ('VISITOR', 'reports',    true, false, false, false, true, false),
+    ('VISITOR', 'users',      true, false, false, false, true, false),
+    ('VISITOR', 'settings',   true, false, false, false, true, false),
+
+    -- TCC — a banca opera o sistema: as telas do VISITOR e a Saúde do Sistema (TELAS_DO_TCC,
+    -- em rbac.ts), com escrita só onde a RFC pede. Só web: o painel esconde o
+    -- simulador do app para o perfil.
+    --   alerts:edit ......... ciência, atendimento e encerramento (RF17–RF20)
+    --   patients:create/edit  cadastrar, editar, vincular a ambiente e dar alta
+    --                         (RF05, RF08, RF28). A API também aceita
+    --                         transferir com edit, que não está na RFC.
+    --   monitoring:edit ..... cadastrar câmera e vincular a ambiente (RF07). A
+    --                         mesma permissão abre, na API, cadastrar e
+    --                         desativar sensor (fora da RFC): limitação do TCC.
+    -- Sem monitoring:create (ocorrência nasce da IA, RF13), sem nada em
+    -- users além de ver (users:create aceita qualquer perfil, inclusive ADMIN;
+    -- RF03/RF04 se mostram com uma conta ADMIN) e sem settings:edit (reescreve
+    -- a matriz de qualquer perfil). settings:view fica pelo registro de acesso
+    -- (RF29, aba Histórico de Acessos em Usuários). Nenhuma exclusão.
+    ('TCC', 'dashboard',  true, false, false, false, true, false),
+    ('TCC', 'monitoring', true, false, true,  false, true, false),
+    ('TCC', 'alerts',     true, false, true,  false, true, false),
+    ('TCC', 'patients',   true, true,  true,  false, true, false),
+    ('TCC', 'beds',       true, false, false, false, true, false),
+    ('TCC', 'reports',    true, false, false, false, true, false),
+    ('TCC', 'users',      true, false, false, false, true, false),
+    ('TCC', 'settings',   true, false, false, false, true, false)
 ),
 
 montadas AS (

@@ -19,9 +19,19 @@ interface Props {
   paciente: PacienteResumo;
   aoFechar: () => void;
   aoConcluir: (resultado: AltaResultado) => void;
+  /**
+   * Só a alta, sem a transferência para outra unidade. Usado pela ficha do
+   * paciente (perfil da banca do TCC), que fica no que a RFC pede: RF28.
+   */
+  somenteAlta?: boolean;
 }
 
-export function ModalAlta({ paciente, aoFechar, aoConcluir }: Props) {
+const MOTIVOS = [
+  ['alta', 'Alta', 'O paciente deixou a clínica.'],
+  ['transferido', 'Transferência', 'O paciente foi para outra unidade.'],
+] as const;
+
+export function ModalAlta({ paciente, aoFechar, aoConcluir, somenteAlta = false }: Props) {
   const { tenantId } = useAuth();
   const [motivo, setMotivo] = useState<'alta' | 'transferido'>('alta');
   const [observacao, setObservacao] = useState('');
@@ -102,17 +112,16 @@ export function ModalAlta({ paciente, aoFechar, aoConcluir }: Props) {
           <fieldset>
             <legend className="mb-2 text-sm text-gray-700">Motivo da saída</legend>
             <div className="space-y-2">
-              {([
-                ['alta', 'Alta', 'O paciente deixou a clínica.'],
-                ['transferido', 'Transferência', 'O paciente foi para outra unidade.'],
-              ] as const).map(([valor, titulo, ajuda]) => (
+              {MOTIVOS.filter(([valor]) => !somenteAlta || valor === 'alta').map(([valor, titulo, ajuda]) => (
                 <label
                   key={valor}
+                  htmlFor={`motivo-${valor}`}
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
                     motivo === valor ? 'border-marca bg-marca-suave' : 'border-gray-200 hover:bg-gray-50'
                   }`}
                 >
                   <input
+                    id={`motivo-${valor}`}
                     type="radio"
                     name="motivo"
                     value={valor}
@@ -121,7 +130,7 @@ export function ModalAlta({ paciente, aoFechar, aoConcluir }: Props) {
                     className="mt-1"
                   />
                   <span>
-                    <span className="block text-sm text-gray-800">{titulo}</span>
+                    <span className="block text-sm text-gray-800">{titulo}</span>{' '}
                     <span className="block text-xs text-gray-500">{ajuda}</span>
                   </span>
                 </label>
