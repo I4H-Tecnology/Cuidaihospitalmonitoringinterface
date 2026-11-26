@@ -171,13 +171,6 @@ export function CameraAoVivo({ url = VISAO_URL, compacto = false }: { url?: stri
               <span className="text-sm">Pessoa no chão detectada</span>
             </div>
           )}
-          {/* A tarja global já marca o modo de teste; repetir em cada quadro
-              do mosaico só polui. */}
-          {!compacto && estado?.modo_teste && (
-            <span className="absolute right-3 top-3 rounded bg-amber-500 px-2 py-1 text-xs text-amber-950">
-              MODO DE TESTE
-            </span>
-          )}
         </>
       )}
     </div>

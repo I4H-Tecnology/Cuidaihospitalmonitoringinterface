@@ -162,6 +162,9 @@ export interface OperationalOverviewResponse {
 
 export const fetchTenants = () => request<TenantInfo[]>('/api/tenants');
 
+/** O modo de teste EFETIVO do backend. Pública: a faixa aparece antes do login. */
+export const fetchModoDeTeste = () => request<{ modoTeste: boolean }>('/api/modo-de-teste');
+
 export const loginRequest = (payload: { tenant: string; username: string; password: string }) =>
   request<LoginResponse>('/api/auth/login', {
     method: 'POST',

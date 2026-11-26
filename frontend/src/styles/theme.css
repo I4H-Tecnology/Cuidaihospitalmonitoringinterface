@@ -491,7 +491,7 @@
 
    `-900`/`-950` só clareiam sobre fundo `-50`/`-100` da mesma família:
    fora disso eles são o texto escuro de faixa amarela fixa (aviso de queda,
-   tarja de modo teste), que tem de continuar escuro.
+   faixa de modo de teste), que tem de continuar escuro.
 
    Quem já declara `dark:bg-`/`dark:text-` (o módulo financeiro) fica de
    fora: a variante explícita dele vale. */
@@ -869,4 +869,38 @@
   --sidebar-accent-foreground: #f3eadf;
   --sidebar-border: #4d3d30;
   --sidebar-ring: #9a6230;
+}
+
+/* ========================================================================
+ * Faixa de MODO DE TESTE (TarjaModoTeste)
+ *
+ * A faixa é uma barra de 2rem no topo da página, `sticky`, que só existe em modo de teste. O app
+ * usa `min-h-screen`/`h-screen` e peças coladas no topo (cabeçalho e menu lateral); sem descontar
+ * a faixa, a página passaria de 100% da janela e rolaria, e a própria faixa sairia da tela.
+ *
+ * `html[data-faixa-de-teste]` é ligado pelo componente enquanto a faixa aparece. Sem a faixa,
+ * `--altura-faixa` vale 0px e nada abaixo muda. Fica FORA de @layer, como o bloco de modo escuro
+ * acima: regra sem camada vence as utilitárias do Tailwind.
+ * ======================================================================== */
+
+:root {
+  --altura-faixa: 0px;
+}
+
+html[data-faixa-de-teste] {
+  --altura-faixa: 2rem;
+}
+
+.min-h-screen {
+  min-height: calc(100vh - var(--altura-faixa));
+}
+
+.h-screen {
+  height: calc(100vh - var(--altura-faixa));
+}
+
+/* Menu lateral e cabeçalhos de página (sticky top-0 z-40) passam a colar logo abaixo da faixa. */
+aside.sticky.top-0,
+.sticky.top-0.z-40 {
+  top: var(--altura-faixa);
 }

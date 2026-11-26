@@ -165,6 +165,20 @@ O `--no-deps --force-recreate caddy` só recria o Caddy (para ele ler o `Caddyfi
 
 Limites: o Dozzle lê o socket do Docker (enxerga a máquina toda; o filtro só esconde o que não é do projeto na tela), não bloqueia depois de senhas erradas (no ensaio, 20 erradas seguidas e a certa entrou na hora: use uma senha longa) e a senha passa pela linha de comando do `docker run` durante o `generate`.
 
+## Faixa "MODO DE TESTE" (identifica o ambiente inteiro)
+
+Com `MEDSIGNAL_MODO_TESTE=true` (o padrão desta instalação, que é uma demonstração), o painel mostra uma **faixa amarela fixa em todas as telas, inclusive no login**: "MODO DE TESTE — ambiente de demonstração… Não representa operação real". Ela é diferente do selo "ENSAIO CONTROLADO" (abaixo), que marca **cada registro**; a faixa marca o **ambiente**.
+
+A faixa não é um texto fixo nem uma variável gravada no build do painel: o painel pergunta ao backend (`GET /api/modo-de-teste`) e mostra o **modo efetivo**, o mesmo valor que libera a retenção estendida dos clipes e a importação dos registros de ensaio. Para desligar: `MEDSIGNAL_MODO_TESTE=false` no `.env` e reiniciar (`docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps backend visao`); a faixa some **sem rebuild do painel**.
+
+**Conferir depois de cada publicação, na própria VPS** (a faixa só vale se aparecer aqui):
+
+```bash
+curl -s https://SEU_DOMINIO/api/modo-de-teste        # esperado nesta instalação: {"modoTeste":true}
+```
+
+e abrir `https://SEU_DOMINIO` num navegador: a faixa amarela tem de estar no topo, **antes do login**. Com o modo desligado, o `curl` devolve `{"modoTeste":false}` e a faixa não aparece.
+
 ## O que esta pasta NÃO faz
 
 - **Visão com webcam.** A VPS roda a visão só com **vídeo gravado em laço** (profile `visao`, ver `visao.Dockerfile`), em modo de teste e identificada como demonstração. Webcam em nuvem não existe: os clipes usam pasta compartilhada e não há envio de vídeo ao vivo de outro lugar.

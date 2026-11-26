@@ -22,7 +22,6 @@ function servidorDeDesenvolvimento(mode: string) {
   if (mode === 'development') {
     process.env.VITE_API_URL ??= env.VITE_API_URL || 'http://localhost:8000'
     process.env.VITE_VISAO_URL ??= env.VITE_VISAO_URL || 'http://localhost:8001'
-    process.env.VITE_MODO_TESTE ??= env.MEDSIGNAL_MODO_TESTE || 'false'
   }
   return {
     // A API só libera CORS para esta porta (CORS_ORIGINS no compose). Ocupada,

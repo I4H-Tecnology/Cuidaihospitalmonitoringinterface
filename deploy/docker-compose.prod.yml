@@ -61,7 +61,9 @@ services:
       CLIPES_DIR: /app/dados/clipes
       # Demonstração (sem paciente real): libera reter o clipe por mais de 24 h, até 30 dias.
       # Sem esta variável o teto é 24 h (RNF05). O prazo vem de CLIPES_RETENCAO_HORAS no .env.
-      MEDSIGNAL_MODO_TESTE: 'true'
+      # É também o que o painel mostra na faixa "MODO DE TESTE" (GET /api/modo-de-teste): uma
+      # variável só para a VPS inteira, com padrão ligado porque esta instalação é demonstração.
+      MEDSIGNAL_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-true}
       CLIPES_RETENCAO_HORAS: ${CLIPES_RETENCAO_HORAS:-24}
       FINANCEIRO_FUSO: ${FINANCEIRO_FUSO:-America/Sao_Paulo}
     volumes:
@@ -91,8 +93,9 @@ services:
     cpus: ${VISAO_CPUS:-0.7}
     mem_limit: ${VISAO_MEMORIA:-1536m}
     environment:
-      # Marca o serviço como de teste/demonstração (aparece em /health e /estado).
-      MEDSIGNAL_MODO_TESTE: 'true'
+      # Marca o serviço como de teste/demonstração (aparece em /health e /estado). A mesma
+      # variável do backend: o modo de teste vale para o projeto inteiro.
+      MEDSIGNAL_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-true}
       VISAO_FONTE: arquivo
       VISAO_ARQUIVO: /srv/videos/${VISAO_VIDEO:-demo.mp4}
       VISAO_ARQUIVO_TEMPO_REAL: 'true'

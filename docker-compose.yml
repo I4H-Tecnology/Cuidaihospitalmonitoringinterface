@@ -116,9 +116,6 @@ services:
     environment:
       # No navegador do host, a API é localhost — não o hostname da rede Docker.
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-      # O Vite só expõe variáveis com prefixo VITE_. Derivar aqui evita ter a
-      # mesma flag escrita duas vezes no .env, com risco de dessincronizar.
-      VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
       # Servico de visao. Roda fora do compose quando a fonte e webcam, porque
       # container no Windows nao enxerga dispositivo de video.
       VITE_VISAO_URL: ${VITE_VISAO_URL:-http://localhost:8001}
@@ -139,7 +136,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-        VITE_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
         VITE_MODE: production
     container_name: medsignal-frontend
     restart: unless-stopped
@@ -171,6 +167,9 @@ services:
       # "dev" devolve o codigo de recuperacao de senha na resposta da API
       # (nao ha envio de e-mail). Qualquer outro valor, inclusive vazio, nao devolve.
       MEDSIGNAL_AMBIENTE: ${MEDSIGNAL_AMBIENTE:-producao}
+      # O painel mostra a faixa "MODO DE TESTE" a partir do que o BACKEND diz (GET /api/modo-de-teste),
+      # então o backend precisa receber a mesma flag do .env que o serviço de visão lê.
+      MEDSIGNAL_MODO_TESTE: ${MEDSIGNAL_MODO_TESTE:-false}
       # Log estruturado (json|texto) e nivel, iguais aos do servico de visao.
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMATO: ${LOG_FORMATO:-json}

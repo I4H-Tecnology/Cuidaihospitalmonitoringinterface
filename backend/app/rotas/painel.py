@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from .. import db
+from .. import clipes, db
 from ..comum import agora_iso, clinica_por_slug, iso, logger
 from ..seguranca import (
     UsuarioAutenticado,
@@ -27,6 +27,18 @@ router = APIRouter()
 def health():
     db.buscar_um("SELECT 1 AS ok")
     return {"status": "ok", "banco": "conectado"}
+
+
+@router.get("/api/modo-de-teste")
+def modo_de_teste():
+    """O modo EFETIVO do sistema, para o painel mostrar a faixa "MODO DE TESTE".
+
+    É o mesmo valor (MEDSIGNAL_MODO_TESTE, lido pelo backend) que libera a retenção estendida dos
+    clipes e a importação dos registros de ensaio: a faixa não depende de uma cópia da configuração
+    gravada no build do painel, que poderia divergir. Público de propósito, como a lista de
+    clínicas: a faixa aparece antes do login, e dizer que o ambiente é de demonstração não é segredo.
+    """
+    return {"modoTeste": clipes.MODO_TESTE}
 
 
 @router.get("/api/tenants", response_model=list[TenantInfo])
