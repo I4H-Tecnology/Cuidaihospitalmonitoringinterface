@@ -82,7 +82,7 @@ perfis(nome, descricao) AS (
     ('MANAGER', 'Acompanha indicadores e histórico de ocorrências; libera acesso de acompanhante (RN03)'),
     ('NURSE',   'Recebe o alerta, atende e encerra a ocorrência (RF17–RF20, RN13)'),
     ('VISITOR', 'Somente leitura, limitada ao escopo da RFC; usado na apresentação do TCC'),
-    ('TCC',     'Banca do TCC: as telas da RFC, com a escrita que a RFC pede (alertas, pacientes, acompanhantes, câmeras)')
+    ('TCC',     'Banca do TCC: as telas da RFC, com a escrita que a RFC pede (alertas, pacientes, câmeras)')
 ),
 
 concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
@@ -151,12 +151,14 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     -- VISITOR — o perfil da banca do TCC (criar-usuario-tcc.sql): só LÊ, e só
     -- o que a RFC especifica. Nenhuma ação de escrita em módulo nenhum.
     --   dentro: painel, monitoramento, alertas, pacientes, leitos/quartos,
-    --           relatórios, acompanhantes (RN03), usuários e perfis (RF04,
-    --           RN02) e configurações (ambientes e câmeras, RN02).
+    --           relatórios, usuários e perfis (RF04, RN02) e configurações
+    --           (ambientes e câmeras, RN02).
     --   fora:   `clinical_logs` (as rotas que sobraram nele são o prontuário
     --           — evolução, riscos, prescrição, Morse —, fora do MVP pela
     --           seção 2.6) e tudo o que veio depois da entrega: financeiro,
     --           folha, capital, compras, contratos, CRM e operações.
+    --           `companions` também fica fora: a única tela da banca que o
+    --           usava era a App Paciente, retirada do projeto em 26/11/2026.
     -- Só web: a banca vê o painel, não o aplicativo da enfermagem. A coluna
     -- `app` fica toda falsa, e o painel esconde o simulador do app para o perfil.
     ('VISITOR', 'dashboard',  true, false, false, false, true, false),
@@ -165,7 +167,6 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('VISITOR', 'patients',   true, false, false, false, true, false),
     ('VISITOR', 'beds',       true, false, false, false, true, false),
     ('VISITOR', 'reports',    true, false, false, false, true, false),
-    ('VISITOR', 'companions', true, false, false, false, true, false),
     ('VISITOR', 'users',      true, false, false, false, true, false),
     ('VISITOR', 'settings',   true, false, false, false, true, false),
 
@@ -176,9 +177,6 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     --   patients:create/edit  cadastrar, editar, vincular a ambiente e dar alta
     --                         (RF05, RF08, RF28). A API também aceita
     --                         transferir com edit, que não está na RFC.
-    --   companions:edit ..... gerar e revogar o acesso do acompanhante (RF25–
-    --                         RF28). `create` entra pela regra, mas nenhuma
-    --                         rota o confere: as duas pedem `edit`.
     --   monitoring:edit ..... cadastrar câmera e vincular a ambiente (RF07). A
     --                         mesma permissão abre, na API, cadastrar e
     --                         desativar sensor (fora da RFC): limitação do TCC.
@@ -193,7 +191,6 @@ concessoes(perfil, modulo, ver, criar, editar, excluir, web, app) AS (
     ('TCC', 'patients',   true, true,  true,  false, true, false),
     ('TCC', 'beds',       true, false, false, false, true, false),
     ('TCC', 'reports',    true, false, false, false, true, false),
-    ('TCC', 'companions', true, true,  true,  false, true, false),
     ('TCC', 'users',      true, false, false, false, true, false),
     ('TCC', 'settings',   true, false, false, false, true, false)
 ),

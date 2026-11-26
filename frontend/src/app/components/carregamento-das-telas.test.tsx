@@ -10,7 +10,6 @@ import { LinhaDoTempoScreen } from './clinica/LinhaDoTempoScreen';
 import { ContratosScreen } from './ContratosScreen';
 import { ComprasScreen } from './ComprasScreen';
 import { PatientListScreen } from './pep/PatientListScreen';
-import { AppPacienteScreen } from './AppPacienteScreen';
 import { AbaCameras } from './settings/AbaCameras';
 import { AbaClinica } from './settings/AbaClinica';
 
@@ -35,7 +34,6 @@ const telas: Array<{ nome: string; ui: () => ReactElement; erro: RegExp }> = [
   { nome: 'Contratos', ui: () => <ContratosScreen />, erro: /Banco indisponível\./ },
   { nome: 'Compras', ui: () => <ComprasScreen />, erro: /Banco indisponível\./ },
   { nome: 'Lista de prontuários', ui: () => <PatientListScreen onSelectPatient={() => {}} />, erro: /Não foi possível carregar os pacientes/ },
-  { nome: 'App do acompanhante (acessos)', ui: () => <AppPacienteScreen />, erro: /Banco indisponível\./ },
   { nome: 'Configurações › Câmeras', ui: () => <AbaCameras />, erro: /Não foi possível carregar as câmeras/ },
   { nome: 'Configurações › Clínica', ui: () => <AbaClinica />, erro: /Não foi possível carregar|Banco indisponível/ },
 ];

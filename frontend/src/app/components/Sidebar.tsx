@@ -227,10 +227,9 @@ export function Sidebar({
         },
         { icon: <Settings className="w-5 h-5" />, label: 'Configurações', module: 'settings', screen: 'settings' },
         { icon: <Activity className="w-5 h-5" />, label: 'Saúde do Sistema', module: 'monitoring', screen: 'saude' },
-        // Acessos da família ao portal /familia (o app do acompanhante).
         // "Segurança" saiu: a política de senha já mora em Usuários, e um item
-        // de menu que não navega para lugar nenhum é botão morto.
-        { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente', screen: 'app-paciente' },
+        // de menu que não navega para lugar nenhum é botão morto. "App Paciente"
+        // (lista dos acessos da família) saiu do projeto em 26/11/2026.
       ],
     },
   ];

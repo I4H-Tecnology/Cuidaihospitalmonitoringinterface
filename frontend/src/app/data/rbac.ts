@@ -21,7 +21,6 @@ export type Screen =
   | 'settings'
   | 'users'
   | 'saude'
-  | 'app-paciente'
   | 'compras'
   | 'contratos'
   | 'indicadores-chave'
@@ -71,8 +70,6 @@ export const screenModuleMap: Record<Exclude<Screen, TelaFinanceira>, string> = 
   users: 'users',
   // Observabilidade: quem acompanha o monitoramento precisa ver a saúde dele.
   saude: 'monitoring',
-  // Acessos da família ao app: a mesma permissão da aba de acompanhantes.
-  'app-paciente': 'companions',
   compras: 'purchases',
   contratos: 'contracts',
   // Dashboard
@@ -133,7 +130,6 @@ export const TELAS_DE_TODOS: ReadonlySet<Screen> = new Set<Screen>(['settings'])
  *   dashboard, monitoring, alerts ... RF09 a RF24, RF30
  *   incidentes ...................... RF21, RF22 (histórico de ocorrências)
  *   patients, beds-rooms ............ RF05 a RF08
- *   app-paciente .................... RF25 a RF28 (acesso do acompanhante)
  *   users, settings ................. RF03, RF04, RF06, RF07, RF29
  *   relatorios, kpis ................ gestor "consulta relatórios" e
  *                                     "acompanha indicadores" (RFC 1.4)
@@ -149,7 +145,6 @@ export const TELAS_DA_RFC: ReadonlySet<Screen> = new Set<Screen>([
   'incidentes',
   'patients',
   'beds-rooms',
-  'app-paciente',
   'users',
   'settings',
   'relatorios',

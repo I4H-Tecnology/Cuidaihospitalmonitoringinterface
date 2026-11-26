@@ -23,7 +23,6 @@ import { SaudeScreen } from './components/SaudeScreen';
 import { EvolucoesScreen } from './components/clinica/EvolucoesScreen';
 import { LinhaDoTempoScreen } from './components/clinica/LinhaDoTempoScreen';
 import { RiscosScreen } from './components/clinica/RiscosScreen';
-import { AppPacienteScreen } from './components/AppPacienteScreen';
 import { ComprasScreen } from './components/ComprasScreen';
 import { ContratosScreen } from './components/ContratosScreen';
 import { PortalFamilia } from './components/familia/PortalFamilia';
@@ -244,7 +243,6 @@ function AppContent() {
       evolucoes: { title: 'Evoluções Clínicas', subtitle: 'Registros da equipe, de todos os pacientes da clínica' },
       'linha-do-tempo': { title: 'Linha do Tempo Clínica', subtitle: 'Ocorrências, evoluções, admissões e altas de toda a clínica' },
       riscos: { title: 'Alergias e Riscos', subtitle: 'O que a equipe precisa saber, por paciente' },
-      'app-paciente': { title: 'App Paciente', subtitle: 'Acessos da família à câmera do paciente' },
       compras: { title: 'Compras', subtitle: 'Pedidos de compra, da solicitação ao recebimento' },
       contratos: { title: 'Contratos', subtitle: 'Fornecedores, prazos e renovações' }
     };
@@ -354,7 +352,6 @@ function AppContent() {
               onBack={handleBackToPatientList}
             />
           )}
-          {isScreenAllowed(currentScreen) && currentScreen === 'app-paciente' && <AppPacienteScreen />}
           {isScreenAllowed(currentScreen) && TELAS_REGISTRADAS[currentScreen] && (() => {
             const Tela = TELAS_REGISTRADAS[currentScreen]!.componente;
             return (

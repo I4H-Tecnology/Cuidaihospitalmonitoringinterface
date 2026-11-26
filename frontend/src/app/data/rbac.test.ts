@@ -30,7 +30,6 @@ const TELAS: Screen[] = [
   'settings',
   'users',
   'saude',
-  'app-paciente',
   'compras',
   'contratos',
   'indicadores-chave', 'alertas-prioritarios',
@@ -94,10 +93,9 @@ describe('mapa de telas para módulos de permissão', () => {
     expect(getModuleForScreen('beds-rooms')).toBe('beds');
   });
 
-  it('compras e contratos têm módulo próprio; App Paciente usa o dos acompanhantes', () => {
+  it('compras e contratos têm módulo próprio', () => {
     expect(getModuleForScreen('compras')).toBe('purchases');
     expect(getModuleForScreen('contratos')).toBe('contracts');
-    expect(getModuleForScreen('app-paciente')).toBe('companions');
   });
 
   it('só Configurações abre para qualquer perfil (pelas seções pessoais)', () => {
@@ -114,7 +112,7 @@ describe('telas por perfil (VISITOR, a banca do TCC)', () => {
   // uma tela da RFC passar a precisar de outro módulo, o banco e esta lista
   // têm de mudar juntos — senão a tela abre vazia ou nem aparece.
   const MODULOS_DO_VISITOR = [
-    'alerts', 'beds', 'companions', 'dashboard', 'monitoring',
+    'alerts', 'beds', 'dashboard', 'monitoring',
     'patients', 'reports', 'settings', 'users',
   ];
 

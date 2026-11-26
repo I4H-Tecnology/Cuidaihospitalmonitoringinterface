@@ -129,7 +129,7 @@ const profileMeta: Record<Role, { title: string; description: string; color: str
   },
   TCC: {
     title: 'TCC (banca)',
-    description: 'Telas da RFC, com alertas, pacientes, acompanhantes e câmeras',
+    description: 'Telas da RFC, com alertas, pacientes e câmeras',
     color: 'bg-teal-50 border-teal-200 text-teal-700',
     icon: <Monitor className="w-5 h-5" />
   }

@@ -472,17 +472,8 @@ class PacienteEdicaoPayload(BaseModel):
 
 
 # -----------------------------------------------------------------------------
-# App Paciente: visão da equipe e portal da família (25/10/2026)
+# Portal da família (25/10/2026)
 # -----------------------------------------------------------------------------
-
-class AcompanhanteDaClinica(AcompanhanteResumo):
-    """Acompanhante na lista geral da clínica (tela App Paciente)."""
-
-    pacienteNome: str
-    ambienteNome: str | None = None
-    termoAceitoEm: str | None = None
-    ultimoAcessoEm: str | None = None
-
 
 class FamiliaEntrada(BaseModel):
     # "<id do acompanhante>.<token>", exatamente o que o QR Code carrega.

@@ -13,7 +13,7 @@ const GRUPOS: Record<string, Screen[]> = {
   'Relacionamento (CRM)': ['agenda', 'lembretes', 'mensagens', 'chatbot', 'exames', 'historico-atendimento', 'nps', 'campanhas'],
   'Inteligência & Analytics': ['indicadores-clinicos', 'kpis', 'relatorios', 'previsao', 'heatmaps', 'comparativos', 'insights'],
   Administração: ['compras', 'contratos'],
-  Sistema: ['users', 'settings', 'saude', 'app-paciente'],
+  Sistema: ['users', 'settings', 'saude'],
 };
 
 const GRUPO_DA_TELA = new Map<Screen, string>(Object.entries(GRUPOS).flatMap(([grupo, telas]) => telas.map((t) => [t, grupo] as const)));
