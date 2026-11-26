@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { emailValido } from '../data/texto';
 import { HeartPulse, Loader2, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSystemToast } from './ui/SystemToast';
@@ -71,7 +72,7 @@ export function LoginScreen() {
       showToast({ message: 'Informe seu e-mail.' });
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!emailValido(email)) {
       setForgotEmailError(true);
       showToast({ message: 'Informe um e-mail válido.' });
       return;
@@ -184,7 +185,6 @@ export function LoginScreen() {
                       id="username"
                       type="text"
                       autoComplete="username"
-                      autoFocus
                       value={username}
                       onChange={(e) => {
                         setUsername(e.target.value);
@@ -320,8 +320,8 @@ export function LoginScreen() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Login</label>
-                <input
+                <label htmlFor="loginscreen-login" className="block text-sm text-gray-700 mb-1">Login</label>
+                <input id="loginscreen-login"
                   type="text"
                   value={firstAccessUsername}
                   onChange={(e) => setFirstAccessUsername(e.target.value)}
@@ -330,8 +330,8 @@ export function LoginScreen() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Nova senha</label>
-                <input
+                <label htmlFor="loginscreen-nova-senha" className="block text-sm text-gray-700 mb-1">Nova senha</label>
+                <input id="loginscreen-nova-senha"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -340,8 +340,8 @@ export function LoginScreen() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Confirmar nova senha</label>
-                <input
+                <label htmlFor="loginscreen-confirmar-nova-senha" className="block text-sm text-gray-700 mb-1">Confirmar nova senha</label>
+                <input id="loginscreen-confirmar-nova-senha"
                   type="password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}

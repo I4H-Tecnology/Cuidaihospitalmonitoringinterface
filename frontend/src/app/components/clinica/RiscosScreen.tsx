@@ -1,3 +1,4 @@
+import { focarAoAparecer } from '../foco';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, AlertTriangle, Ban, Loader2, Plus, RotateCcw, Search, ShieldAlert, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -53,7 +54,7 @@ export function RiscosScreen({ aoAbrirPaciente }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   const porId = useMemo(() => new Map(pacientes.map((p) => [p.id, p])), [pacientes]);
@@ -148,26 +149,26 @@ export function RiscosScreen({ aoAbrirPaciente }: Props) {
       {formulario && podeRegistrar && (
         <form onSubmit={registrar} className="mb-6 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-5">
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Paciente</label>
-            <select value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className={campo}>
+            <label htmlFor="riscosscreen-paciente" className="mb-1 block text-xs text-gray-600">Paciente</label>
+            <select id="riscosscreen-paciente" value={pacienteId} onChange={(e) => setPacienteId(e.target.value)} className={campo}>
               <option value="">Escolha</option>
               {internados.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Tipo</label>
-            <select value={tipo} onChange={(e) => setTipo(e.target.value as RiscoResumo['tipo'])} className={campo}>
+            <label htmlFor="riscosscreen-tipo" className="mb-1 block text-xs text-gray-600">Tipo</label>
+            <select id="riscosscreen-tipo" value={tipo} onChange={(e) => setTipo(e.target.value as RiscoResumo['tipo'])} className={campo}>
               <option value="alergia">Alergia</option>
               <option value="risco">Risco</option>
             </select>
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-gray-600">Descrição</label>
-            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={300} className={campo} autoFocus />
+            <label htmlFor="riscosscreen-descricao" className="mb-1 block text-xs text-gray-600">Descrição</label>
+            <input id="riscosscreen-descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={300} className={campo} ref={focarAoAparecer} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Gravidade</label>
-            <select value={gravidade} onChange={(e) => setGravidade(e.target.value as RiscoResumo['gravidade'])} className={campo}>
+            <label htmlFor="riscosscreen-gravidade" className="mb-1 block text-xs text-gray-600">Gravidade</label>
+            <select id="riscosscreen-gravidade" value={gravidade} onChange={(e) => setGravidade(e.target.value as RiscoResumo['gravidade'])} className={campo}>
               <option value="leve">Leve</option>
               <option value="moderada">Moderada</option>
               <option value="grave">Grave</option>

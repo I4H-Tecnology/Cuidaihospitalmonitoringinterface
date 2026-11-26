@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle, FileText, LogIn, LogOut, MinusCircle, XCirc
 import type { EvolucaoResumo, OcorrenciaResumo, PacienteResumo } from '../../data/api';
 import { ROTULO_STATUS, rotuloDoEvento } from '../../data/ocorrencias';
 import { quandoFoi } from '../../data/tempo';
+import { SeloEnsaio } from '../SeloEnsaio';
 
 /**
  * Linha do tempo clínica: montagem e renderização compartilhadas entre a aba
@@ -128,6 +129,7 @@ export function LinhaDoTempoLista({
               <p className="mb-1 flex flex-wrap items-center gap-2 text-sm">
                 <span className="text-gray-800">{rotuloDoEvento(o.tipoEvento)}</span>
                 <span className={`rounded px-2 py-0.5 text-xs ${a.chip}`}>{ROTULO_STATUS[o.status] ?? o.status}</span>
+                {o.ensaio && <SeloEnsaio />}
                 <Nome nome={ev.pacienteNome} />
               </p>
               <p className="text-xs text-gray-500">

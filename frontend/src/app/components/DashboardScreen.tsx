@@ -13,7 +13,7 @@ import type { CameraResumo, OcorrenciaResumo, PacienteResumo } from '../data/api
 import {
   estaAberta, gravidadeDe, nasUltimasHoras, porHoraNasUltimas24h, porTipo, rotuloDoEvento,
 } from '../data/ocorrencias';
-import type { Screen } from '../data/rbac';
+import { perfilSoDaRfc, type Screen } from '../data/rbac';
 import { quandoFoi } from '../data/tempo';
 import { useAlertas } from '../data/useAlertas';
 import { DashboardBuilder } from './DashboardBuilder';
@@ -55,7 +55,10 @@ interface Props {
 }
 
 export function DashboardScreen({ onNavigate }: Props) {
-  const { tenantId } = useAuth();
+  const { tenantId, user } = useAuth();
+  // O editor de dashboard é um protótipo com números de exemplo, fora da RFC:
+  // quem só vê o que a RFC especifica (a banca do TCC) não o recebe.
+  const mostraNovoDashboard = !perfilSoDaRfc(user?.role);
   const { ocorrencias, carregando: carregandoOcorrencias } = useAlertas(tenantId);
   const [pacientes, setPacientes] = useState<PacienteResumo[]>([]);
   const [cameras, setCameras] = useState<CameraResumo[]>([]);
@@ -81,7 +84,7 @@ export function DashboardScreen({ onNavigate }: Props) {
   }, [tenantId]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
     const timer = window.setInterval(carregar, INTERVALO_MS);
     return () => window.clearInterval(timer);
   }, [carregar]);
@@ -130,14 +133,16 @@ export function DashboardScreen({ onNavigate }: Props) {
             <RotateCcw className="w-4 h-4" />
             Atualizar
           </button>
-          <button
-            type="button"
-            onClick={() => setMostrarBuilder(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover"
-          >
-            <Plus className="w-4 h-4" />
-            Novo dashboard
-          </button>
+          {mostraNovoDashboard && (
+            <button
+              type="button"
+              onClick={() => setMostrarBuilder(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-marca text-white rounded-lg text-sm hover:bg-marca-hover"
+            >
+              <Plus className="w-4 h-4" />
+              Novo dashboard
+            </button>
+          )}
         </div>
       </div>
 
@@ -382,9 +387,11 @@ function paraEvento(o: OcorrenciaResumo) {
   return {
     id: o.id,
     type: gravidadeDe(o),
-    title: rotuloDoEvento(o.tipoEvento),
+    // Ensaio controlado: registro de teste do autor, não detecção ao vivo e sem paciente. O painel não tem
+    // lugar para um selo neste cartão, então o aviso vai no título e no lugar do paciente.
+    title: o.ensaio ? `${rotuloDoEvento(o.tipoEvento)} · ENSAIO CONTROLADO` : rotuloDoEvento(o.tipoEvento),
     location: o.cameraIdentificador ? `${o.ambienteNome} · ${o.cameraIdentificador}` : o.ambienteNome,
-    patient: o.pacienteNome ?? 'Paciente não identificado',
+    patient: o.ensaio ? 'Registro de demonstração (sem paciente)' : o.pacienteNome ?? 'Paciente não identificado',
     time: quandoFoi(o.dataHora),
   };
 }

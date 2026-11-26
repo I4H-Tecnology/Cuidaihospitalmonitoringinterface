@@ -15,7 +15,14 @@ ENV PYTHONUNBUFFERED=1 \
 COPY requirements.txt /srv/financeiro/requirements.txt
 RUN pip install --no-cache-dir -r /srv/financeiro/requirements.txt
 
-COPY . /srv/financeiro
+# Cópia explícita, e não `COPY .`: copiar a pasta inteira levaria para a imagem
+# tudo o que estiver nela (um .env esquecido, uma chave, anotações). O SonarQube
+# aponta isso como docker:S6470. Arquivo ou pasta nova do módulo entra aqui.
+COPY __init__.py acesso.py banco.py erros.py relogio.py servidor.py tarefas.py /srv/financeiro/
+COPY api/ /srv/financeiro/api/
+COPY dominio/ /srv/financeiro/dominio/
+COPY migracoes/ /srv/financeiro/migracoes/
+COPY servicos/ /srv/financeiro/servicos/
 
 RUN useradd --system --no-create-home financeiro
 USER financeiro

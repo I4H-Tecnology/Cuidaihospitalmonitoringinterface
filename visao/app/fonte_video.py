@@ -126,13 +126,15 @@ class FonteVideo:
             self.abrir()
         assert self._cap is not None
 
-        if self.cfg.fonte is Fonte.ARQUIVO and not self.cfg.arquivo_tempo_real:
-            yield from self._quadros_em_tempo_de_video()
+        if self.cfg.fonte is Fonte.ARQUIVO:
+            if self.cfg.arquivo_tempo_real:
+                yield from self._quadros_no_ritmo_do_relogio()
+            else:
+                yield from self._quadros_em_tempo_de_video()
             return
 
         intervalo = 1.0 / self.cfg.fps_alvo
         proximo = time.monotonic()
-        ao_vivo = self.cfg.fonte is not Fonte.ARQUIVO
 
         while True:
             ok, imagem = self._cap.read()
@@ -143,11 +145,65 @@ class FonteVideo:
             agora = time.monotonic()
             if agora < proximo:
                 # Ainda não é hora deste frame. Em fonte ao vivo o descarte é
-                # de propósito; em arquivo, só avança.
-                if ao_vivo:
-                    continue
+                # de propósito: frame velho vira alerta atrasado.
                 continue
             proximo = agora + intervalo
+
+            self._indice += 1
+            yield Quadro(
+                imagem=self._redimensionar(imagem),
+                indice=self._indice,
+                timestamp=time.time(),
+            )
+
+    def _quadros_no_ritmo_do_relogio(self) -> Iterator[Quadro]:
+        """Arquivo que se comporta como câmera: o vídeo anda no ritmo do relógio.
+
+        A posição no arquivo é função do tempo que passou, não de quantos
+        quadros o processador conseguiu ler. Quem demora mais que o intervalo
+        perde quadros, como numa câmera, e o vídeo não fica em câmera lenta;
+        quem tem folga espera, e o vídeo não corre. Os quadros pulados são só
+        avançados (`grab`), sem decodificar. Só o entregue é decodificado.
+
+        Sem isso, o arquivo era lido na velocidade da decodificação, e o vídeo
+        passava dezenas de vezes mais rápido que o real em máquina rápida (e em
+        câmera lenta em máquina lenta).
+        """
+        assert self._cap is not None
+        fps_arquivo = float(self._cap.get(cv2.CAP_PROP_FPS) or 0.0)
+        if fps_arquivo <= 0:
+            # Sem metadado de fps não há como casar quadro com relógio. Assume
+            # a taxa alvo, o palpite que não inventa tempo.
+            logger.warning("Arquivo sem fps declarado; assumindo %.1f fps", self.cfg.fps_alvo)
+            fps_arquivo = self.cfg.fps_alvo
+
+        intervalo = 1.0 / self.cfg.fps_alvo
+        inicio = time.monotonic()
+        proximo = inicio
+        consumidos = 0  # quadros do arquivo já passados (descartados ou entregues)
+
+        while True:
+            espera = proximo - time.monotonic()
+            if espera > 0:
+                time.sleep(espera)
+            agora = time.monotonic()
+
+            # Quadro do arquivo que corresponde a este instante.
+            alvo = int((agora - inicio) * fps_arquivo)
+            while consumidos < alvo:
+                if not self._cap.grab():
+                    logger.info("Fim do stream após %d quadros", self._indice)
+                    return
+                consumidos += 1
+
+            ok, imagem = self._cap.read()
+            if not ok:
+                logger.info("Fim do stream após %d quadros", self._indice)
+                return
+            consumidos += 1
+
+            # Nunca antes da hora do próximo quadro do arquivo (alvo > fps do arquivo).
+            proximo = max(agora + intervalo, inicio + consumidos / fps_arquivo)
 
             self._indice += 1
             yield Quadro(

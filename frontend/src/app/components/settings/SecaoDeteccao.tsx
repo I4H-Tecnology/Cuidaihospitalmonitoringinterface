@@ -22,7 +22,7 @@ const ETAPAS = [
 ];
 
 export function SecaoDeteccao({ onNavigate }: { onNavigate?: (tela: Screen) => void }) {
-  const { can } = useAuth();
+  const { podeAbrirTela } = useAuth();
   const { saude, erro, carregando } = useSaudeDoSistema();
 
   return (
@@ -30,7 +30,7 @@ export function SecaoDeteccao({ onNavigate }: { onNavigate?: (tela: Screen) => v
       <CabecalhoSecao
         titulo="Detecção e alertas"
         descricao="O que o sistema detecta e o caminho de um alerta até o encerramento."
-        acao={onNavigate && can('alerts', 'view') ? (
+        acao={onNavigate && podeAbrirTela('alerts') ? (
           <button type="button" onClick={() => onNavigate('alerts')} className={BOTAO_SECUNDARIO}>Abrir Central de Alertas</button>
         ) : undefined}
       />

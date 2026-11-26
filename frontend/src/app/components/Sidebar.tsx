@@ -23,7 +23,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getModuleForScreen, type Screen } from '../data/rbac';
+import type { Screen } from '../data/rbac';
 import { AREAS_FINANCEIRO } from '../../modulos/financeiro/navegacao';
 
 interface SidebarProps {
@@ -105,7 +105,7 @@ export function Sidebar({
   isCollapsed = false, onToggleCollapse, currentScreen = 'dashboard', onNavigate,
   casosAbertos = 0, alertasCriticos = 0, nomeDaClinica = null,
 }: SidebarProps) {
-  const { can } = useAuth();
+  const { can, podeAbrirTela } = useAuth();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
 
@@ -227,10 +227,9 @@ export function Sidebar({
         },
         { icon: <Settings className="w-5 h-5" />, label: 'Configurações', module: 'settings', screen: 'settings' },
         { icon: <Activity className="w-5 h-5" />, label: 'Saúde do Sistema', module: 'monitoring', screen: 'saude' },
-        // Acessos da família ao portal /familia (o app do acompanhante).
         // "Segurança" saiu: a política de senha já mora em Usuários, e um item
-        // de menu que não navega para lugar nenhum é botão morto.
-        { icon: <Smartphone className="w-5 h-5" />, label: 'App Paciente', screen: 'app-paciente' },
+        // de menu que não navega para lugar nenhum é botão morto. "App Paciente"
+        // (lista dos acessos da família) saiu do projeto em 26/11/2026.
       ],
     },
   ];
@@ -277,8 +276,7 @@ export function Sidebar({
 
   const isItemAllowed = (item: MenuItem): boolean => {
     if (item.screen) {
-      const module = getModuleForScreen(item.screen);
-      return can(module, 'view');
+      return podeAbrirTela(item.screen);
     }
     if (item.module) {
       return can(item.module, 'view');

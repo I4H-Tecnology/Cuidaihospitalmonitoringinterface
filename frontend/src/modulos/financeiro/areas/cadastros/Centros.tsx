@@ -40,7 +40,7 @@ export function Centros() {
           centro={editando === 'novo' ? null : editando}
           centros={centros.dados ?? []}
           aoFechar={() => setEditando(null)}
-          aoSalvar={() => { setEditando(null); centros.recarregar(); }}
+          aoSalvar={() => { setEditando(null); void centros.recarregar(); }}
         />
       )}
     </div>

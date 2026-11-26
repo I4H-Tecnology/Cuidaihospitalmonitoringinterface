@@ -1,4 +1,4 @@
-import type { Platform } from './authStore';
+import type { Platform, Role } from './authStore';
 // navegacao.ts, e não o índice do módulo: o menu precisa só dos nomes das áreas,
 // e o módulo inteiro é carregado sob demanda (App.tsx, React.lazy).
 import { descricaoDaArea, type AreaFinanceira } from '../../modulos/financeiro/navegacao';
@@ -21,7 +21,6 @@ export type Screen =
   | 'settings'
   | 'users'
   | 'saude'
-  | 'app-paciente'
   | 'compras'
   | 'contratos'
   | 'indicadores-chave'
@@ -71,8 +70,6 @@ export const screenModuleMap: Record<Exclude<Screen, TelaFinanceira>, string> = 
   users: 'users',
   // Observabilidade: quem acompanha o monitoramento precisa ver a saúde dele.
   saude: 'monitoring',
-  // Acessos da família ao app: a mesma permissão da aba de acompanhantes.
-  'app-paciente': 'companions',
   compras: 'purchases',
   contratos: 'contracts',
   // Dashboard
@@ -118,6 +115,71 @@ export const screenModuleMap: Record<Exclude<Screen, TelaFinanceira>, string> = 
  * (SettingsScreen esconde) e na API (que recusa).
  */
 export const TELAS_DE_TODOS: ReadonlySet<Screen> = new Set<Screen>(['settings']);
+
+/**
+ * As telas que a RFC especifica (RF03 a RF08, RF15 a RF30). É o que o VISITOR
+ * (banca só lendo) abre, e nada além disso. O TCC (banca operando) abre estas
+ * e mais a Saúde do Sistema: ver TELAS_DO_TCC.
+ *
+ * A permissão do backend é por módulo, e vários módulos da RFC abrigam telas
+ * que vieram depois dela (Sensores IoT e Ausência no Quarto moram em
+ * `monitoring`, os analytics em `reports`). Sem este filtro, liberar o módulo
+ * liberaria a tela junto. Ele só ESCONDE a tela: o que protege o dado é a
+ * permissão do módulo, na API.
+ *
+ *   dashboard, monitoring, alerts ... RF09 a RF24, RF30
+ *   incidentes ...................... RF21, RF22 (histórico de ocorrências)
+ *   patients, beds-rooms ............ RF05 a RF08
+ *   users, settings ................. RF03, RF04, RF06, RF07, RF29
+ *   relatorios, kpis ................ gestor "consulta relatórios" e
+ *                                     "acompanha indicadores" (RFC 1.4)
+ *
+ * Ficam de fora o que a seção 2.6 exclui (financeiro, prontuário, sensores
+ * IoT, gestão hospitalar ampla) e o que nasceu depois da entrega (CRM,
+ * operações, compras, contratos, os demais analytics).
+ */
+export const TELAS_DA_RFC: ReadonlySet<Screen> = new Set<Screen>([
+  'dashboard',
+  'monitoring',
+  'alerts',
+  'incidentes',
+  'patients',
+  'beds-rooms',
+  'users',
+  'settings',
+  'relatorios',
+  'kpis',
+]);
+
+/**
+ * O que o TCC abre: as telas da RFC e a Saúde do Sistema. A Saúde não é
+ * requisito da RFC; é o monitoramento do núcleo comum de engenharia do
+ * Playbook, que a banca avalia operando o sistema. Ela só LÊ o estado da API,
+ * do banco e do serviço de visão, pelo módulo `monitoring`, que o TCC já
+ * recebe no banco (02_perfis.sql): nenhuma permissão nova.
+ */
+export const TELAS_DO_TCC: ReadonlySet<Screen> = new Set<Screen>([...TELAS_DA_RFC, 'saude']);
+
+/** Perfis que abrem só um conjunto de telas. Perfil fora daqui vale o que o módulo diz. */
+const TELAS_DO_PERFIL: Partial<Record<Role, ReadonlySet<Screen>>> = {
+  VISITOR: TELAS_DA_RFC,
+  TCC: TELAS_DO_TCC,
+};
+
+/**
+ * O perfil é da banca (VISITOR ou TCC)? Os dois enxergam o escopo da RFC (o TCC
+ * também a Saúde do Sistema). Serve para o que não é tela, como o "Novo
+ * dashboard": um editor de protótipo, com números de exemplo, que não está na
+ * RFC, e o simulador do app.
+ */
+export const perfilSoDaRfc = (role: Role | undefined): boolean =>
+  role === 'VISITOR' || role === 'TCC';
+
+/** O perfil pode abrir esta tela, além da permissão do módulo? */
+export const perfilAbreTela = (role: Role | undefined, screen: Screen): boolean => {
+  const permitidas = role ? TELAS_DO_PERFIL[role] : undefined;
+  return !permitidas || permitidas.has(screen);
+};
 
 /**
  * Recurso do financeiro -> módulo do RBAC do MedSignal. O MESMO mapa do

@@ -25,6 +25,13 @@ import { obterPreferencias } from '../data/preferencias';
  *
  * `contido` é para o simulador de celular do painel: a borda acompanha a tela
  * do aparelho em vez da janela inteira.
+ *
+ * Exceção para quem não pode dar ciência (perfil de leitura, como o gestor e a
+ * banca do TCC): para essas pessoas o cartão traz "Ocultar". Sem isso ele
+ * ficaria para sempre por cima do cabeçalho, e no celular cobre o botão do
+ * menu: a pessoa não conseguiria sair da tela. Ocultar é só local e dura até
+ * recarregar: não registra ciência, e o alerta continua visível, com "sem
+ * ciência", nas telas de alertas e de monitoramento (RN12).
  */
 
 interface Props {
@@ -44,11 +51,15 @@ export function AvisoDeQueda({ contido = false, aoChegarQueda }: Props) {
   const { tenantId, can } = useAuth();
   const { ocorrencias, recarregar } = useAlertas(can('alerts', 'view') ? tenantId : null);
   const vistas = useRef<Set<string>>(new Set());
+  const podeDarCiencia = can('alerts', 'edit');
+  const [ocultas, setOcultas] = useState<ReadonlySet<string>>(new Set());
 
   // A API devolve da mais recente para a mais antiga: o cartão mostra a
   // última queda e conta as outras.
   const abertas = ocorrencias.filter(aguardaCiencia);
   const chave = abertas.map((o) => o.id).join(',');
+  // Quem dá ciência não pode ocultar: o aviso só some com a ciência.
+  const visiveis = podeDarCiencia ? abertas : abertas.filter((o) => !ocultas.has(o.id));
 
   // Uma vez por ocorrência nova, não a cada recarga da lista.
   useEffect(() => {
@@ -70,7 +81,7 @@ export function AvisoDeQueda({ contido = false, aoChegarQueda }: Props) {
     if (prefs.abrirMonitoramento) aoChegarQueda?.();
   }, [chave]);
 
-  if (abertas.length === 0) return null;
+  if (visiveis.length === 0) return null;
 
   const posicao = contido ? 'absolute' : 'fixed';
 
@@ -80,13 +91,14 @@ export function AvisoDeQueda({ contido = false, aoChegarQueda }: Props) {
 
       {/* A key zera vídeo e erro quando o cartão passa para a próxima queda. */}
       <CartaoDaQueda
-        key={abertas[0].id}
-        ocorrencia={abertas[0]}
-        outras={abertas.length - 1}
+        key={visiveis[0].id}
+        ocorrencia={visiveis[0]}
+        outras={visiveis.length - 1}
+        aoOcultar={() => setOcultas((atual) => new Set(atual).add(visiveis[0].id))}
         posicao={`${posicao} ${contido ? 'top-9' : 'top-3 sm:left-1/2 sm:right-auto sm:w-[30rem] sm:-translate-x-1/2'}`}
         aoDarCiencia={async () => {
           if (!tenantId) return;
-          await darCiencia(tenantId, abertas[0].id);
+          await darCiencia(tenantId, visiveis[0].id);
           await recarregar();
         }}
       />
@@ -95,12 +107,13 @@ export function AvisoDeQueda({ contido = false, aoChegarQueda }: Props) {
 }
 
 function CartaoDaQueda({
-  ocorrencia: o, outras, posicao, aoDarCiencia,
+  ocorrencia: o, outras, posicao, aoDarCiencia, aoOcultar,
 }: {
   ocorrencia: OcorrenciaResumo;
   outras: number;
   posicao: string;
   aoDarCiencia: () => Promise<void>;
+  aoOcultar: () => void;
 }) {
   const { can } = useAuth();
   const podeDarCiencia = can('alerts', 'edit');
@@ -198,7 +211,12 @@ function CartaoDaQueda({
             {enviando ? 'Registrando…' : 'Dar ciência'}
           </button>
         ) : (
-          <p className="self-center text-xs">Aguardando ciência de alguém da equipe.</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs">Aguardando ciência de alguém da equipe.</p>
+            <button type="button" onClick={aoOcultar} className={`${secundario} shrink-0 px-3`}>
+              Ocultar
+            </button>
+          </div>
         )}
       </div>
     </div>

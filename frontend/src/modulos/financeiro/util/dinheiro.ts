@@ -88,3 +88,18 @@ export function paraEdicao(valor: Dinheiro | null | undefined): string {
 
 export const ehNegativo = (valor: Dinheiro | number | null | undefined) => paraCentavos(valor) < 0;
 export const ehZero = (valor: Dinheiro | number | null | undefined) => paraCentavos(valor) === 0;
+
+/**
+ * Tira os zeros à direita da parte decimal de um número em texto
+ * ("1.5000" -> "1.5", "10.00" -> "10"). Sem ponto decimal devolve o valor como
+ * veio: "100" continua "100" (a regex `\.?0+$` o transformaria em "1").
+ * Feito com laço, e não com regex, para não ter custo super-linear.
+ */
+export function semZerosFinais(valor: string): string {
+  if (!valor.includes('.')) return valor;
+  let fim = valor.length;
+  while (fim > 0 && valor[fim - 1] === '0') fim -= 1;
+  if (valor[fim - 1] === '.') fim -= 1;
+  return valor.slice(0, fim);
+}
+

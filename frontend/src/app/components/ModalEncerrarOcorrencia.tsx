@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle, Loader2, MinusCircle, X } from 'lucide-react';
+import { ApiError } from '../data/api';
 import type { ClassificacaoOcorrencia, OcorrenciaResumo } from '../data/api';
 
 /**
@@ -51,6 +52,7 @@ export function ModalEncerrarOcorrencia({ ocorrencia, aoFechar, aoConfirmar }: P
   const [escolha, setEscolha] = useState<ClassificacaoOcorrencia | null>(null);
   const [observacao, setObservacao] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     const aoTeclar = (e: KeyboardEvent) => {
@@ -64,8 +66,14 @@ export function ModalEncerrarOcorrencia({ ocorrencia, aoFechar, aoConfirmar }: P
     e.preventDefault();
     if (!escolha) return;
     setSalvando(true);
+    setErro(null);
     try {
       await aoConfirmar(escolha, observacao.trim() || undefined);
+    } catch (e) {
+      // Quem chama pode deixar a falha subir. Ela fica aqui, na janela aberta,
+      // com a classificação e a observação intactas, em vez de virar uma
+      // rejeição sem tratamento e um botão que parece não ter feito nada.
+      setErro(e instanceof ApiError ? e.message : 'Não foi possível encerrar a ocorrência. Tente de novo.');
     } finally {
       setSalvando(false);
     }
@@ -149,6 +157,12 @@ export function ModalEncerrarOcorrencia({ ocorrencia, aoFechar, aoConfirmar }: P
                          focus:border-marca focus:outline-none focus:ring-1 focus:ring-marca"
             />
           </div>
+
+          {erro && (
+            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {erro}
+            </p>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-1">
             <button

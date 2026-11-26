@@ -1,15 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   addAccessLog,
   addUser,
   buildUserAvatar,
   clearFailedAttempts,
   deleteUser,
+  generateRandomPassword,
   getPermissions,
   getSecurityPolicy,
-  getSystemDefaultPassword,
   getTenantData,
-  hashPassword,
   isPasswordExpired,
   isPasswordStrong,
   isTenantActive,
@@ -20,7 +19,6 @@ import {
   seedTenant,
   updateSecurityPolicy,
   updateUser,
-  verifyPassword,
   type SecurityPolicy,
   type UserRecord,
 } from './authStore';
@@ -52,7 +50,7 @@ const makeUser = (overrides: Partial<UserRecord> = {}): UserRecord => ({
   name: 'Ana Paula Souza',
   email: 'ana@hospital.com',
   login: 'ana.souza',
-  passwordHash: hashPassword('Senha@123'),
+  passwordHash: '',
   role: 'NURSE',
   status: 'active',
   platforms: ['web'],
@@ -342,31 +340,41 @@ describe('utilitários', () => {
     expect(buildUserAvatar('Ana Paula Souza')).toBe('AP');
     expect(buildUserAvatar('Bruno')).toBe('B');
   });
-
-  it('expõe a senha padrão do usuário de sistema', () => {
-    expect(getSystemDefaultPassword()).toBeTruthy();
-  });
 });
 
-/* ---------------------------------------------------------------------------
-   VULNERABILIDADE DOCUMENTADA — não é um teste de aprovação.
-
-   hashPassword() é btoa(): Base64, não hash. É reversível com uma linha.
-   Os testes abaixo pinam esse comportamento para que, quando o hash real
-   (bcrypt/argon2 no backend) entrar, eles QUEBREM e obriguem a revisão aqui.
-
-   Ao corrigir: apague este bloco inteiro junto com a função.
---------------------------------------------------------------------------- */
-describe('hash de senha (INSEGURO — ver comentário acima)', () => {
-  it('faz o roundtrip de verificação', () => {
-    const hash = hashPassword('Senha@123');
-    expect(verifyPassword('Senha@123', hash)).toBe(true);
-    expect(verifyPassword('Senha@124', hash)).toBe(false);
+describe('senha temporária aleatória', () => {
+  const regras = policy({
+    requireLowercase: true,
+    requireUppercase: true,
+    requireNumber: true,
+    requireSpecialChar: true,
+    minPasswordLength: 14,
   });
 
-  it('é reversível: qualquer um recupera a senha original a partir do "hash"', () => {
-    const hash = hashPassword('Senha@123');
-    expect(atob(hash)).toBe('Senha@123');
+  it('respeita o tamanho mínimo e todas as classes de caractere da política', () => {
+    for (let i = 0; i < 50; i += 1) {
+      const senha = generateRandomPassword(regras);
+      expect(senha.length).toBeGreaterThanOrEqual(14);
+      expect(senha).toMatch(/[a-z]/);
+      expect(senha).toMatch(/[A-Z]/);
+      expect(senha).toMatch(/[0-9]/);
+      expect(senha).toMatch(/[^A-Za-z0-9]/);
+    }
+  });
+
+  it('não gera a mesma senha duas vezes seguidas', () => {
+    const geradas = new Set(Array.from({ length: 50 }, () => generateRandomPassword(regras)));
+    expect(geradas.size).toBe(50);
+  });
+
+  it('sorteia com o gerador criptográfico, nunca com Math.random()', () => {
+    const cripto = vi.spyOn(globalThis.crypto, 'getRandomValues');
+    const comum = vi.spyOn(Math, 'random');
+    generateRandomPassword(regras);
+    expect(cripto).toHaveBeenCalled();
+    expect(comum).not.toHaveBeenCalled();
+    cripto.mockRestore();
+    comum.mockRestore();
   });
 });
 

@@ -61,7 +61,7 @@ export function Investimentos() {
         )}
       </div>
       <p className={`text-xs ${texto.suave}`}>Para aplicar ou resgatar, faça uma transferência em Caixa e bancos: dinheiro mudando de conta não é receita nem despesa.</p>
-      {atualizando && <Atualizar conta={atualizando} aoFechar={() => setAtualizando(null)} aoSalvar={() => { setAtualizando(null); lista.recarregar(); }} />}
+      {atualizando && <Atualizar conta={atualizando} aoFechar={() => setAtualizando(null)} aoSalvar={() => { setAtualizando(null); void lista.recarregar(); }} />}
     </div>
   );
 }

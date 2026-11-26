@@ -34,10 +34,17 @@ export interface OpcoesDoCliente {
 
 type Consulta = Record<string, string | number | boolean | null | undefined>;
 
+// Sem regex: `/\/+$/` tem custo quadrático numa entrada cheia de barras (S8786).
+function semBarraFinal(url: string): string {
+  let fim = url.length;
+  while (fim > 0 && url[fim - 1] === '/') fim -= 1;
+  return url.slice(0, fim);
+}
+
 export type ClienteFinanceiro = ReturnType<typeof criarClienteFinanceiro>;
 
 export function criarClienteFinanceiro(opcoes: OpcoesDoCliente = {}) {
-  const base = (opcoes.baseUrl ?? '').replace(/\/+$/, '') + (opcoes.prefixo ?? '/api/financeiro');
+  const base = semBarraFinal(opcoes.baseUrl ?? '') + (opcoes.prefixo ?? '/api/financeiro');
   const buscar = opcoes.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
 
   async function pedir<R>(metodo: string, caminho: string, corpo?: unknown, consulta?: Consulta): Promise<R> {

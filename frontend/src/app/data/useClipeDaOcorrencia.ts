@@ -45,7 +45,7 @@ export function useClipeDaOcorrencia(o: OcorrenciaResumo) {
     } catch (erro) {
       setAviso(
         erro instanceof ApiError && erro.status === 404
-          ? 'Clipe indisponível: ainda em gravação ou já expurgado (retenção de 24 h).'
+          ? 'Clipe indisponível: ainda em gravação ou já expurgado (fora do prazo de retenção).'
           : 'Não foi possível carregar o clipe.',
       );
     } finally {

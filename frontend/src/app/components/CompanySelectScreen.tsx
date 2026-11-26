@@ -103,7 +103,6 @@ export function CompanySelectScreen({ onContinue }: CompanySelectScreenProps) {
                     id="company"
                     type="text"
                     autoComplete="organization"
-                    autoFocus
                     placeholder="ex.: clinica-demo"
                     aria-describedby="company-ajuda"
                     value={company}

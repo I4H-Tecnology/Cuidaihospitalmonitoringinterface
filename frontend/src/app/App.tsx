@@ -23,13 +23,12 @@ import { SaudeScreen } from './components/SaudeScreen';
 import { EvolucoesScreen } from './components/clinica/EvolucoesScreen';
 import { LinhaDoTempoScreen } from './components/clinica/LinhaDoTempoScreen';
 import { RiscosScreen } from './components/clinica/RiscosScreen';
-import { AppPacienteScreen } from './components/AppPacienteScreen';
 import { ComprasScreen } from './components/ComprasScreen';
 import { ContratosScreen } from './components/ContratosScreen';
 import { PortalFamilia } from './components/familia/PortalFamilia';
 import { TELAS_REGISTRADAS } from './telas';
 import { grupoDaTela } from './data/navegacao';
-import { TELAS_DE_TODOS, areaDaTela, ehTelaFinanceira, getModuleForScreen, type Screen } from './data/rbac';
+import { areaDaTela, ehTelaFinanceira, getModuleForScreen, perfilSoDaRfc, type Screen } from './data/rbac';
 import type { SecaoConfiguracao } from './components/settings/secoes';
 import { descricaoDaArea } from '../modulos/financeiro/navegacao';
 
@@ -44,7 +43,7 @@ import { useResumoOperacional } from './data/useResumoOperacional';
 // agora vem de GET /api/pacientes, com o cadastro real da clinica.
 
 function AppContent() {
-  const { isAuthenticated, isLoading, can, recordAccess } = useAuth();
+  const { isAuthenticated, isLoading, podeAbrirTela, recordAccess, user } = useAuth();
   const { showToast } = useSystemToast();
   const [route, setRoute] = useState(() => window.location.pathname);
   const [tenant, setTenant] = useState<string | null>(() => localStorage.getItem('tenant'));
@@ -154,11 +153,10 @@ function AppContent() {
   };
 
   const handleNavigate = (screen: Screen) => {
-    const module = getModuleForScreen(screen);
-    if (!TELAS_DE_TODOS.has(screen) && !can(module, 'view')) {
+    if (!podeAbrirTela(screen)) {
       recordAccess({
         action: 'Tentativa de acesso sem permissao',
-        module,
+        module: getModuleForScreen(screen),
         platform: 'web',
         status: 'BLOQUEADO'
       });
@@ -168,7 +166,7 @@ function AppContent() {
     setCurrentScreen(screen);
   };
 
-  const isScreenAllowed = (screen: Screen) => TELAS_DE_TODOS.has(screen) || can(getModuleForScreen(screen), 'view');
+  const isScreenAllowed = podeAbrirTela;
 
   // "Meu perfil" e "Preferências" do menu do avatar abrem Configurações já na
   // seção certa.
@@ -245,7 +243,6 @@ function AppContent() {
       evolucoes: { title: 'Evoluções Clínicas', subtitle: 'Registros da equipe, de todos os pacientes da clínica' },
       'linha-do-tempo': { title: 'Linha do Tempo Clínica', subtitle: 'Ocorrências, evoluções, admissões e altas de toda a clínica' },
       riscos: { title: 'Alergias e Riscos', subtitle: 'O que a equipe precisa saber, por paciente' },
-      'app-paciente': { title: 'App Paciente', subtitle: 'Acessos da família à câmera do paciente' },
       compras: { title: 'Compras', subtitle: 'Pedidos de compra, da solicitação ao recebimento' },
       contratos: { title: 'Contratos', subtitle: 'Fornecedores, prazos e renovações' }
     };
@@ -311,7 +308,9 @@ function AppContent() {
           onNotificationClick={() => setNotificationCenterOpen(true)}
           onAbrirConfiguracoes={abrirConfiguracoes}
           onAbrirMenu={() => setMenuMovelAberto(true)}
-          onAbrirAppMobile={() => setViewMode('mobile')}
+          // O simulador do app da enfermagem fica de fora para quem só consulta
+          // (a banca do TCC): o Header só mostra o botão quando recebe isto.
+          onAbrirAppMobile={perfilSoDaRfc(user?.role) ? undefined : () => setViewMode('mobile')}
         />
 
         {/* Screen Content */}
@@ -332,12 +331,15 @@ function AppContent() {
           {isScreenAllowed(currentScreen) && currentScreen === 'alerts' && <AlertsScreen />}
           {isScreenAllowed(currentScreen) && currentScreen === 'patients' && (
             <PatientsScreen
-              aoAbrirPaciente={(paciente) => {
+              // Sem acesso ao prontuário, o cartão do paciente fica sem ação: em
+              // vez de um clique que só avisa "permissão insuficiente" e grava
+              // uma tentativa de acesso que a pessoa nem fez de propósito.
+              aoAbrirPaciente={isScreenAllowed('pep') ? (paciente) => {
                 // Abrir o prontuario a partir da gestao de pacientes: os dois
                 // caminhos levam ao mesmo lugar, com o mesmo paciente do banco.
                 setSelectedPatient(paciente);
                 handleNavigate('pep');
-              }}
+              } : undefined}
             />
           )}
           {isScreenAllowed(currentScreen) && currentScreen === 'beds-rooms' && <BedsRoomsScreen />}
@@ -350,7 +352,6 @@ function AppContent() {
               onBack={handleBackToPatientList}
             />
           )}
-          {isScreenAllowed(currentScreen) && currentScreen === 'app-paciente' && <AppPacienteScreen />}
           {isScreenAllowed(currentScreen) && TELAS_REGISTRADAS[currentScreen] && (() => {
             const Tela = TELAS_REGISTRADAS[currentScreen]!.componente;
             return (

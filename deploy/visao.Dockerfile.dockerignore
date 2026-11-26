@@ -1,0 +1,10 @@
+# Lista permitida: o contexto é a raiz do repositório, e só o serviço de visão interessa.
+*
+!visao/
+# Fora da imagem: ambiente virtual, vídeos/resultados de avaliação, capturas e testes.
+visao/.venv
+visao/dados
+visao/capturas
+visao/testes
+**/__pycache__
+**/*.pyc

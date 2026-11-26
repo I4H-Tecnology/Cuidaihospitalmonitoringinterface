@@ -60,7 +60,7 @@ export function useAlertas(tenantId: string | null): Retorno {
     if (!tenantId) return;
     vivo.current = true;
 
-    recarregar();
+    void recarregar();
     const timerPolling = window.setInterval(recarregar, INTERVALO_POLLING_MS);
 
     let timerPing: number | null = null;
@@ -100,7 +100,7 @@ export function useAlertas(tenantId: string | null): Retorno {
         // reconstruir a lista a partir da mensagem -- e arriscar divergir do
         // banco --, o push serve de gatilho e a verdade vem da API.
         if (['ocorrencia', 'ciencia', 'atendimento_iniciado', 'encerrada'].includes(dados.tipo)) {
-          recarregar();
+          void recarregar();
         }
       };
 

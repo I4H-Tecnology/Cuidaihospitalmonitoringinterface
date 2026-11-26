@@ -23,7 +23,7 @@ const TIPOS: Record<string, string> = {
 export function SecaoAmbientes({ aoIrPara, onNavigate }: {
   aoIrPara: (secao: SecaoConfiguracao) => void; onNavigate?: (tela: Screen) => void;
 }) {
-  const { tenantId, can } = useAuth();
+  const { tenantId, podeAbrirTela } = useAuth();
   const [ambientes, setAmbientes] = useState<AmbienteResumo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -45,9 +45,9 @@ export function SecaoAmbientes({ aoIrPara, onNavigate }: {
     }
   }, [tenantId]);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { void carregar(); }, [carregar]);
 
-  const tiposPresentes = useMemo(() => [...new Set(ambientes.map((a) => a.tipo))].sort(), [ambientes]);
+  const tiposPresentes = useMemo(() => [...new Set(ambientes.map((a) => a.tipo))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [ambientes]);
   const visiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return ambientes
@@ -157,7 +157,7 @@ export function SecaoAmbientes({ aoIrPara, onNavigate }: {
 
       <p className="text-sm text-gray-600">
         Criar e renomear ambientes ainda não tem tela: hoje isso é feito no cadastro inicial da clínica.
-        {onNavigate && can('beds', 'view') && (
+        {onNavigate && podeAbrirTela('beds-rooms') && (
           <>
             {' '}A ocupação em tempo real fica em{' '}
             <button type="button" onClick={() => onNavigate('beds-rooms')} className="text-marca-texto underline">

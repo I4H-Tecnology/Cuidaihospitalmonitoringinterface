@@ -6,10 +6,12 @@ on:
   pull_request:
     branches: [main, dev, qa]
 
-# Um push novo na mesma branch cancela a execução anterior.
+# Um push novo na mesma branch cancela a execução anterior, EXCETO na main, que publica:
+# cancelar no meio de uma publicação deixaria a VPS pela metade. Lá, o push novo espera o
+# atual terminar.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
   qualidade:
@@ -87,6 +89,32 @@ jobs:
       - name: Compilar backend e visão
         run: python -m py_compile backend/app/*.py backend/app/rotas/*.py backend/financeiro/*.py backend/financeiro/*/*.py visao/app/*.py visao/*.py
 
+  # Backend principal (backend/app): token, login, bloqueio, política de senha e
+  # permissões. Rodam sem banco: o acesso ao Postgres é trocado por respostas
+  # combinadas, então provam a regra e não o SQL (que só um banco de verdade
+  # prova, como o job `financeiro` faz com o dele). unittest, como em toda a
+  # base: é o que roda na máquina do aluno.
+  backend:
+    name: Backend principal (testes sem banco)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependências do backend
+        run: pip install -r backend/requirements.txt
+
+      - name: Testes do backend
+        run: python -m unittest discover -s backend/testes -t backend -v
+
   # Módulo financeiro (backend/financeiro): domínio (imposto, parcela, juros)
   # e integração contra um Postgres de verdade — gatilhos de período fechado,
   # somas conferidas no COMMIT e isolamento entre empresas só existem no banco,
@@ -127,6 +155,20 @@ jobs:
         env:
           FINANCEIRO_TESTE_DSN: postgresql://financeiro:financeiro@localhost:5432/financeiro_teste
         run: python -m unittest discover -s backend/financeiro/testes -t backend -v
+
+      # O Dockerfile copia arquivos e pastas por nome (nada de `COPY .`). O job
+      # `imagem` só roda na main, então sem estes dois passos uma pasta nova do
+      # módulo que faltasse no COPY só apareceria depois do merge.
+      - name: Construir a imagem do módulo financeiro
+        run: docker build -t medsignal-financeiro:${{ github.sha }} ./backend/financeiro
+
+      - name: Conferir que o servidor importa dentro da imagem
+        run: >-
+          docker run --rm
+          -e FINANCEIRO_JWT_SEGREDO=segredo-so-para-o-teste-0123456789abcdef
+          -e FINANCEIRO_DATABASE_URL=postgresql://teste@localhost:5432/teste
+          medsignal-financeiro:${{ github.sha }}
+          python -c "import financeiro.servidor"
 
   # Análise estática de código e segurança (núcleo comum). Roda dentro do CI,
   # sem serviço externo, conta ou token: o repositório é privado por decisão
@@ -211,7 +253,7 @@ jobs:
   imagem:
     name: Imagens Docker
     runs-on: ubuntu-latest
-    needs: [qualidade, visao, financeiro, seguranca]
+    needs: [qualidade, visao, backend, financeiro, seguranca]
     # Sem working-directory aqui: os contextos de build sao passados explicitos.
     # Só valida a imagem no que vai para produção.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -225,3 +267,96 @@ jobs:
 
       - name: Build da imagem do backend
         run: docker build -t medsignal-backend:${{ github.sha }} ./backend
+
+  # Publicação (CD). Roda SÓ depois de os cinco jobs de teste passarem e SÓ em push na
+  # main: branch de trabalho, dev, qa e pull request testam, mas nunca publicam. O que vai
+  # para a VPS é a árvore exata deste commit, já testada; quem a põe no ar é
+  # deploy/atualizar.sh, com rollback automático se algo não ficar saudável.
+  # Os segredos de produção (senhas, SECRET_KEY) ficam só na VPS, em deploy/.env: daqui
+  # entram apenas a chave SSH do pipeline e quatro valores públicos.
+  #
+  # Configuração, em Settings > Secrets and variables > Actions (do REPOSITÓRIO, não de um
+  # "environment": ambientes em repositório privado exigem plano pago do GitHub):
+  #   segredo   VPS_SSH_KEY      chave privada EXCLUSIVA do pipeline (ed25519, sem senha)
+  #   variável  VPS_HOST         IP ou nome da VPS
+  #   variável  VPS_USER         usuário SSH
+  #   variável  VPS_FINGERPRINT  impressão digital ED25519 do servidor (SHA256:...), para o
+  #                              pipeline recusar um servidor falso
+  #   variável  DOMINIO          endereço público, sem https:// (conferência final)
+  publicar:
+    name: Publicar na VPS
+    runs-on: ubuntu-latest
+    needs: [qualidade, visao, backend, financeiro, seguranca]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      VPS_HOST: ${{ vars.VPS_HOST }}
+      VPS_USER: ${{ vars.VPS_USER }}
+      VPS_FINGERPRINT: ${{ vars.VPS_FINGERPRINT }}
+      DOMINIO: ${{ vars.DOMINIO }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preparar a conexão SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          for v in VPS_SSH_KEY VPS_HOST VPS_USER VPS_FINGERPRINT DOMINIO; do
+            if [ -z "${!v}" ]; then
+              echo "::error::falta configurar $v (Settings > Secrets and variables > Actions)"
+              exit 1
+            fi
+          done
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/chave_vps
+          # Confere a impressão digital ANTES de confiar no servidor.
+          ssh-keyscan -t ed25519 "$VPS_HOST" > ~/.ssh/servidor.candidato 2>/dev/null
+          visto="$(ssh-keygen -lf ~/.ssh/servidor.candidato | awk '{print $2}')"
+          if [ "$visto" != "$VPS_FINGERPRINT" ]; then
+            echo "::error::a impressão digital do servidor ($visto) não é a esperada. Publicação abortada."
+            exit 1
+          fi
+          mv ~/.ssh/servidor.candidato ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/chave_vps\n  IdentitiesOnly yes\n  BatchMode yes\n  StrictHostKeyChecking yes\n  ServerAliveInterval 30\n' \
+            "$VPS_HOST" "$VPS_USER" > ~/.ssh/config
+
+      # Sem --delete de propósito: o que só existe na VPS (deploy/.env, vídeo de demonstração,
+      # pesos do YOLO, usuários do Dozzle, clipes e manifesto dos registros de ensaio) não pode
+      # ser apagado por uma publicação.
+      - name: Enviar o código testado
+        run: |
+          set -euo pipefail
+          tar --exclude-vcs \
+              --exclude='./node_modules' --exclude='./frontend/node_modules' \
+              --exclude='./docs' --exclude='./visao/dados' --exclude='./visao/.venv' \
+              --exclude='./visao/pesos' --exclude='./deploy/.env' --exclude='./deploy/videos' \
+              --exclude='./deploy/dozzle' --exclude='./deploy/clipes-ensaio' \
+              -czf - . | ssh vps 'mkdir -p ~/medsignal && tar -xzf - -C ~/medsignal --no-same-owner'
+
+      - name: Atualizar a pilha (com rollback automático)
+        run: ssh vps "bash ~/medsignal/deploy/atualizar.sh '${GITHUB_SHA}'"
+
+      - name: Conferir o site publicado
+        run: |
+          set -euo pipefail
+          ok=0
+          for i in $(seq 1 18); do
+            if curl -fsS -m 15 "https://${DOMINIO}/api/tenants" | grep -q '"id"'; then ok=1; break; fi
+            sleep 10
+          done
+          [ "$ok" = 1 ] || { echo "::error::a API não respondeu em https://${DOMINIO}"; exit 1; }
+          curl -fsS -m 15 "https://${DOMINIO}/" | grep -qi 'MedSignal' \
+            || { echo "::error::o painel não respondeu em https://${DOMINIO}"; exit 1; }
+          # Rota protegida sem token tem de recusar (401): prova que a autenticação está de pé.
+          codigo="$(curl -s -o /dev/null -w '%{http_code}' -m 15 "https://${DOMINIO}/api/pacientes?tenantId=clinica-demo")"
+          [ "$codigo" = 401 ] || { echo "::error::rota protegida respondeu $codigo, esperado 401"; exit 1; }
+          # A versão no ar tem de ser a que acabou de passar nos testes.
+          versao="$(ssh vps 'cat ~/medsignal/VERSAO')"
+          [ "$versao" = "${GITHUB_SHA}" ] || { echo "::error::no ar: $versao; testado: ${GITHUB_SHA}"; exit 1; }
+          echo "Publicado: commit ${GITHUB_SHA} em https://${DOMINIO}" | tee -a "$GITHUB_STEP_SUMMARY"

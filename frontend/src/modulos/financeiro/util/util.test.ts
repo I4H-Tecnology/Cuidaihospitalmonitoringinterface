@@ -6,6 +6,7 @@ import {
   lerValorDigitado,
   paraCentavos,
   paraEdicao,
+  semZerosFinais,
   somar,
 } from './dinheiro';
 import {
@@ -82,3 +83,21 @@ describe('csv', () => {
     expect(csv).toBe('Descrição;Valor\r\n"Aluguel ""centro""";1500,00');
   });
 });
+
+describe('semZerosFinais', () => {
+  it.each([
+    ['1.5000', '1.5'],
+    ['10.00', '10'],
+    ['0.00', '0'],
+    ['2.50', '2.5'],
+    ['0.0150', '0.015'],
+  ])('%s vira %s', (entrada, esperado) => {
+    expect(semZerosFinais(entrada)).toBe(esperado);
+  });
+
+  it('não mexe em inteiro sem ponto decimal', () => {
+    expect(semZerosFinais('100')).toBe('100');
+    expect(semZerosFinais('10')).toBe('10');
+  });
+});
+

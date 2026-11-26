@@ -31,7 +31,7 @@ export function Recorrencias() {
                 try {
                   const r = await api.gerarRecorrencias();
                   avisar(r.gerados ? `${r.gerados} lançamento(s) gerado(s).` : 'Nada novo a gerar: tudo em dia.');
-                  lista.recarregar();
+                  void lista.recarregar();
                 } catch (e) {
                   avisar(e instanceof Error ? e.message : 'Não foi possível gerar.', 'erro');
                 } finally {
@@ -88,7 +88,7 @@ export function Recorrencias() {
         <EditorRecorrencia
           recorrencia={editando === 'nova' ? null : editando}
           aoFechar={() => setEditando(null)}
-          aoSalvar={() => { setEditando(null); lista.recarregar(); }}
+          aoSalvar={() => { setEditando(null); void lista.recarregar(); }}
         />
       )}
     </div>

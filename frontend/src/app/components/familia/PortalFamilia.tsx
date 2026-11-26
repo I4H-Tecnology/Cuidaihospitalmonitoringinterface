@@ -54,8 +54,8 @@ export function PortalFamilia() {
     // num print que o familiar mande para alguém.
     if (codigo) window.history.replaceState(null, '', window.location.pathname);
     const sessao = lerSessao();
-    if (codigo) usarCodigo(codigo);
-    else if (sessao) abrirPainel(sessao);
+    if (codigo) void usarCodigo(codigo);
+    else if (sessao) void abrirPainel(sessao);
     else setEtapa({ tipo: 'codigo' });
 
     // Link do QR colado numa aba que já estava no portal: só o # muda, sem recarregar.
@@ -63,7 +63,7 @@ export function PortalFamilia() {
       const novo = lerCodigoDaUrl();
       if (!novo) return;
       window.history.replaceState(null, '', window.location.pathname);
-      usarCodigo(novo);
+      void usarCodigo(novo);
     };
     window.addEventListener('hashchange', aoMudarHash);
     return () => window.removeEventListener('hashchange', aoMudarHash);
@@ -260,7 +260,7 @@ function Video({ sessao, disponivel, conectada }: { sessao: SessaoFamilia; dispo
   }, [sessao.token]);
 
   useEffect(() => {
-    if (disponivel) abrir();
+    if (disponivel) void abrir();
     else setSrc(null);
   }, [disponivel, abrir]);
 

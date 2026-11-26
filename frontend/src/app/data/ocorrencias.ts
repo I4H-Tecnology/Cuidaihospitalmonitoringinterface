@@ -35,6 +35,14 @@ export function estaAberta(o: OcorrenciaResumo): boolean {
 }
 
 /**
+ * Registros de ENSAIO CONTROLADO ficam fora de toda contagem e estatística: não são operação.
+ * Continuam nas listas (com selo). O servidor aplica a mesma regra nas estatísticas dele.
+ */
+export function semEnsaio(ocorrencias: OcorrenciaResumo[]): OcorrenciaResumo[] {
+  return ocorrencias.filter((o) => !o.ensaio);
+}
+
+/**
  * Gravidade visual de uma ocorrência: pendente é crítica (ninguém deu
  * ciência ainda), em atendimento é atenção, encerrada é informativa.
  */
@@ -51,13 +59,14 @@ export function nasUltimasHoras(
   agora: number = Date.now(),
 ): OcorrenciaResumo[] {
   const limite = agora - horas * 3600000;
-  return ocorrencias.filter((o) => new Date(o.dataHora).getTime() >= limite);
+  // Só alimenta contagens e gráficos: o ensaio controlado não entra (ver semEnsaio).
+  return semEnsaio(ocorrencias).filter((o) => new Date(o.dataHora).getTime() >= limite);
 }
 
 /** Contagem por tipo de evento, ordenada da mais frequente para a menos. */
 export function porTipo(ocorrencias: OcorrenciaResumo[]): { tipo: string; total: number }[] {
   const contagem = new Map<string, number>();
-  for (const o of ocorrencias) {
+  for (const o of semEnsaio(ocorrencias)) {
     contagem.set(o.tipoEvento, (contagem.get(o.tipoEvento) ?? 0) + 1);
   }
   return [...contagem.entries()]
@@ -80,7 +89,7 @@ export function porHoraNasUltimas24h(
     const t = inicio.getTime() - i * 3600000;
     faixas.push({ hora: `${String(new Date(t).getHours()).padStart(2, '0')}h`, total: 0, inicio: t });
   }
-  for (const o of ocorrencias) {
+  for (const o of semEnsaio(ocorrencias)) {
     const t = new Date(o.dataHora).getTime();
     const faixa = faixas.find((f) => t >= f.inicio && t < f.inicio + 3600000);
     if (faixa) faixa.total += 1;

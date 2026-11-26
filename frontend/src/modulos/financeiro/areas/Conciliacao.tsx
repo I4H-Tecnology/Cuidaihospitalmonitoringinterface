@@ -113,7 +113,7 @@ export function Conciliacao() {
                   try {
                     const r = await api.conciliarFortes(contaId);
                     avisar(`${r.conciliadas} linha(s) conciliada(s).`);
-                    pendencias.recarregar();
+                    void pendencias.recarregar();
                   } catch (e) {
                     avisar(e instanceof Error ? e.message : 'Não foi possível conciliar.', 'erro');
                   }
@@ -194,7 +194,7 @@ export function Conciliacao() {
           aoFechar={() => setImportando(false)}
           aoConcluir={() => {
             setImportando(false);
-            pendencias.recarregar();
+            void pendencias.recarregar();
           }}
         />
       )}
@@ -205,8 +205,8 @@ export function Conciliacao() {
           aoFechar={() => setLancando(null)}
           aoConcluir={() => {
             setLancando(null);
-            pendencias.recarregar();
-            cadastros.recarregar();
+            void pendencias.recarregar();
+            void cadastros.recarregar();
           }}
         />
       )}
@@ -221,7 +221,7 @@ export function Conciliacao() {
             try {
               await api.ignorarLinha(ignorando.id, motivo);
               setIgnorando(null);
-              pendencias.recarregar();
+              void pendencias.recarregar();
             } catch (e) {
               avisar(e instanceof Error ? e.message : 'Não foi possível ignorar.', 'erro');
             }

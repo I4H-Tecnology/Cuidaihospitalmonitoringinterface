@@ -39,7 +39,7 @@ export function useDados<T>(buscar: (tenantId: string) => Promise<T>, chave: unk
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, ...chave]);
 
-  useEffect(() => { recarregar(); }, [recarregar]);
+  useEffect(() => { void recarregar(); }, [recarregar]);
 
   useEffect(() => {
     if (!intervaloMs) return;

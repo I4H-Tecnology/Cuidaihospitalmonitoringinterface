@@ -15,9 +15,11 @@ from statistics import mean, median
 
 from fastapi import APIRouter, Depends, HTTPException
 from financeiro.relogio import FUSO, hoje
+from psycopg import sql
 
 from .. import db
 from ..comum import clinica_por_slug, iso
+from ..ensaio import sem_ensaio
 from ..seguranca import UsuarioAutenticado, exigir_permissao, exigir_tenant, permissoes_do_perfil
 
 router = APIRouter()
@@ -53,9 +55,15 @@ def limites(i: date, f: date) -> tuple[datetime, datetime]:
 
 
 def ocorrencias_do_periodo(clinica_id, i: date, f: date) -> list[dict]:
+    """As ocorrências do período, base de TODAS as estatísticas desta tela.
+
+    Os registros de ensaio controlado ficam de fora (ver ensaio.py): têm ciência pré-marcada e
+    encerramento sem atendimento, e entrariam nos tempos de resposta e nas contagens como se
+    fossem operação real. Eles aparecem na lista de Alertas Clínicos, não aqui.
+    """
     ini, fim = limites(i, f)
     return db.buscar_todos(
-        """
+        sql.SQL("""
         SELECT o.id, o.tipo_evento, o.status, o.data_hora, o.encerrada_em, o.observacao,
                o.ambiente_id, amb.nome AS ambiente_nome, o.paciente_id, p.nome AS paciente_nome,
                p.data_nascimento, a.ciencia_em, uc.nome AS ciencia_nome,
@@ -71,8 +79,9 @@ def ocorrencias_do_periodo(clinica_id, i: date, f: date) -> list[dict]:
           ) at ON true
           LEFT JOIN usuario ua ON ua.id = at.usuario_id
          WHERE o.clinica_id = %s AND o.data_hora >= %s AND o.data_hora < %s
+           AND {sem}
          ORDER BY o.data_hora DESC
-        """,
+        """).format(sem=sem_ensaio("o")),
         (clinica_id, ini, fim),
     )
 

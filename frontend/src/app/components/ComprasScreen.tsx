@@ -64,7 +64,7 @@ export function ComprasScreen({ onNavigate }: { onNavigate?: (tela: Screen) => v
     }
   }, [tenantId]);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { void carregar(); }, [carregar]);
 
   const conta = (s: StatusPedido) => pedidos.filter((p) => p.status === s).length;
   const urgentesAbertos = pedidos.filter((p) => p.urgente && ['solicitado', 'aprovado', 'comprado'].includes(p.status)).length;
@@ -90,7 +90,7 @@ export function ComprasScreen({ onNavigate }: { onNavigate?: (tela: Screen) => v
 
   const depoisDe = (mensagem: string) => {
     setAviso(mensagem);
-    carregar();
+    void carregar();
   };
 
   return (

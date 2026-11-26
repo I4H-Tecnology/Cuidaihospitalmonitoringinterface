@@ -47,8 +47,8 @@ export function Caixa() {
   );
 
   const recarregar = () => {
-    contas.recarregar();
-    extrato.recarregar();
+    void contas.recarregar();
+    void extrato.recarregar();
   };
 
   const exportar = () => {

@@ -54,7 +54,7 @@ export function PlanoDeContas() {
           grupos={grupos.dados.grupos}
           categorias={categorias.dados}
           aoFechar={() => setEditando(null)}
-          aoSalvar={() => { setEditando(null); categorias.recarregar(); }}
+          aoSalvar={() => { setEditando(null); void categorias.recarregar(); }}
         />
       )}
     </div>

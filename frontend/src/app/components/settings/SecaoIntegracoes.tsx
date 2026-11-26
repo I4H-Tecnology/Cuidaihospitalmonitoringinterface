@@ -30,7 +30,7 @@ export function SecaoIntegracoes() {
 
   useEffect(() => {
     let vivo = true;
-    fetchServicoPadrao().then((r) => vivo && setVisao(r.noAr ? 'no-ar' : 'fora'));
+    void fetchServicoPadrao().then((r) => vivo && setVisao(r.noAr ? 'no-ar' : 'fora'));
     return () => { vivo = false; };
   }, []);
 

@@ -1,3 +1,4 @@
+import { focarAoAparecer } from '../../foco';
 import { useState } from 'react';
 import { AlertCircle, Ban, Loader2, Pill, Plus, Stethoscope, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -95,20 +96,20 @@ export function MedicationsTab({ paciente, prescricoes, carregando, aoMudar }: P
       {formulario && podeRegistrar && (
         <form onSubmit={registrar} className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Medicamento *</label>
-            <input value={medicamento} onChange={(e) => setMedicamento(e.target.value)} maxLength={120} placeholder="Ex.: losartana 50 mg" className={campo} autoFocus />
+            <label htmlFor="medicationstab-medicamento" className="mb-1 block text-xs text-gray-600">Medicamento *</label>
+            <input id="medicationstab-medicamento" value={medicamento} onChange={(e) => setMedicamento(e.target.value)} maxLength={120} placeholder="Ex.: losartana 50 mg" className={campo} ref={focarAoAparecer} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Posologia</label>
-            <input value={posologia} onChange={(e) => setPosologia(e.target.value)} maxLength={200} placeholder="Ex.: 1 comprimido, 2x ao dia" className={campo} />
+            <label htmlFor="medicationstab-posologia" className="mb-1 block text-xs text-gray-600">Posologia</label>
+            <input id="medicationstab-posologia" value={posologia} onChange={(e) => setPosologia(e.target.value)} maxLength={200} placeholder="Ex.: 1 comprimido, 2x ao dia" className={campo} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-600">Médico que receitou</label>
-            <input value={medico} onChange={(e) => setMedico(e.target.value)} maxLength={120} placeholder="Nome e CRM" className={campo} />
+            <label htmlFor="medicationstab-medico-que-receitou" className="mb-1 block text-xs text-gray-600">Médico que receitou</label>
+            <input id="medicationstab-medico-que-receitou" value={medico} onChange={(e) => setMedico(e.target.value)} maxLength={120} placeholder="Nome e CRM" className={campo} />
           </div>
           <div className="md:col-span-3">
-            <label className="mb-1 block text-xs text-gray-600">Observação</label>
-            <input value={observacao} onChange={(e) => setObservacao(e.target.value)} maxLength={500} placeholder="Ex.: após as refeições; suspender se pressão abaixo de 10" className={campo} />
+            <label htmlFor="medicationstab-observacao" className="mb-1 block text-xs text-gray-600">Observação</label>
+            <input id="medicationstab-observacao" value={observacao} onChange={(e) => setObservacao(e.target.value)} maxLength={500} placeholder="Ex.: após as refeições; suspender se pressão abaixo de 10" className={campo} />
           </div>
           <div className="flex items-center justify-end gap-2 md:col-span-3">
             <button type="button" onClick={() => setFormulario(false)} disabled={salvando} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancelar</button>

@@ -14,10 +14,12 @@ import time
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
+from psycopg import sql
 
 from .. import clipes, db
 from ..alertas import central
 from ..comum import clinica_por_slug
+from ..ensaio import sem_ensaio
 from ..registro import nivel_e_formato
 from ..seguranca import UsuarioAutenticado, exigir_permissao, exigir_tenant
 from .cameras import JANELA_DE_PING
@@ -50,19 +52,20 @@ def saude(
     numeros = {"cameras": 0, "conectadas": 0, "ocorrencias_24h": 0, "abertas": 0}
     if banco["ok"]:
         # JANELA_DE_PING é constante; o id da clínica vai por parâmetro.
-        linha = db.buscar_um(  # nosec B608
-            f"""
+        linha = db.buscar_um(
+            sql.SQL("""
             SELECT
               (SELECT count(*) FROM camera cam JOIN ambiente amb ON amb.id = cam.ambiente_id
                 WHERE amb.clinica_id = %(cid)s) AS cameras,
               (SELECT count(*) FROM camera cam JOIN ambiente amb ON amb.id = cam.ambiente_id
                 WHERE amb.clinica_id = %(cid)s
-                  AND cam.ultimo_ping > now() - interval '{JANELA_DE_PING}') AS conectadas,
-              (SELECT count(*) FROM ocorrencia
-                WHERE clinica_id = %(cid)s AND data_hora > now() - interval '24 hours') AS ocorrencias_24h,
+                  AND cam.ultimo_ping > now() - interval '{janela}') AS conectadas,
+              (SELECT count(*) FROM ocorrencia o
+                WHERE o.clinica_id = %(cid)s AND o.data_hora > now() - interval '24 hours'
+                  AND {sem}) AS ocorrencias_24h,
               (SELECT count(*) FROM ocorrencia
                 WHERE clinica_id = %(cid)s AND status IN ('pendente', 'em_atendimento')) AS abertas
-            """,
+            """).format(janela=sql.SQL(JANELA_DE_PING), sem=sem_ensaio("o")),
             {"cid": clinica["id"]},
         )
         numeros = {k: int(linha[k] or 0) for k in numeros}

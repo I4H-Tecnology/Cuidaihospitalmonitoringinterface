@@ -13,7 +13,7 @@ import { Aviso, BOTAO_PRIMARIO, CabecalhoSecao, Carregando, Cartao, Dado } from 
  * regra, e um deles errado mais cedo ou mais tarde.
  */
 export function SecaoSeguranca({ onNavigate }: { onNavigate?: (tela: Screen) => void }) {
-  const { tenantId, can } = useAuth();
+  const { tenantId, podeAbrirTela } = useAuth();
   const [politica, setPolitica] = useState<SecurityPolicy | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -34,7 +34,7 @@ export function SecaoSeguranca({ onNavigate }: { onNavigate?: (tela: Screen) => 
       <CabecalhoSecao
         titulo="Segurança"
         descricao="Regras de senha, bloqueio e inatividade que valem para todos os usuários da clínica."
-        acao={onNavigate && can('users', 'view') ? (
+        acao={onNavigate && podeAbrirTela('users') ? (
           <button type="button" onClick={() => onNavigate('users')} className={BOTAO_PRIMARIO}>Editar em Usuários</button>
         ) : undefined}
       />
